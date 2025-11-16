@@ -1,0 +1,36 @@
+# Cursor Rules
+
+## Source of Truth
+- Follow `requirements/PRD.md` for product vision, flows, and technical requirements.
+- Use `requirements/tasks.json` to understand phase scope, task priorities, and dependencies before starting implementation.
+- If requirements and code conflict, update the docs first or flag the discrepancy before coding.
+
+## Stack & Architecture
+- Frontend: Next.js 16 (App Router) with React, TypeScript (strict), and Tailwind CSS. Prefer Server Components when possible; fall back to Client Components only for interactive pieces.
+- Backend/API: Use Next.js API routes or Route Handlers with TypeScript. Keep business logic inside `/app/api` or `/src/server` modules instead of mixing with UI.
+- Authentication: Clerk is the only auth provider. Use Clerk UI components for auth surfaces and Clerk middleware for route protection (no Supabase Auth).
+- Database: Dockerized PostgreSQL is the system of record. Prefer Prisma or Drizzle for schema management and migrations. Keep SQL schema files under version control.
+- Caching/Queues: Use Redis for crawl cache + rate limiting. Long-running crawls should run via background jobs/queues (BullMQ or equivalent).
+- AI & Crawling: Integrate Firecrawl for website analysis and OpenRouter for AI prompts (scope suggestions, scoring, risk analysis). Always add graceful fallbacks if those services fail.
+- Exports & Storage: Store PDFs/screenshots/attachments in S3-compatible storage. Keep generated assets and links short-lived if they include sensitive data.
+
+## Implementation Guidance
+- Always build for the two entry flows: fresh Webflow project and existing-site analysis, converging on the same calculation engine.
+- Questionnaire logic must be data-driven (JSON configs) with conditional visibility, progress indicators, tooltips, and save/resume (localStorage or authenticated persistence).
+- Cost calculation engine is deterministic first (base hours + multipliers). AI insights can enhance but must not block deterministic results.
+- Use feature flags or tier checks to separate Free vs Pro features (PDF watermark, crawl limits, advanced benchmarks).
+- All new code should be TypeScript; avoid `any` unless absolutely necessary and documented.
+- Handle secrets via `.env.local`/`.env` and never commit keys. Reference required env variables in docs/readme before using them.
+
+## Testing & Quality
+- Unit tests: Jest + React Testing Library for UI/components and core calculation logic.
+- Integration/E2E: Playwright covering both user flows (fresh project, existing site) including export triggers.
+- Add backend tests (Vitest/Jest) for calculation API, crawler proxy, and AI endpoints when feasible.
+- Run linters/formatters (ESLint + Prettier) before committing. Enforce strict TypeScript.
+
+## Deliverables & Workflow
+- When adding features, update the relevant section in `requirements/PRD.md` or `requirements/tasks.json` if scope changes.
+- Provide migration scripts whenever DB schema changes.
+- Favor modular, reusable components (e.g., question controls, cost breakdown tables, timeline views).
+- Document new endpoints, env vars, or CLI scripts in README or `/docs`.
+

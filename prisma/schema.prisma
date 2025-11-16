@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  FREELANCER
+  AGENCY
+  COMPANY
+}
+
+enum ProjectFlow {
+  FRESH
+  EXISTING
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  userType   UserType
+  hourlyRate Decimal? @db.Decimal(8, 2)
+  currency   String   @default("USD")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id         String      @id @default(cuid())
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id])
+  title      String
+  status     String      @default("draft")
+  flow       ProjectFlow
+  hourlyRate Decimal?    @db.Decimal(8, 2)
+  currency   String      @default("USD")
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  responses    ProjectResponse[]
+  calculations CostCalculation[]
+  crawlResults CrawlResult[]
+
+  @@index([userId])
+  @@index([flow, status])
+}
+
+model ProjectResponse {
+  id          String   @id @default(cuid())
+  projectId   String
+  questionKey String
+  answer      Json
+  answerType  String?
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([questionKey])
+}
+
+model CostCalculation {
+  id         String   @id @default(cuid())
+  projectId  String
+  totalHours Decimal  @db.Decimal(8, 2)
+  totalCost  Decimal  @db.Decimal(12, 2)
+  currency   String   @default("USD")
+  breakdown  Json
+  aiEnhanced Boolean  @default(false)
+  confidence Float?
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model CrawlResult {
+  id         String    @id @default(cuid())
+  projectId  String?
+  url        String
+  urlHash    String    @unique
+  resultData Json
+  status     String    @default("completed")
+  analyzedAt DateTime  @default(now())
+  expiresAt  DateTime?
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([urlHash])
+}

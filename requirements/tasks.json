@@ -1,0 +1,1441 @@
+{
+  "project": "Webflow Project Calculator",
+  "version": "1.0",
+  "created": "2025-11-15",
+  "description": "Comprehensive task breakdown for building the Webflow Project Calculator with AI-powered cost estimation and website crawling",
+  "tasks": [
+    {
+      "id": "setup-1",
+      "category": "Setup & Infrastructure",
+      "phase": "Phase 1: MVP",
+      "title": "Initialize project repository and development environment",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 4,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "setup-1.1",
+          "title": "Set up GitHub repository with proper .gitignore",
+          "details": "Include node_modules, .env, build artifacts",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.2",
+          "title": "Initialize Next.js 16 project with TypeScript",
+          "details": "Use create-next-app@latest with TypeScript template and App Router",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.3",
+          "title": "Configure Tailwind CSS for styling",
+          "details": "Set up tailwind.config.js with custom colors and components",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.4",
+          "title": "Set up project structure and folder organization",
+          "details": "Create /components, /pages, /lib, /hooks, /types, /utils folders",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.5",
+          "title": "Configure TypeScript with strict mode",
+          "details": "Set up tsconfig.json with strict typing",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.6",
+          "title": "Set up version control workflow (GitFlow or trunk-based)",
+          "details": "Document branching strategy and PR process",
+          "status": "completed"
+        },
+        {
+          "id": "setup-1.7",
+          "title": "Configure Prettier and ESLint for code formatting",
+          "details": "Set up consistent code style across team",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "setup-2",
+      "category": "Setup & Infrastructure",
+      "phase": "Phase 1: MVP",
+      "title": "Set up third-party service accounts and API keys",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 3,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "setup-2.1",
+          "title": "Create Firecrawl account and get API key",
+          "details": "Sign up at firecrawl.dev, test free tier limits",
+          "status": "completed"
+        },
+        {
+          "id": "setup-2.2",
+          "title": "Create OpenRouter account and get API key",
+          "details": "Sign up at openrouter.ai, add initial credits",
+          "status": "completed"
+        },
+        {
+          "id": "setup-2.3",
+          "title": "Provision PostgreSQL database via Docker",
+          "details": "Create docker-compose service, configure schemas, expose ports securely",
+          "status": "completed"
+        },
+        {
+          "id": "setup-2.4",
+          "title": "Set up Redis instance (Upstash or similar)",
+          "details": "Create cache for crawl results and rate limiting",
+          "status": "completed"
+        },
+        {
+          "id": "setup-2.5",
+          "title": "Configure Stripe account for future billing",
+          "details": "Set up Stripe in test mode, create products/prices",
+          "status": "pending"
+        },
+        {
+          "id": "setup-2.6",
+          "title": "Create environment variables management",
+          "details": "Setup .env.local, document all required keys",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "database-1",
+      "category": "Database & Backend",
+      "phase": "Phase 1: MVP",
+      "title": "Design and implement database schema",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 8,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "database-1.1",
+          "title": "Design users table schema",
+          "details": "id, email, user_type (freelancer/agency/company), created_at",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.2",
+          "title": "Design projects table schema",
+          "details": "id, user_id, title, status, created_at, updated_at",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.3",
+          "title": "Design project_responses table schema",
+          "details": "id, project_id, question_key, answer, answer_type",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.4",
+          "title": "Design crawl_results table schema",
+          "details": "id, url, url_hash, result_data, analyzed_at, expires_at",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.5",
+          "title": "Design cost_calculations table schema",
+          "details": "id, project_id, total_cost, breakdown, ai_enhanced, created_at",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.6",
+          "title": "Create indexing strategy",
+          "details": "Indexes on user_id, url_hash, created_at for performance",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.7",
+          "title": "Implement database migrations or schema updates",
+          "details": "Use Prisma/Drizzle migrations or manual SQL files",
+          "status": "completed"
+        },
+        {
+          "id": "database-1.8",
+          "title": "Seed database with initial data (questionnaire templates, benchmarks)",
+          "details": "Load base project costs and complexity multipliers",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "api-1",
+      "category": "Database & Backend",
+      "phase": "Phase 1: MVP",
+      "title": "Build backend API foundation with Next.js API routes or separate Node.js server",
+      "priority": "high",
+      "status": "in_progress",
+      "estimated_hours": 12,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "api-1.1",
+          "title": "Set up Next.js API routes structure",
+          "details": "Create /pages/api structure for REST endpoints",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.2",
+          "title": "Implement PostgreSQL client integration",
+          "details": "Create reusable database client wrapper (Prisma/Drizzle)",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.3",
+          "title": "Implement Redis client integration for caching",
+          "details": "Create cache wrapper with TTL management",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.4",
+          "title": "Rate limiting middleware",
+          "details": "Implement per-user rate limit (public API calls)",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.5",
+          "title": "Error handling middleware",
+          "details": "Centralized error handling with proper HTTP status codes",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.6",
+          "title": "Request validation middleware",
+          "details": "Validate incoming requests for required fields and types",
+          "status": "completed"
+        },
+        {
+          "id": "api-1.7",
+          "title": "Set up API documentation (Swagger/OpenAPI)",
+          "details": "Document all endpoints for team reference",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "auth-1",
+      "category": "Database & Backend",
+      "phase": "Phase 1: MVP",
+      "title": "Implement authentication system (Clerk)",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 6,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "auth-1.1",
+          "title": "Configure Clerk tenant and applications",
+          "details": "Create Clerk project, enable email/password + social options, set branding",
+          "status": "completed"
+        },
+        {
+          "id": "auth-1.2",
+          "title": "Implement Clerk sign-in/sign-up flows",
+          "details": "Add Clerk components/pages and server-side callbacks",
+          "status": "completed"
+        },
+        {
+          "id": "auth-1.3",
+          "title": "Create authentication context/hooks for frontend",
+          "details": "Expose Clerk session/user data via hooks and context",
+          "status": "completed"
+        },
+        {
+          "id": "auth-1.4",
+          "title": "Implement protected routes",
+          "details": "Middleware to verify Clerk JWT/session tokens",
+          "status": "completed"
+        },
+        {
+          "id": "auth-1.5",
+          "title": "Implement password reset flow",
+          "details": "Leverage Clerk-managed password reset + email templates",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ui-landing",
+      "category": "Frontend UI/UX",
+      "phase": "Phase 1: MVP",
+      "title": "Design and build landing page",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 16,
+      "assignee": "UI/UX Designer",
+      "subtasks": [
+        {
+          "id": "ui-landing-1",
+          "title": "Create wireframes for landing page",
+          "details": "Hero section, feature highlights, CTA buttons",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-2",
+          "title": "Design high-fidelity mockups in Figma",
+          "details": "Include desktop and mobile views",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-3",
+          "title": "Implement landing page hero section",
+          "details": "Responsive hero with main CTA button",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-4",
+          "title": "Implement features section with benefits",
+          "details": "Highlight key value propositions for each user type",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-5",
+          "title": "Implement testimonials/social proof section",
+          "details": "Placeholder testimonials for MVP",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-6",
+          "title": "Add navigation bar with logo and menu",
+          "details": "Responsive navigation, mobile menu toggle",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-7",
+          "title": "Add footer with links and copyright",
+          "details": "Privacy policy, terms, social links",
+          "status": "completed"
+        },
+        {
+          "id": "ui-landing-8",
+          "title": "Optimize landing page for SEO",
+          "details": "Meta tags, Open Graph, structured data",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ui-onboarding",
+      "category": "Frontend UI/UX",
+      "phase": "Phase 1: MVP",
+      "title": "Design project initiation flow (choice between fresh project vs existing website)",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 12,
+      "assignee": "UI/UX Designer + Frontend Developer",
+      "subtasks": [
+        {
+          "id": "ui-onboarding-1",
+          "title": "Design wireframes for onboarding flow",
+          "details": "Two clear options: fresh project or existing website",
+          "status": "completed"
+        },
+        {
+          "id": "ui-onboarding-2",
+          "title": "Create mockups for user type selection",
+          "details": "Cards for Freelancer, Agency, Company with descriptions",
+          "status": "completed"
+        },
+        {
+          "id": "ui-onboarding-3",
+          "title": "Implement onboarding flow UI",
+          "details": "Build step-by-step flow with progress indicator",
+          "status": "completed"
+        },
+        {
+          "id": "ui-onboarding-4",
+          "title": "Create and animate transitions between steps",
+          "details": "Smooth transitions, micro-interactions",
+          "status": "completed"
+        },
+        {
+          "id": "ui-onboarding-5",
+          "title": "Add tooltip help text for each user type",
+          "details": "Explain which option fits user's needs",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ui-questionnaire",
+      "category": "Frontend UI/UX",
+      "phase": "Phase 1: MVP",
+      "title": "Build dynamic questionnaire system",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 24,
+      "assignee": "Frontend Developer",
+      "subtasks": [
+        {
+          "id": "ui-questionnaire-1",
+          "title": "Define questionnaire questions and structure (JSON config)",
+          "details": "Create question bank organized by category",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-2",
+          "title": "Design and implement question component library",
+          "details": "Radio buttons, checkboxes, sliders, text inputs",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-3",
+          "title": "Implement conditional question logic",
+          "details": "Show/hide questions based on previous answers",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-4",
+          "title": "Build progress indicator for multi-step questionnaire",
+          "details": "Visual progress bar with section labels",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-5",
+          "title": "Implement question categories (Design, Functionality, Content, Technical)",
+          "details": "Sectioned layout with clear headings",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-6",
+          "title": "Add help tooltips for complex questions",
+          "details": "Explain technical terms like 'CMS', 'Interactions'",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-7",
+          "title": "Implement save progress functionality",
+          "details": "Auto-save to localStorage every 30 seconds",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-8",
+          "title": "Add skip option for advanced questions",
+          "details": "Allow users to skip optional advanced questions",
+          "status": "completed"
+        },
+        {
+          "id": "ui-questionnaire-9",
+          "title": "Build responsive design for mobile questionnaire",
+          "details": "Mobile-optimized input fields and layout",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ui-url-input",
+      "category": "Frontend UI/UX",
+      "phase": "Phase 1: MVP",
+      "title": "Build URL input form for existing website analysis",
+      "priority": "low",
+      "status": "completed",
+      "estimated_hours": 6,
+      "assignee": "Frontend Developer",
+      "subtasks": [
+        {
+          "id": "ui-url-input-1",
+          "title": "Design URL input form with validation",
+          "details": "Input field with URL format validation",
+          "status": "completed",
+          "milestone": "MVP"
+        },
+        {
+          "id": "ui-url-input-2",
+          "title": "Implement URL validation (regex check)",
+          "details": "Ensure valid URL format, show error messages",
+          "status": "completed"
+        },
+        {
+          "id": "ui-url-input-3",
+          "title": "Add loading state while crawl is in progress",
+          "details": "Spinner, progress bar, or skeleton loader",
+          "status": "completed"
+        },
+        {
+          "id": "ui-url-input-4",
+          "title": "Display crawl results summary",
+          "details": "Show page count, technologies detected",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "calc-basic",
+      "category": "Core Logic",
+      "phase": "Phase 1: MVP",
+      "title": "Implement basic cost calculation engine (deterministic, no AI)",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 16,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "calc-basic-1",
+          "title": "Define base cost estimates for each project type",
+          "details": "Landings pages: Simple ($500), Moderate ($1200), Complex ($2500)",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-2",
+          "title": "Implement complexity multiplier system",
+          "details": "Design: 1.0-2.5x, Features: 1.0-3.0x, Content: 1.0-2.0x, Tech: 1.0-2.0x",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-3",
+          "title": "Create mapping of questions to cost factors",
+          "details": "Each question answer maps to a multiplier or fixed cost",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-4",
+          "title": "Implement timeline urgency multiplier",
+          "details": "1.0x standard, up to 1.5x for rush jobs",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-5",
+          "title": "Implement maintenance cost addition (10-30% of total)",
+          "details": "Monthly maintenance pricing",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-6",
+          "title": "Build cost calculation API endpoint",
+          "details": "POST /api/calculations: receive answers, return cost breakdown",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-7",
+          "title": "Add validation for calculation inputs",
+          "details": "Ensure required answers are provided",
+          "status": "completed"
+        },
+        {
+          "id": "calc-basic-8",
+          "title": "Write unit tests for calculation engine",
+          "details": "Test edge cases, boundary values",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "crawler-integration",
+      "category": "AI & Crawling",
+      "phase": "Phase 1: MVP (optional, basic)",
+      "title": "Integrate Firecrawl for basic website crawling",
+      "priority": "medium",
+      "status": "completed",
+      "estimated_hours": 12,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "crawler-1",
+          "title": "Install and configure Firecrawl SDK",
+          "details": "npm install @mendable/firecrawl-js",
+          "status": "completed"
+        },
+        {
+          "id": "crawler-2",
+          "title": "Implement basic crawl endpoint",
+          "details": "POST /api/crawl: receive URL, trigger Firecrawl job",
+          "status": "completed"
+        },
+        {
+          "id": "crawler-3",
+          "title": "Poll Firecrawl job status until complete",
+          "details": "Check status every 2-3 seconds, return results when ready",
+          "status": "completed"
+        },
+        {
+          "id": "crawler-4",
+          "title": "Extract basic metrics from crawl result",
+          "details": "Page count, word count, image count",
+          "status": "completed"
+        },
+        {
+          "id": "crawler-5",
+          "title": "Cache crawl results in Redis (30-day TTL)",
+          "details": "Hash URL and store result, check cache before crawling",
+          "status": "completed"
+        },
+        {
+          "id": "crawler-6",
+          "title": "Add rate limiting for crawl requests",
+          "details": "Per-user rate limit, max concurrent crawls",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ai-basic",
+      "category": "AI & Crawling",
+      "phase": "Phase 1: MVP (optional, AI scoring)",
+      "title": "Implement OpenRouter integration for basic AI features",
+      "priority": "low",
+      "status": "completed",
+      "estimated_hours": 10,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "ai-basic-1",
+          "title": "Install OpenRouter SDK or configure fetch calls",
+          "details": "Set up API client with API key",
+          "status": "completed"
+        },
+        {
+          "id": "ai-basic-2",
+          "title": "Implement complexity scoring AI call",
+          "details": "Send project description, get complexity score from Claude Haiku",
+          "status": "completed"
+        },
+        {
+          "id": "ai-basic-3",
+          "title": "Parse AI response and integrate scores into calculation",
+          "details": "Use AI confidence scores as additional multipliers",
+          "status": "completed"
+        },
+        {
+          "id": "ai-basic-4",
+          "title": "Implement error handling for AI API failures",
+          "details": "Fallback to deterministic calculation if AI fails",
+          "status": "completed"
+        },
+        {
+          "id": "ai-basic-5",
+          "title": "Add loading state for AI processing",
+          "details": "Show processing indicator during AI calls",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "ui-results",
+      "category": "Frontend UI/UX",
+      "phase": "Phase 1: MVP",
+      "title": "Build results display and cost breakdown UI",
+      "priority": "high",
+      "status": "completed",
+      "estimated_hours": 16,
+      "assignee": "Frontend Developer",
+      "subtasks": [
+        {
+          "id": "ui-results-1",
+          "title": "Design results page layout",
+          "details": "At-a-glance total, expandable breakdown",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-2",
+          "title": "Implement total cost display (large, prominent)",
+          "details": "Show grand total with currency formatting",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-3",
+          "title": "Build expandable cost breakdown by category",
+          "details": "Design, Development, Content, Technical, etc.",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-4",
+          "title": "Implement line-item details with descriptions",
+          "details": "Each line item has description and rationale",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-5",
+          "title": "Add complexity tier view toggle",
+          "details": "Switch between detailed table and high/medium/low tiers",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-6",
+          "title": "Implement timeline view with visual Gantt chart",
+          "details": "Show phases and milestones visually",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-7",
+          "title": "Add copy/sharing functionality",
+          "details": "Copy link to clipboard button",
+          "status": "completed"
+        },
+        {
+          "id": "ui-results-8",
+          "title": "Optimize for mobile display",
+          "details": "Responsive tables and accordions",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "export-basic",
+      "category": "Core Logic",
+      "phase": "Phase 1: MVP",
+      "title": "Implement basic PDF export functionality",
+      "priority": "medium",
+      "status": "pending",
+      "estimated_hours": 12,
+      "assignee": "Frontend Developer",
+      "subtasks": [
+        {
+          "id": "export-1.1",
+          "title": "Research PDF generation libraries (jsPDF, react-pdf, or server-side)",
+          "details": "Compare options, choose best for requirements",
+          "status": "completed"
+        },
+        {
+          "id": "export-1.2",
+          "title": "Design PDF report template layout",
+          "details": "Header, footer, sections: summary, breakdown, timeline, assumptions",
+          "status": "pending"
+        },
+        {
+          "id": "export-1.3",
+          "title": "Implement PDF generation function",
+          "details": "Generate PDF with project details and cost breakdown",
+          "status": "pending"
+        },
+        {
+          "id": "export-1.4",
+          "title": "Add download button to results page",
+          "details": "Trigger PDF generation and download",
+          "status": "pending"
+        },
+        {
+          "id": "export-1.5",
+          "title": "Add watermark for free tier PDFs",
+          "details": "Free users get watermarked PDFs",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "testing-1",
+      "category": "Testing & QA",
+      "phase": "Phase 1: MVP",
+      "title": "Write unit tests for calculation engine",
+      "priority": "medium",
+      "status": "pending",
+      "estimated_hours": 8,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "testing-1.1",
+          "title": "Set up Jest and React Testing Library",
+          "details": "Configure test environment",
+          "status": "pending"
+        },
+        {
+          "id": "testing-1.2",
+          "title": "Write tests for basic calculation logic",
+          "details": "Test each multiplier and base cost",
+          "status": "pending"
+        },
+        {
+          "id": "testing-1.3",
+          "title": "Write tests for complex scenarios",
+          "details": "Multiple multipliers, edge cases (zero cost, max cost)",
+          "status": "pending"
+        },
+        {
+          "id": "testing-1.4",
+          "title": "Test API endpoints",
+          "details": "Use supertest to test all API routes",
+          "status": "pending"
+        },
+        {
+          "id": "testing-1.5",
+          "title": "Write integration tests for calculation flow",
+          "details": "End-to-end: answers → calculation → results",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "testing-2",
+      "category": "Testing & QA",
+      "phase": "Phase 1: MVP",
+      "title": "Implement E2E tests for complete user flow",
+      "priority": "medium",
+      "estimated_hours": 8,
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "testing-2.1",
+          "title": "Set up Playwright for E2E testing",
+          "details": "Configure Playwright with multiple browsers",
+          "status": "pending"
+        },
+        {
+          "id": "testing-2.2",
+          "title": "Write E2E test: Fresh project flow",
+          "details": "Complete flow from landing page to PDF export",
+          "status": "pending"
+        },
+        {
+          "id": "testing-2.3",
+          "title": "Write E2E test: Existing website flow",
+          "details": "Test URL input, crawling, results display",
+          "status": "pending"
+        },
+        {
+          "id": "testing-2.4",
+          "title": "Set up CI/CD for running tests",
+          "details": "GitHub Actions to run tests on PR",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase2-1",
+      "category": "Extended Features",
+      "phase": "Phase 2: Extended Features (M+4-6)",
+      "title": "Add Agency user type with team features",
+      "priority": "high",
+      "estimated_hours": 20,
+      "status": "pending",
+      "assignee": "Full-stack Developer + Backend Engineer",
+      "dependencies": ["auth-1"],
+      "subtasks": [
+        {
+          "id": "features-phase2-1.1",
+          "title": "Extend user schema for agency details",
+          "details": "Team size, hourly rate, margin targets",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-1.2",
+          "title": "Implement team member management",
+          "details": "Add/remove team members, roles",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-1.3",
+          "title": "Add team-wide project templates",
+          "details": "Pre-configured projects for common agency work",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase2-2",
+      "category": "Extended Features",
+      "phase": "Phase 2: Extended Features (M+4-6)",
+      "title": "Implement save/load projects functionality",
+      "priority": "high",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Frontend Developer + Backend Engineer",
+      "dependencies": ["database-1", "auth-1"],
+      "subtasks": [
+        {
+          "id": "features-phase2-2.1",
+          "title": "Create projects dashboard UI",
+          "details": "List view of all user's saved projects",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-2.2",
+          "title": "Implement project CRUD API endpoints",
+          "details": "Create, read, update, delete projects",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-2.3",
+          "title": "Add edit project functionality",
+          "details": "Allow users to modify saved project answers",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-2.4",
+          "title": "Add duplicate project functionality",
+          "details": "Clone existing project for similar new estimate",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase2-3",
+      "category": "Extended Features",
+      "phase": "Phase 2: Extended Features (M+4-6)",
+      "title": "Enhance questionnaire with technical specs and timeline questions",
+      "priority": "medium",
+      "estimated_hours": 12,
+      "status": "pending",
+      "assignee": "Frontend Developer",
+      "subtasks": [
+        {
+          "id": "features-phase2-3.1",
+          "title": "Add timeline/urgency questions",
+          "details": "When does project need to launch? Rush or standard?",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-3.2",
+          "title": "Add maintenance requirements questions",
+          "details": "Ongoing updates frequency, support needs",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-3.3",
+          "title": "Add technical specifications section",
+          "details": "Hosting requirements, SEO needs, security",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase2-4",
+      "category": "Extended Features",
+      "phase": "Phase 2: Extended Features (M+4-6)",
+      "title": "Implement industry comparison and complexity tier view",
+      "priority": "medium",
+      "estimated_hours": 20,
+      "status": "pending",
+      "assignee": "Frontend Developer + Backend Engineer",
+      "subtasks": [
+        {
+          "id": "features-phase2-4.1",
+          "title": "Research and compile industry benchmark data",
+          "details": "Collect data from Clutch, Upwork, surveys",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-4.2",
+          "title": "Import benchmark data into database",
+          "details": "Seed database with industry averages",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-4.3",
+          "title": "Implement complexity tier calculator",
+          "details": "Determine if project is low/medium/high complexity",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-4.4",
+          "title": "Add complexity tier view to results UI",
+          "details": "Toggle between detailed and tiered view",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-4.5",
+          "title": "Show user estimate vs industry average comparison",
+          "details": "Visual comparison chart or indicator",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase3-1",
+      "category": "Website Crawling",
+      "phase": "Phase 3: Webflow Analysis (M+7-9)",
+      "title": "Enhance crawler for Webflow-specific element detection",
+      "priority": "high",
+      "estimated_hours": 24,
+      "status": "pending",
+      "assignee": "Full-stack Developer + Backend Engineer",
+      "dependencies": ["crawler-integration"],
+      "subtasks": [
+        {
+          "id": "features-phase3-1.1",
+          "title": "Implement CMS collection detection",
+          "details": "Count collections, analyze field complexity",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-1.2",
+          "title": "Implement interaction complexity scoring",
+          "details": "Count triggers, animations, scroll effects",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-1.3",
+          "title": "Detect Lottie animations in pages",
+          "details": "Count Lottie files, complexity assessment",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-1.4",
+          "title": "Analyze component and symbol usage",
+          "details": "Count reusable components, structure",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-1.5",
+          "title": "Test crawler on 20+ diverse Webflow sites",
+          "details": "Validate extraction accuracy",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase3-2",
+      "category": "Website Crawling",
+      "phase": "Phase 3: Webflow Analysis (M+7-9)",
+      "title": "Implement platform detection and migration analysis",
+      "priority": "high",
+      "estimated_hours": 20,
+      "status": "pending",
+      "assignee": "Full-stack Developer + Backend Engineer",
+      "dependencies": ["crawler-integration"],
+      "subtasks": [
+        {
+          "id": "features-phase3-2.1",
+          "title": "Implement CMS platform detection",
+          "details": "Detect WordPress, Shopify, Squarespace, Webflow, Custom",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-2.2",
+          "title": "Estimate migration complexity multiplier",
+          "details": "CLI app migration vs simple page conversion",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-2.3",
+          "title": "Analyze existing site structure for CMS mapping",
+          "details": "Map existing CMS to Webflow CMS collections",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-2.4",
+          "title": "Add migration-specific questions to questionnaire",
+          "details": "What needs migration? Content, design, functionality?",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase3-3",
+      "category": "AI & Crawling",
+      "phase": "Phase 3: Advanced AI (M+7-9)",
+      "title": "Implement smart questioning AI (OpenRouter)",
+      "priority": "medium",
+      "estimated_hours": 24,
+      "status": "pending",
+      "assignee": "Full-stack Developer",
+      "dependencies": ["ai-basic"],
+      "subtasks": [
+        {
+          "id": "features-phase3-3.1",
+          "title": "Design prompt for project scope suggestions",
+          "details": "Send brief description, get AI suggestions",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-3.2",
+          "title": "Implement scope suggestion endpoint",
+          "details": "POST /api/ai/suggest-scope with user description",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-3.3",
+          "title": "Add UI for project description input",
+          "details": "Text area for user to describe project",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-3.4",
+          "title": "Display AI scope suggestions as checkable options",
+          "details": "User can select which suggestions apply",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase3-4",
+      "category": "AI & Crawling",
+      "phase": "Phase 3: Advanced AI (M+7-9)",
+      "title": "Implement AI-powered risk assessment",
+      "priority": "medium",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Full-stack Developer",
+      "dependencies": ["ai-basic"],
+      "subtasks": [
+        {
+          "id": "features-phase3-4.1",
+          "title": "Design prompt for risk assessment",
+          "details": "Send full project answers, get risk factors",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-4.2",
+          "title": "Implement risk assessment API endpoint",
+          "details": "POST /api/ai/assess-risk",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-4.3",
+          "title": "Add risk display to results page",
+          "details": "Show warnings or concern areas",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase3-4.4",
+          "title": "Implement scope optimization suggestions",
+          "details": "AI suggests cost-saving alternatives",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase4-1",
+      "category": "User Types & Features",
+      "phase": "Phase 4: Company Features (M+10-12)",
+      "title": "Implement Company user type with budget planning",
+      "priority": "high",
+      "estimated_hours": 24,
+      "status": "pending",
+      "assignee": "Full-stack Developer + Backend Engineer",
+      "dependencies": ["features-phase2-1"],
+      "subtasks": [
+        {
+          "id": "features-phase4-1.1",
+          "title": "Extend user schema for company details",
+          "details": "Company name, team structure, budget ranges",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase4-1.2",
+          "title": "Implement budget range input (instead of hourly rate)",
+          "details": "Min/max budget for hiring scenario",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase4-1.3",
+          "title": "Add internal team capabilities assessment",
+          "details": "Who on team can handle what?",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase4-1.4",
+          "title": "Implement stakeholder structure capture",
+          "details": "Number of approvers, decision makers",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase4-2",
+      "category": "User Types & Features",
+      "phase": "Phase 4: Company Features (M+10-12)",
+      "title": "Create RFP/RFQ templates for company users",
+      "priority": "medium",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Frontend Developer",
+      "dependencies": ["features-phase4-1"],
+      "subtasks": [
+        {
+          "id": "features-phase4-2.1",
+          "title": "Design RFP template based on project answers",
+          "details": "Word/Google Doc template with placeholders",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase4-2.2",
+          "title": "Implement RFP generation and download",
+          "details": "Generate document with project details",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase4-2.3",
+          "title": "Add vendor questionnaire template",
+          "details": "Questions companies should ask vendors",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase5-1",
+      "category": "Payment & User Management",
+      "phase": "Phase 5: Monetization (M+13-15)",
+      "title": "Implement Stripe billing for Pro tier",
+      "priority": "high",
+      "estimated_hours": 24,
+      "status": "pending",
+      "assignee": "Full-stack Developer + Backend Engineer",
+      "subtasks": [
+        {
+          "id": "features-phase5-1.1",
+          "title": "Set up Stripe checkout sessions",
+          "details": "Create checkout flow for Pro subscription",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase5-1.2",
+          "title": "Implement webhook handlers for Stripe events",
+          "details": "subscription.created, invoice.paid, subscription.cancelled",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase5-1.3",
+          "title": "Add subscription status to user model",
+          "details": "Track free vs pro users",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase5-1.4",
+          "title": "Hide Pro features behind paywall",
+          "details": "Unlimited crawls, advanced exports, custom branding",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase5-2",
+      "category": "Payment & User Management",
+      "phase": "Phase 5: Monetization (M+13-15)",
+      "title": "Implement advanced PDF exports (no watermark, custom branding)",
+      "priority": "medium",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Frontend Developer",
+      "dependencies": ["features-phase5-1"],
+      "subtasks": [
+        {
+          "id": "features-phase5-2.1",
+          "title": "Remove watermark for Pro users",
+          "details": "Check subscription status before PDF generation",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase5-2.2",
+          "title": "Add custom logo upload for Pro users",
+          "details": "Allow agencies to add their logo to PDFs",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase5-2.3",
+          "title": "Add custom colors/branding options",
+          "details": "Custom brand colors in PDF exports",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase6-1",
+      "category": "Performance & Scale",
+      "phase": "Phase 6: Scale & Refine (M+16+)",
+      "title": "Optimize crawler performance and queue management",
+      "priority": "medium",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Backend Engineer",
+      "dependencies": ["features-phase3-1", "features-phase3-2"],
+      "subtasks": [
+        {
+          "id": "features-phase6-1.1",
+          "title": "Implement crawling queue system (BullMQ or similar)",
+          "details": "Handle concurrent crawl requests",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase6-1.2",
+          "title": "Add email notification for large crawls",
+          "details": "Notify users when crawl of 200+ pages completes",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase6-1.3",
+          "title": "Optimize Redis cache TTL strategy",
+          "details": "Refresh cache intelligently",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase7-1",
+      "category": "Advanced AI",
+      "phase": "Phase 7: Advanced AI (M+16-18)",
+      "title": "Implement AI-powered schedule builder for project timelines",
+      "priority": "low",
+      "estimated_hours": 24,
+      "status": "pending",
+      "assignee": "Full-stack Developer",
+      "dependencies": ["ai-basic"],
+      "subtasks": [
+        {
+          "id": "features-phase7-1.1",
+          "title": "Design prompt for schedule generation",
+          "details": "Send project requirements, get phased timeline",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase7-1.2",
+          "title": "Implement timeline visualization",
+          "details": "Interactive Gantt chart or calendar view",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase7-1.3",
+          "title": "Allow users to adjust AI-generated timeline",
+          "details": "Drag and drop milestones",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase7-2",
+      "category": "Advanced AI",
+      "phase": "Phase 7: Advanced AI (M+16-18)",
+      "title": "Implement AI prompt generator for external tools (ChatGPT, Claude)",
+      "priority": "low",
+      "estimated_hours": 16,
+      "status": "pending",
+          "assignee": "Full-stack Developer",
+      "dependencies": ["ai-basic"],
+      "subtasks": [
+        {
+          "id": "features-phase7-2.1",
+          "title": "Generate prompts for Webflow development tasks",
+          "details": "Based on project answers, create helpful ChatGPT prompts",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase7-2.2",
+          "title": "Generate prompts for client communication",
+          "details": "Email templates, proposal language",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "deployment-1",
+      "category": "Deployment & DevOps",
+      "phase": "Phase 1: MVP",
+      "title": "Set up deployment pipeline and CI/CD",
+      "priority": "medium",
+      "estimated_hours": 12,
+      "status": "pending",
+      "assignee": "DevOps Engineer",
+      "subtasks": [
+        {
+          "id": "deployment-1.1",
+          "title": "Set up Vercel or similar hosting",
+          "details": "Configure production environment",
+          "status": "pending"
+        },
+        {
+          "id": "deployment-1.2",
+          "title": "Configure environment variables for production",
+          "details": "API keys, database URLs, etc.",
+          "status": "pending"
+        },
+        {
+          "id": "deployment-1.3",
+          "title": "Set up GitHub Actions for CI/CD",
+          "details": "Run tests on PR, deploy on merge to main",
+          "status": "pending"
+        },
+        {
+          "id": "deployment-1.4",
+          "title": "Set up monitoring and error tracking (Sentry)",
+          "details": "Track errors in production",
+          "status": "pending"
+        },
+        {
+          "id": "deployment-1.5",
+          "title": "Configure domain and SSL certificate",
+          "details": "Production domain with HTTPS",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "documentation-1",
+      "category": "Documentation",
+      "phase": "Ongoing",
+      "title": "Write user documentation and help guides",
+      "priority": "low",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Product Manager + Frontend Developer",
+      "subtasks": [
+        {
+          "id": "documentation-1.1",
+          "title": "Write FAQ page",
+          "details": "Common questions about pricing, methodology",
+          "status": "pending"
+        },
+        {
+          "id": "documentation-1.2",
+          "title": "Create methodology explanation page",
+          "details": "How are estimates calculated? What data is used?",
+          "status": "pending"
+        },
+        {
+          "id": "documentation-1.3",
+          "title": "Write user guide for questionnaire",
+          "details": "How to answer questions for accurate estimates",
+          "status": "pending"
+        },
+        {
+          "id": "documentation-1.4",
+          "title": "Create video tutorials (optional)",
+          "details": "Screen recordings of how to use tool",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "marketing-1",
+      "category": "Marketing & Launch",
+      "phase": "Phase 1: MVP",
+      "title": "Prepare for beta launch and user acquisition",
+      "priority": "medium",
+      "estimated_hours": 16,
+      "status": "pending",
+      "assignee": "Product Manager + Marketing/Growth",
+      "subtasks": [
+        {
+          "id": "marketing-1.1",
+          "title": "Create launch checklist",
+          "details": "All features complete, bugs fixed, performance good",
+          "status": "pending"
+        },
+        {
+          "id": "marketing-1.2",
+          "title": "Recruit 10 beta testers from Webflow community",
+          "details": "Post in Webflow forums, Reddit, social media",
+          "status": "pending"
+        },
+        {
+          "id": "marketing-1.3",
+          "title": "Set up analytics tracking",
+          "details": "Google Analytics or Plausible for usage tracking",
+          "status": "pending"
+        },
+        {
+          "id": "marketing-1.4",
+          "title": "Create feedback collection system",
+          "details": "Survey, feedback form, or email for beta users",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "task_totals": {
+    "total_tasks": 247,
+    "total_hours_mvp": 284,
+    "total_hours_phase1": 284,
+    "total_hours_phase2": 68,
+    "total_hours_phase3": 84,
+    "total_hours_phase4": 40,
+    "total_hours_phase5": 40,
+    "total_hours_phase6": 16,
+    "total_hours_phase7": 40
+  }
+}
