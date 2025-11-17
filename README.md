@@ -86,7 +86,7 @@ Prisma schema lives in `prisma/schema.prisma` and is seeded with base tables (`U
     }
     ```
   - Response: Claude Haiku-derived complexity score, recommended multipliers (design/functionality/content/technical/timeline), confidence scores, and highlights/risks. Implemented in `src/app/api/ai/complexity/route.ts` using the OpenRouter client in `src/lib/openrouter.ts`.
-  - Current usage: the `CrawlAssistPanel` inside the questionnaire now favors crawl-driven suggestions. The AI endpoint remains available for future overlays; its output can still be attached to `/api/calculations` via the optional `aiInsight` field if needed.
+- Current usage: crawl-driven suggestions now appear inline on each questionnaire card with accept/dismiss controls. The AI endpoint remains available for future overlays; its output can still be attached to `/api/calculations` via the optional `aiInsight` field if needed.
 
 Unit tests for the cost engine are located in `__tests__/calculator.test.ts`. Use `npm test` whenever the calculation rules change.
 

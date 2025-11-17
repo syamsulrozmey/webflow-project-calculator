@@ -473,7 +473,7 @@ function InsightCard({
         </p>
       </CardHeader>
       <CardContent className="pt-0">
-        <ul className="space-y-2 text-sm text-primary-foreground">
+        <ul className="space-y-2 text-sm text-white">
           {highlights.map((item) => (
             <li key={item} className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />

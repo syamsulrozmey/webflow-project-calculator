@@ -37,7 +37,7 @@ Freelancers, agencies, and companies struggle to accurately estimate **Webflow w
 ### AI Intelligence & Crawl Features
 The Webflow Project Calculator leverages AI and crawl intelligence throughout the estimation process:
 
-- **MVP Signal:** Firecrawl captures the latest site snapshot and the questionnaire now surfaces it via the `CrawlAssistPanel`. The panel stores crawl results locally, summarizes stack + warnings, and recommends questionnaire pre-fills with one-click apply (single field or “apply all”). Claude Haiku (via `/api/ai/complexity`) remains available as an optional overlay, but the deterministic flow no longer depends on it.
+- **MVP Signal:** Firecrawl captures the latest site snapshot and the questionnaire now surfaces it inline through AI suggestion badges on each relevant question. Suggestions highlight recommended answers with rationale plus one-click accept/dismiss controls while keeping the deterministic flow optional. Claude Haiku (via `/api/ai/complexity`) remains available as an optional overlay, but the deterministic flow no longer depends on it.
 
 **Pre-Questionnaire:**
 - **Project Scope Suggestions:** User describes project briefly → AI suggests likely requirements and feature needs

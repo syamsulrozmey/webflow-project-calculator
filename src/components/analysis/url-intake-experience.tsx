@@ -24,6 +24,11 @@ import { cn } from "@/lib/utils";
 import { saveLatestAnalysis } from "@/lib/analysis/storage";
 import type { AnalysisResult } from "@/types/analysis";
 import {
+  QUESTIONNAIRE_STORAGE_KEY,
+  type StoredQuestionnaireState,
+} from "@/lib/questionnaire";
+import { readUserContext } from "@/lib/user-context";
+import {
   AlertCircle,
   ArrowRight,
   BarChart3,
@@ -39,6 +44,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const HISTORY_KEY = "wpc-url-analysis-history";
 
@@ -63,6 +69,7 @@ const crawlPhases = [
 interface UrlIntakeExperienceProps {
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
+  sessionId?: string | null;
 }
 
 type AnalysisStatus =
@@ -76,26 +83,24 @@ type AnalysisStatus =
 export function UrlIntakeExperience({
   entry,
   userType,
+  sessionId,
 }: UrlIntakeExperienceProps) {
+  const router = useRouter();
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [history, setHistory] = useState<AnalysisResult[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-    try {
-      const stored = window.localStorage.getItem(HISTORY_KEY);
-      return stored ? (JSON.parse(stored) as AnalysisResult[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [isTransitioningToQuestionnaire, setIsTransitioningToQuestionnaire] =
+    useState(false);
   const effectiveEntry: EntryFlow = entry ?? "existing";
   const effectiveUserType = userType ?? null;
+
+  const [displayUserType, setDisplayUserType] = useState<QuestionnaireUserType | null>(
+    effectiveUserType,
+  );
 
   const timersRef = useRef<number[]>([]);
 
@@ -105,7 +110,46 @@ export function UrlIntakeExperience({
     };
   }, []);
 
-  const ctaHref = buildFlowHref("/questionnaire", "existing", effectiveUserType);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
+      const stored = window.localStorage.getItem(HISTORY_KEY);
+      setHistory(stored ? (JSON.parse(stored) as AnalysisResult[]) : []);
+    } catch {
+      setHistory([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    setDisplayUserType(effectiveUserType);
+  }, [effectiveUserType]);
+
+  useEffect(() => {
+  if (effectiveUserType || typeof window === "undefined") {
+    return;
+  }
+  const storedContext = readUserContext();
+  if (storedContext?.userType) {
+    setDisplayUserType(storedContext.userType);
+    return;
+  }
+  try {
+    const stored = window.localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
+    if (!stored) return;
+    const parsed = JSON.parse(stored) as StoredQuestionnaireState;
+    if (parsed.userType) {
+      setDisplayUserType(parsed.userType);
+    }
+  } catch {
+    // ignore
+  }
+}, [effectiveUserType]);
+
+  const ctaHref = buildFlowHref("/questionnaire", "existing", effectiveUserType, {
+    session: sessionId ?? undefined,
+  });
 
   const phaseProgress = useMemo(() => {
     return crawlPhases.map((phase, index) => ({
@@ -121,6 +165,18 @@ export function UrlIntakeExperience({
     }));
   }, [phaseIndex, status]);
 
+  const crawlCompletionPercent = useMemo(() => {
+    if (status === "completed") {
+      return 100;
+    }
+    if (status === "idle" || status === "error") {
+      return 0;
+    }
+    const totalPhases = crawlPhases.length;
+    const clampedIndex = Math.min(phaseIndex, totalPhases);
+    return Math.round((clampedIndex / totalPhases) * 100);
+  }, [phaseIndex, status]);
+
   const exampleUrls = useMemo(
     () => [
       "atelier-northern.com",
@@ -132,6 +188,11 @@ export function UrlIntakeExperience({
 
   const isAnalyzing =
     status === "queued" || status === "crawling" || status === "summarizing";
+
+  const normalizedCrawlPercent = Math.min(
+    Math.max(crawlCompletionPercent, 0),
+    100,
+  );
 
   const handleExampleClick = (value: string) => {
     setInputValue(value);
@@ -202,6 +263,16 @@ export function UrlIntakeExperience({
     }
   };
 
+  const handleContinueToQuestionnaire = () => {
+    if (!result || isTransitioningToQuestionnaire) {
+      return;
+    }
+    setIsTransitioningToQuestionnaire(true);
+    window.setTimeout(() => {
+      router.push(ctaHref);
+    }, 700);
+  };
+
   const handleReset = () => {
     clearPhaseTimers();
     setInputValue("");
@@ -251,9 +322,8 @@ export function UrlIntakeExperience({
               <p>
                 User type:{" "}
                 <span className="text-white">
-                  {effectiveUserType
-                    ? effectiveUserType.charAt(0).toUpperCase() +
-                      effectiveUserType.slice(1)
+                  {displayUserType
+                    ? displayUserType.charAt(0).toUpperCase() + displayUserType.slice(1)
                     : "Not set"}
                 </span>
               </p>
@@ -349,83 +419,130 @@ export function UrlIntakeExperience({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Card className="border-white/5 bg-white/[0.02]">
-          <CardHeader className="border-b border-white/5">
-            <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
-              Crawl progress
-            </p>
-            <CardTitle className="text-2xl">Status timeline</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <Timeline phases={phaseProgress} />
-            {notice && (
-              <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary-foreground">
-                <Info className="mt-0.5 h-4 w-4 text-primary" />
-                {notice}
+        <div className="space-y-6">
+          <Card className="border-white/5 bg-white/[0.02]">
+            <CardHeader className="border-b border-white/5">
+              <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                Crawl progress
+              </p>
+              <CardTitle className="text-2xl">Status timeline</CardTitle>
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Summarizing progress</span>
+                  <span className="text-white">{normalizedCrawlPercent}%</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-white/10">
+                  <div
+                    className="h-1.5 rounded-full bg-primary transition-all"
+                    style={{ width: `${normalizedCrawlPercent}%` }}
+                  />
+                </div>
               </div>
-            )}
-            {status === "completed" && result && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              {status === "completed" ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-muted-foreground">
+                  <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                    Crawl finished
+                  </p>
+                  <p className="text-white">
+                    We captured the latest snapshot. Review the summary below or rerun a new URL.
+                  </p>
+                </div>
+              ) : (
+                <Timeline phases={phaseProgress} />
+              )}
+              {notice && (
+                <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary-foreground">
+                  <Info className="mt-0.5 h-4 w-4 text-primary" />
+                  {notice}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {result && (
+            <Card className="border-white/5 bg-white/[0.01]">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Globe className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
-                      Ready for questionnaire
+                      Crawl summary
                     </p>
-                    <p className="text-lg font-semibold text-white">
-                      {result.normalizedUrl}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {result.metrics.pages} pages · {result.stack.platform} ·{" "}
-                      {result.stack.technologies.slice(0, 2).join(", ")}
-                    </p>
+                    <CardTitle className="text-2xl">Site insights</CardTitle>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild className="gap-2">
-                      <Link href={ctaHref}>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <SummaryDetails result={result} progressPercent={normalizedCrawlPercent} />
+              </CardContent>
+            </Card>
+          )}
+
+          {status === "completed" && result && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                    Ready for questionnaire
+                  </p>
+                  <p className="text-lg font-semibold text-white">
+                    {result.normalizedUrl}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {result.metrics.pages} pages · {result.stack.platform} ·{" "}
+                    {result.stack.technologies.slice(0, 2).join(", ")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    className="gap-2"
+                    onClick={handleContinueToQuestionnaire}
+                    disabled={isTransitioningToQuestionnaire}
+                  >
+                    {isTransitioningToQuestionnaire ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Preparing AI suggestions…
+                      </>
+                    ) : (
+                      <>
                         Continue to questionnaire
                         <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-white/20"
-                      onClick={handleReset}
-                    >
-                      Run another URL
-                    </Button>
-                  </div>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-white/20"
+                    onClick={handleReset}
+                  >
+                    Run another URL
+                  </Button>
                 </div>
               </div>
-            )}
-            {status === "error" && error && (
-              <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
-                </div>
+            </div>
+          )}
+
+          {status === "error" && error && (
+            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </div>
 
         <aside className="space-y-4">
-          <InsightCard kicker="Summary" title="Latest crawl output" icon={FileChartColumn}>
-            {result ? (
-              <SummaryMetrics result={result} />
-            ) : (
-              <PlaceholderText>
-                Run a crawl to unlock metrics, stack detection, and recommended focus areas.
-              </PlaceholderText>
-            )}
-          </InsightCard>
-
           <InsightCard kicker="History" title="Recent analyses" icon={History}>
             {history.length === 0 ? (
               <PlaceholderText>
                 Once you process a URL it will be available here for quick reference.
               </PlaceholderText>
             ) : (
-              <div className="space-y-3 text-sm">
+                  <div className="space-y-3 text-sm">
                 {history.map((record) => (
                   <button
                     key={record.id}
@@ -433,13 +550,10 @@ export function UrlIntakeExperience({
                     className="w-full rounded-xl border border-white/10 px-4 py-3 text-left transition hover:border-white/30"
                     onClick={() => handleHistorySelect(record)}
                   >
-                    <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                      <span>{new URL(record.normalizedUrl).hostname}</span>
-                      <span>{record.metrics.pages} pages</span>
-                    </div>
-                    <p className="text-sm text-white">
-                      {record.stack.platform} · {record.stack.technologies[0]}
-                    </p>
+                      <p className="text-sm text-white">{record.normalizedUrl}</p>
+                      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                        {formatHistoryDate(record.timestamp)}
+                      </p>
                   </button>
                 ))}
               </div>
@@ -455,141 +569,6 @@ export function UrlIntakeExperience({
           </InsightCard>
         </aside>
       </div>
-
-      {result && (
-        <Card className="border-white/5 bg-white/[0.01]">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Globe className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
-                  Crawl summary
-                </p>
-                <CardTitle className="text-2xl">Site insights</CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-4">
-              {[
-                {
-                  label: "Pages discovered",
-                  value: result.metrics.pages,
-                },
-                {
-                  label: "Avg words / page",
-                  value: result.metrics.avgWordsPerPage,
-                },
-                {
-                  label: "Assets",
-                  value: `${result.metrics.images} images / ${result.metrics.videos} videos`,
-                },
-                {
-                  label: "Forms tracked",
-                  value: result.metrics.forms,
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
-                >
-                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                    {item.label}
-                  </p>
-                  <p className="text-xl font-semibold text-white">{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
-                  Technology stack
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {result.stack.platform} on {result.stack.hosting}
-                </p>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {result.stack.technologies.map((tech) => (
-                    <span
-                      key={tech}
-                      className="rounded-full border border-white/15 px-3 py-1"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
-                  Complexity score
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="h-2 flex-1 rounded-full bg-white/10">
-                    <div
-                      className="h-2 rounded-full bg-primary"
-                      style={{ width: `${result.complexityScore}%` }}
-                    />
-                  </div>
-                  <span className="text-2xl font-semibold text-white">
-                    {result.complexityScore}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Estimated {result.estimatedHours} hours to rebuild / migrate.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
-                  Page mix
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {result.pageTypes.map((item) => (
-                    <li key={item.label} className="flex items-center gap-3">
-                      <span className="flex-1">{item.label}</span>
-                      <span className="rounded-full border border-white/10 px-3 py-0.5 text-xs">
-                        {item.count}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
-                  Recommendations
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {result.recommendations.map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {result.warnings.length > 0 && (
-              <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-300" />
-                  <div>
-                    <p className="font-semibold text-white">Watch outs</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5">
-                      {result.warnings.map((warning) => (
-                        <li key={warning}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
@@ -636,7 +615,169 @@ function Timeline({
   );
 }
 
-function SummaryMetrics({ result }: { result: AnalysisResult }) {
+function SummaryDetails({
+  result,
+  progressPercent,
+}: {
+  result: AnalysisResult;
+  progressPercent: number;
+}) {
+  const clamped = Math.min(Math.max(progressPercent, 0), 100);
+  return (
+    <>
+      <div className="space-y-1">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-primary/70">
+          Crawl progress
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="h-1.5 flex-1 rounded-full bg-white/10">
+            <div
+              className="h-1.5 rounded-full bg-primary transition-all"
+              style={{ width: `${clamped}%` }}
+            />
+          </div>
+          <span className="text-xs text-white">{clamped}%</span>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        {[
+          {
+            label: "Pages discovered",
+            value: result.metrics.pages,
+            hint: "Free-tier crawl scans up to 35 pages per URL.",
+          },
+          {
+            label: "Avg words / page",
+            value: result.metrics.avgWordsPerPage,
+          },
+          {
+            label: "Assets",
+            value: `${result.metrics.images} images / ${result.metrics.videos} videos`,
+          },
+          {
+            label: "Forms tracked",
+            value: result.metrics.forms,
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              {item.label}
+            </p>
+            <p className="text-xl font-semibold text-white">{item.value}</p>
+            {item.hint && (
+              <p className="text-[11px] text-muted-foreground">{item.hint}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+            Technology stack
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {result.stack.platform} on {result.stack.hosting}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Detected from current crawl sample — not a full inventory.
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {result.stack.technologies.map((tech) => (
+              <span key={tech} className="rounded-full border border-white/15 px-3 py-1">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+            Complexity score
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="h-2 flex-1 rounded-full bg-white/10">
+              <div
+                className="h-2 rounded-full bg-primary"
+                style={{ width: `${result.complexityScore}%` }}
+              />
+            </div>
+            <span className="text-2xl font-semibold text-white">
+              {result.complexityScore}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Estimated {result.estimatedHours} hours to rebuild / migrate.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
+            Page mix
+          </h3>
+          {result.pageTypes.some((item) => item.count > 0) ? (
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              {result.pageTypes.map((item) => (
+                <li key={item.label} className="flex items-center gap-3">
+                  <span className="flex-1">{item.label}</span>
+                  <span className="rounded-full border border-white/10 px-3 py-0.5 text-xs">
+                    {item.count}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Page mix will populate once the crawl finds pages with distinct paths.
+            </p>
+          )}
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
+            Recommendations
+          </h3>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            {result.recommendations.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {result.warnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-300" />
+            <div>
+              <p className="font-semibold text-white">Watch outs</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {result.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SummaryMetrics({
+  result,
+  progressPercent,
+}: {
+  result: AnalysisResult;
+  progressPercent: number;
+}) {
   return (
     <div className="space-y-3 text-sm text-muted-foreground">
       <p className="text-white">{result.normalizedUrl}</p>
@@ -644,6 +785,20 @@ function SummaryMetrics({ result }: { result: AnalysisResult }) {
         {result.metrics.pages} pages · {result.stack.platform} ·{" "}
         {result.stack.technologies.slice(0, 2).join(", ")}
       </p>
+      <div className="space-y-1">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-primary/70">
+          Crawl progress
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="h-1.5 flex-1 rounded-full bg-white/10">
+            <div
+              className="h-1.5 rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(Math.max(progressPercent, 0), 100)}%` }}
+            />
+          </div>
+          <span className="text-xs text-white">{Math.min(Math.max(progressPercent, 0), 100)}%</span>
+        </div>
+      </div>
       <p>Complexity score: {result.complexityScore}/100</p>
       <p>Estimated {result.estimatedHours} migration hours</p>
       <a
@@ -657,6 +812,21 @@ function SummaryMetrics({ result }: { result: AnalysisResult }) {
       </a>
     </div>
   );
+}
+
+function formatHistoryDate(value: string) {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  } catch {
+    return "—";
+  }
 }
 
 function InsightCard({

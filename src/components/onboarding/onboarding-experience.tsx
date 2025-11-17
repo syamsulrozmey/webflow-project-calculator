@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { buildFlowHref } from "@/lib/navigation";
+import { saveUserContext } from "@/lib/user-context";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -173,6 +174,7 @@ export function OnboardingExperience({
   const initialEntry = parseEntry(initialEntryParam);
   const initialUserType = parseUserType(initialUserTypeParam);
 
+  const [sessionId] = useState(() => generateSessionId());
   const [selectedEntry, setSelectedEntry] = useState<EntryOptionId | null>(
     initialEntry,
   );
@@ -196,6 +198,14 @@ export function OnboardingExperience({
   const selectedUserTypeData = userTypes.find(
     (type) => type.id === selectedUserType,
   );
+
+  useEffect(() => {
+    saveUserContext({
+      entry: selectedEntry,
+      userType: selectedUserType,
+      sessionId,
+    });
+  }, [selectedEntry, selectedUserType, sessionId]);
 
   const combinedSummary = useMemo(() => {
     if (!selectedEntryData || !selectedUserTypeData) {
@@ -269,6 +279,7 @@ export function OnboardingExperience({
               summary: combinedSummary,
               entryData: selectedEntryData,
               userTypeData: selectedUserTypeData,
+              sessionId,
             })}
           </div>
         </CardContent>
@@ -362,6 +373,7 @@ function renderStep({
   summary,
   entryData,
   userTypeData,
+  sessionId,
 }: {
   currentStep: number;
   selectedEntry: EntryOptionId | null;
@@ -377,6 +389,7 @@ function renderStep({
   } | null;
   entryData?: (typeof entryOptions)[number];
   userTypeData?: (typeof userTypes)[number];
+  sessionId: string;
 }) {
   if (currentStep === 0) {
     return (
@@ -409,14 +422,22 @@ function renderStep({
   }
 
   if (currentStep === 2 && summary && entryData && userTypeData) {
+    const questionnaireHref = buildFlowHref(
+      "/questionnaire",
+      selectedEntry,
+      selectedUserType,
+      { session: sessionId },
+    );
     const primaryHref =
       selectedEntry === "existing"
-        ? buildFlowHref("/analysis", selectedEntry, selectedUserType)
-        : buildFlowHref("/questionnaire", selectedEntry, selectedUserType);
+        ? buildFlowHref("/analysis", selectedEntry, selectedUserType, {
+            session: sessionId,
+          })
+        : questionnaireHref;
     const secondaryHref =
       selectedEntry === "existing"
-        ? buildFlowHref("/questionnaire", selectedEntry, selectedUserType)
-        : `${buildFlowHref("/questionnaire", selectedEntry, selectedUserType)}#advanced`;
+        ? questionnaireHref
+        : `${questionnaireHref}#advanced`;
     return (
       <div className="space-y-6">
         <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-6 shadow-soft-card">
@@ -727,6 +748,13 @@ function BadgePill({ label }: { label: string }) {
 
 function PlaceholderText({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-muted-foreground">{children}</p>;
+}
+
+function generateSessionId() {
+  if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 function parseEntry(value?: string): EntryOptionId | null {

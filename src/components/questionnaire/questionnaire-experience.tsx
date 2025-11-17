@@ -18,7 +18,6 @@ import type {
   QuestionnaireSection,
   QuestionnaireUserType,
 } from "@/config/questionnaire";
-import { CrawlAssistPanel } from "@/components/questionnaire/crawl-assist-panel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,7 +37,11 @@ import {
 import { buildCalculationPayload } from "@/lib/calculator/from-answers";
 import { saveCalculationResult } from "@/lib/calculator/storage";
 import { cn } from "@/lib/utils";
-import type { CrawlSuggestion } from "@/lib/questionnaire-crawl";
+import { useLatestAnalysis } from "@/hooks/use-latest-analysis";
+import {
+  buildCrawlSuggestions,
+  type CrawlSuggestion,
+} from "@/lib/questionnaire-crawl";
 import {
   AlertCircle,
   ArrowLeft,
@@ -58,6 +61,7 @@ import type { CalculationResult } from "@/lib/calculator/types";
 interface QuestionnaireExperienceProps {
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
+  sessionId?: string | null;
 }
 
 interface SectionState {
@@ -71,6 +75,7 @@ interface SectionState {
 export function QuestionnaireExperience({
   entry,
   userType,
+  sessionId,
 }: QuestionnaireExperienceProps) {
   const router = useRouter();
   const [answers, setAnswers] = useState<QuestionnaireAnswerMap>({});
@@ -87,8 +92,14 @@ export function QuestionnaireExperience({
   );
   const [selectedUserType, setSelectedUserType] =
     useState<QuestionnaireUserType | null>(userType ?? null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(
+    sessionId ?? null,
+  );
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<
+    Record<string, boolean>
+  >({});
 
   const answersRef = useRef<QuestionnaireAnswerMap>({});
   answersRef.current = answers;
@@ -123,40 +134,80 @@ export function QuestionnaireExperience({
 
   const activeSectionState = sectionStates[activeSectionIndex];
   const isLastSection = activeSectionIndex === sectionStates.length - 1;
+  const analysis = useLatestAnalysis();
+  const rawSuggestions = useMemo(
+    () => buildCrawlSuggestions(analysis, answers),
+    [analysis, answers],
+  );
+  const suggestionMap = useMemo(() => {
+    return rawSuggestions.reduce<Record<string, CrawlSuggestion>>((acc, suggestion) => {
+      if (dismissedSuggestions[suggestion.questionId]) {
+        return acc;
+      }
+      acc[suggestion.questionId] = suggestion;
+      return acc;
+    }, {});
+  }, [rawSuggestions, dismissedSuggestions]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
     const effectiveUserType = userType ?? null;
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as StoredQuestionnaireState;
-        const defaults = buildDefaultAnswers(
-          questionnaireSections,
-          parsed.userType ?? effectiveUserType,
-        );
-        setAnswers({ ...defaults, ...parsed.answers });
-        setSkippedQuestions(parsed.skipped ?? {});
-        setShowAdvancedSections(parsed.showAdvanced ?? {});
-        if (!entry && parsed.entry) {
-          setSelectedEntry(parsed.entry);
-        }
-        if (!userType && parsed.userType) {
-          setSelectedUserType(parsed.userType);
-        }
-      } catch (error) {
-        console.warn("Failed to parse questionnaire state", error);
-        setAnswers(
-          buildDefaultAnswers(questionnaireSections, effectiveUserType),
-        );
-      } finally {
-        setIsRestored(true);
-      }
-    } else {
+    const incomingSession = sessionId ?? null;
+
+    const hydrateWithDefaults = () => {
       setAnswers(buildDefaultAnswers(questionnaireSections, effectiveUserType));
+      setSkippedQuestions({});
+      setShowAdvancedSections({});
+    };
+
+    if (!stored) {
+      hydrateWithDefaults();
+      setActiveSessionId(incomingSession);
+      setIsRestored(true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as StoredQuestionnaireState;
+      const storedSession = parsed.sessionId ?? null;
+      const shouldHydrateFromStorage =
+        !incomingSession ||
+        (storedSession !== null && storedSession === incomingSession);
+
+      if (!shouldHydrateFromStorage && incomingSession) {
+        hydrateWithDefaults();
+        setActiveSessionId(incomingSession);
+        setIsRestored(true);
+        return;
+      }
+
+      const defaults = buildDefaultAnswers(
+        questionnaireSections,
+        parsed.userType ?? effectiveUserType,
+      );
+      setAnswers({ ...defaults, ...parsed.answers });
+      setSkippedQuestions(parsed.skipped ?? {});
+      setShowAdvancedSections(parsed.showAdvanced ?? {});
+      if (!entry && parsed.entry) {
+        setSelectedEntry(parsed.entry);
+      }
+      if (!userType && parsed.userType) {
+        setSelectedUserType(parsed.userType);
+      }
+      setActiveSessionId(storedSession ?? incomingSession);
+    } catch (error) {
+      console.warn("Failed to parse questionnaire state", error);
+      hydrateWithDefaults();
+      setActiveSessionId(incomingSession);
+    } finally {
       setIsRestored(true);
     }
-  }, [entry, userType]);
+  }, [entry, userType, sessionId]);
+
+  useEffect(() => {
+    setDismissedSuggestions({});
+  }, [analysis?.id]);
 
   useEffect(() => {
     if (entry) {
@@ -178,6 +229,7 @@ export function QuestionnaireExperience({
       showAdvanced: showAdvancedSections,
       entry: selectedEntry,
       userType: selectedUserType,
+      sessionId: activeSessionId,
       timestamp: Date.now(),
     };
     window.localStorage.setItem(QUESTIONNAIRE_STORAGE_KEY, JSON.stringify(payload));
@@ -187,6 +239,7 @@ export function QuestionnaireExperience({
     showAdvancedSections,
     selectedEntry,
     selectedUserType,
+    activeSessionId,
     isRestored,
   ]);
 
@@ -199,6 +252,7 @@ export function QuestionnaireExperience({
         showAdvanced: showAdvancedSections,
         entry: selectedEntry,
         userType: selectedUserType,
+        sessionId: activeSessionId,
         timestamp: Date.now(),
       };
       window.localStorage.setItem(
@@ -207,7 +261,13 @@ export function QuestionnaireExperience({
       );
     }, 30000);
     return () => window.clearInterval(interval);
-  }, [selectedEntry, skippedQuestions, showAdvancedSections, selectedUserType]);
+  }, [
+    selectedEntry,
+    skippedQuestions,
+    showAdvancedSections,
+    selectedUserType,
+    activeSessionId,
+  ]);
 
   const totalRequiredQuestions = useMemo(() => {
     return sectionStates.reduce((count, state) => {
@@ -341,24 +401,15 @@ export function QuestionnaireExperience({
       delete next[suggestion.questionId];
       return next;
     });
+    setDismissedSuggestions((prev) => {
+      const next = { ...prev };
+      delete next[suggestion.questionId];
+      return next;
+    });
   };
 
-  const handleApplyAllSuggestions = (suggestions: CrawlSuggestion[]) => {
-    if (suggestions.length === 0) return;
-    setAnswers((prev) => {
-      const next = { ...prev };
-      suggestions.forEach((suggestion) => {
-        next[suggestion.questionId] = suggestion.value;
-      });
-      return next;
-    });
-    setSkippedQuestions((prev) => {
-      const next = { ...prev };
-      suggestions.forEach((suggestion) => {
-        delete next[suggestion.questionId];
-      });
-      return next;
-    });
+  const handleDismissSuggestion = (questionId: string) => {
+    setDismissedSuggestions((prev) => ({ ...prev, [questionId]: true }));
   };
 
   if (!isRestored || !activeSectionState) {
@@ -477,6 +528,9 @@ export function QuestionnaireExperience({
                   onTextChange={handleTextChange}
                   onSkip={handleSkipQuestion}
                   skipped={skippedQuestions[question.id]}
+                  suggestion={suggestionMap[question.id]}
+                  onAcceptSuggestion={handleApplySuggestion}
+                  onDismissSuggestion={handleDismissSuggestion}
                 />
               ))
             )}
@@ -583,14 +637,6 @@ export function QuestionnaireExperience({
         </Card>
 
         <aside className="space-y-4">
-          <CrawlAssistPanel
-            completionPercent={overallProgress}
-            entry={selectedEntry}
-            userType={selectedUserType}
-            answers={answers}
-            onApplySuggestion={handleApplySuggestion}
-            onApplyAll={handleApplyAllSuggestions}
-          />
           <InsightCard kicker="Auto-save" title="Progress saved every 30 seconds" icon={CloudDownload}>
             <p>Feel free to close the tab—your answers stay synced locally.</p>
           </InsightCard>
@@ -703,25 +749,42 @@ function QuestionCard({
   question,
   answer,
   skipped,
+  suggestion,
   onSingleSelect,
   onMultiSelect,
   onScaleChange,
   onToggle,
   onTextChange,
   onSkip,
+  onAcceptSuggestion,
+  onDismissSuggestion,
 }: {
   question: QuestionDefinition;
   answer: QuestionnaireAnswer;
   skipped?: boolean;
+  suggestion?: CrawlSuggestion;
   onSingleSelect: (id: string, value: string) => void;
   onMultiSelect: (id: string, value: string) => void;
   onScaleChange: (id: string, value: number) => void;
   onToggle: (id: string, value: boolean) => void;
   onTextChange: (id: string, value: string) => void;
   onSkip: (id: string, skip?: boolean) => void;
+  onAcceptSuggestion?: (suggestion: CrawlSuggestion) => void;
+  onDismissSuggestion?: (questionId: string) => void;
 }) {
+  const suggestionApplied =
+    suggestion && answersEqual(answer, suggestion.value);
+  const showSuggestion = Boolean(suggestion && !skipped && !suggestionApplied);
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-5">
+    <div
+      className={cn(
+        "rounded-2xl border bg-white/[0.01] p-5 transition-shadow duration-300",
+        showSuggestion
+          ? "border-primary/40 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.2)]"
+          : "border-white/10",
+      )}
+    >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -758,6 +821,36 @@ function QuestionCard({
           </button>
         )}
       </div>
+      {showSuggestion && suggestion && (
+        <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI suggestion
+          </div>
+          <p className="text-sm font-semibold text-white">{suggestion.valueLabel}</p>
+          {suggestion.rationale && (
+            <p className="text-xs text-primary/80">{suggestion.rationale}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              className="h-8 gap-1 border-primary/40 bg-primary/90 text-xs"
+              onClick={() => onAcceptSuggestion?.(suggestion)}
+            >
+              Accept
+              <Check className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-white/20 text-xs text-muted-foreground"
+              onClick={() => onDismissSuggestion?.(question.id)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
       {skipped && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-dashed border-white/15 px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -786,6 +879,16 @@ function QuestionCard({
       )}
     </div>
   );
+}
+
+function answersEqual(a: QuestionnaireAnswer, b: QuestionnaireAnswer): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    const sortedA = [...a].sort();
+    const sortedB = [...b].sort();
+    return sortedA.every((value, index) => value === sortedB[index]);
+  }
+  return a === b;
 }
 
 function renderByType(
@@ -843,10 +946,10 @@ function renderByType(
                 type="button"
                 onClick={() => handlers.onMultiSelect(question.id, option.value)}
                 className={cn(
-                  "rounded-full border px-4 py-1.5 text-sm transition",
+                  "rounded-full border px-4 py-1.5 text-sm transition text-white",
                   isSelected
-                    ? "border-primary bg-primary/10 text-primary-foreground"
-                    : "border-white/15 text-muted-foreground hover:border-white/40",
+                    ? "border-primary bg-primary/10"
+                    : "border-white/15 text-white/70 hover:border-white/40 hover:text-white",
                 )}
               >
                 {option.label}
