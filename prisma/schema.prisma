@@ -27,7 +27,8 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  projects Project[]
+  projects      Project[]
+  agencyProfile AgencyProfile?
 }
 
 model Project {
@@ -96,4 +97,38 @@ model CrawlResult {
 
   @@index([projectId])
   @@index([urlHash])
+}
+
+model AgencyProfile {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  targetMargin   Float        @default(0.25)
+  desiredMarkup  Float        @default(0.35)
+  blendedRate    Decimal?     @db.Decimal(8, 2)
+  defaultTemplate String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamMembers TeamMember[]
+}
+
+model TeamMember {
+  id                 String        @id @default(cuid())
+  agencyProfileId    String
+  name               String
+  role               String
+  costRate           Decimal       @db.Decimal(8, 2)
+  billableRate       Decimal?      @db.Decimal(8, 2)
+  weeklyCapacity     Int?
+  utilizationTarget  Float?
+  color              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  agencyProfile AgencyProfile @relation(fields: [agencyProfileId], references: [id], onDelete: Cascade)
+
+  @@index([agencyProfileId])
+  @@index([role])
 }

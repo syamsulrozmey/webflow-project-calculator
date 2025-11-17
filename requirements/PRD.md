@@ -126,18 +126,25 @@ Three distinct user types with tailored experiences:
 - Simple hourly rate input
 - Individual skill level selector (Junior/Mid/Senior)
 - Professional client-ready outputs
+- Capacity tracking for solo bandwidth (hours/week) to flag unrealistic timelines
+- Results highlight single blended rate with add-on suggestions for subcontracting
 
 #### Agency
 - Hourly rate input
 - Team composition settings
 - Project scope standardization options
 - Internal vs external estimates toggle
+- Capture delivery team roster (role, cost rate, billable rate, weekly capacity)
+- Support margin targets that auto-calc recommended client rate from internal costs
+- Allow reusable project templates tied to agency Playbooks (e.g., “B2B site”, “Ecom refresh”)
+- Results show dual outputs: internal cost basis vs client-facing quote + margin %
 
 #### Company
 - Hourly rate (if doing internal development) OR budget range input (if hiring)
 - Internal team capabilities assessment
 - Project priority and timeline constraints
 - Stakeholder structure (number of approvers)
+- Suggested vendor budget ranges and internal resource gaps highlighted in results
 
 ### 4.3 Website Crawler & Scanner
 **Capability:** Analyze existing websites for scope assessment
@@ -228,6 +235,10 @@ Three distinct user types with tailored experiences:
    - Hour/effort breakdown by category
    - Line-item cost details
    - Hourly rate driving factors
+   - User-type overlays:
+     - Freelancers: single-rate view + upsell/downsizing levers
+     - Agencies: internal blended rate, client quote, and target margin summary
+     - Companies: estimate vs stated budget plus resource gap callouts
 
 ### 4.6 Multi-Format Presentation
 
@@ -305,6 +316,7 @@ Three distinct user types with tailored experiences:
 - View breakdown table
 - Toggle to complexity tier view
 - See industry comparison ($4,500 vs industry avg $5,200)
+- Solo-specific insights: rate validation vs peers, highlight if estimated hours exceed available capacity
 
 **Step 8:** Export options
 - Generate PDF proposal
@@ -327,6 +339,8 @@ Three distinct user types with tailored experiences:
 **Step 5:** Select user type → "Agency"
 
 **Step 6:** Input team hourly rate: $125/hour
+- Team builder asks for each contributor’s internal cost, billable rate, and weekly availability
+- System calculates blended internal rate ($92/hour) and recommended client rate ($135/hour) based on desired margin
 
 **Step 7:** Quick questionnaire (focused on changes)
 - What's changing: Full redesign + performance optimization
@@ -338,6 +352,7 @@ Three distinct user types with tailored experiences:
 - View detailed breakdown
 - See internal vs client-facing pricing options
 - Check profitability margins
+- Results show per-role allocation, calculated margin %, and alert if target margin not met
 
 **Step 9:** Export for client presentation
 
@@ -361,11 +376,13 @@ Three distinct user types with tailored experiences:
 - Stakeholders: Marketing (3 approvers), IT (2 approvers)
 - Features: Customer portal, integrations with CRM
 - Timeline: Q1 launch required
+- Company-specific prompts capture whether work is insourced vs outsourced plus budget guardrails
 
 **Step 7:** View estimate
 - Cost: $22,300 (within budget)
 - Timeline: 14 weeks (concerning)
 - Resource gaps: Need QA resource
+- Results emphasize comparison to provided budget, internal capacity gaps, and vendor-ready briefing tips
 
 **Step 8:** Export options
 - PDF for stakeholder presentation

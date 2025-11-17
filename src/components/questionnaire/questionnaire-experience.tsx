@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 
+import { AgencyTeamConfigurator } from "@/components/agency/team-configurator";
 import { questionnaireSections } from "@/config/questionnaire";
 import type {
   EntryFlow,
@@ -28,7 +29,6 @@ import {
 } from "@/components/ui/card";
 import {
   QUESTIONNAIRE_STORAGE_KEY,
-  buildDefaultAnswers,
   evaluateVisibility,
   isQuestionAnswered,
   type QuestionnaireAnswerMap,
@@ -38,10 +38,12 @@ import { buildCalculationPayload } from "@/lib/calculator/from-answers";
 import { saveCalculationResult } from "@/lib/calculator/storage";
 import { cn } from "@/lib/utils";
 import { useLatestAnalysis } from "@/hooks/use-latest-analysis";
+import { useAgencyTeamConfig } from "@/hooks/use-agency-team";
 import {
   buildCrawlSuggestions,
   type CrawlSuggestion,
 } from "@/lib/questionnaire-crawl";
+import { readUserContext } from "@/lib/user-context";
 import {
   AlertCircle,
   ArrowLeft,
@@ -79,6 +81,7 @@ export function QuestionnaireExperience({
 }: QuestionnaireExperienceProps) {
   const router = useRouter();
   const [answers, setAnswers] = useState<QuestionnaireAnswerMap>({});
+  const [touchedQuestions, setTouchedQuestions] = useState<Record<string, boolean>>({});
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [skippedQuestions, setSkippedQuestions] = useState<Record<string, boolean>>(
     {},
@@ -100,6 +103,23 @@ export function QuestionnaireExperience({
   const [dismissedSuggestions, setDismissedSuggestions] = useState<
     Record<string, boolean>
   >({});
+  const {
+    state: agencyTeamState,
+    summary: agencySummary,
+    upsertMember,
+    removeMember,
+    updateSettings: updateAgencySettings,
+    resetState: resetAgencyTeam,
+  } = useAgencyTeamConfig(activeSessionId);
+
+  const markTouched = (questionId: string) => {
+    setTouchedQuestions((prev) => {
+      if (prev[questionId]) {
+        return prev;
+      }
+      return { ...prev, [questionId]: true };
+    });
+  };
 
   const answersRef = useRef<QuestionnaireAnswerMap>({});
   answersRef.current = answers;
@@ -115,8 +135,8 @@ export function QuestionnaireExperience({
       const requiredQuestions = baseQuestions.filter(
         (q) => q.required !== false,
       );
-      const answered = requiredQuestions.filter((q) =>
-        isQuestionAnswered(q, answers[q.id]),
+      const answered = requiredQuestions.filter(
+        (q) => touchedQuestions[q.id] && isQuestionAnswered(q, answers[q.id]),
       );
 
       return {
@@ -130,7 +150,7 @@ export function QuestionnaireExperience({
             : answered.length / requiredQuestions.length,
       };
     });
-  }, [answers]);
+  }, [answers, touchedQuestions]);
 
   const activeSectionState = sectionStates[activeSectionIndex];
   const isLastSection = activeSectionIndex === sectionStates.length - 1;
@@ -152,13 +172,13 @@ export function QuestionnaireExperience({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
-    const effectiveUserType = userType ?? null;
     const incomingSession = sessionId ?? null;
 
     const hydrateWithDefaults = () => {
-      setAnswers(buildDefaultAnswers(questionnaireSections, effectiveUserType));
+      setAnswers({});
       setSkippedQuestions({});
       setShowAdvancedSections({});
+      setTouchedQuestions({});
     };
 
     if (!stored) {
@@ -182,13 +202,13 @@ export function QuestionnaireExperience({
         return;
       }
 
-      const defaults = buildDefaultAnswers(
-        questionnaireSections,
-        parsed.userType ?? effectiveUserType,
-      );
-      setAnswers({ ...defaults, ...parsed.answers });
+      const storedAnswers = parsed.answers ?? {};
+      const storedTouched =
+        parsed.touched ?? deriveTouchedFromAnswers(storedAnswers);
+      setAnswers(storedAnswers);
       setSkippedQuestions(parsed.skipped ?? {});
       setShowAdvancedSections(parsed.showAdvanced ?? {});
+      setTouchedQuestions(storedTouched);
       if (!entry && parsed.entry) {
         setSelectedEntry(parsed.entry);
       }
@@ -210,6 +230,23 @@ export function QuestionnaireExperience({
   }, [analysis?.id]);
 
   useEffect(() => {
+    if (selectedUserType !== "agency") return;
+    if (!agencySummary?.recommendedBillableRate) return;
+    if (touchedQuestions.hourly_rate) return;
+    setAnswers((prev) => {
+      const recommended = Math.round(agencySummary.recommendedBillableRate);
+      if (typeof prev.hourly_rate === "number" && prev.hourly_rate === recommended) {
+        return prev;
+      }
+      return { ...prev, hourly_rate: recommended };
+    });
+  }, [
+    selectedUserType,
+    agencySummary?.recommendedBillableRate,
+    touchedQuestions.hourly_rate,
+  ]);
+
+  useEffect(() => {
     if (entry) {
       setSelectedEntry(entry);
     }
@@ -222,6 +259,20 @@ export function QuestionnaireExperience({
   }, [userType]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const context = readUserContext();
+    if (!entry && !selectedEntry && context?.entry) {
+      setSelectedEntry(context.entry);
+    }
+    if (!userType && !selectedUserType && context?.userType) {
+      setSelectedUserType(context.userType);
+    }
+    if (!sessionId && !activeSessionId && context?.sessionId) {
+      setActiveSessionId(context.sessionId);
+    }
+  }, [entry, userType, sessionId, selectedEntry, selectedUserType, activeSessionId]);
+
+  useEffect(() => {
     if (!isRestored || typeof window === "undefined") return;
     const payload: StoredQuestionnaireState = {
       answers,
@@ -230,6 +281,7 @@ export function QuestionnaireExperience({
       entry: selectedEntry,
       userType: selectedUserType,
       sessionId: activeSessionId,
+      touched: touchedQuestions,
       timestamp: Date.now(),
     };
     window.localStorage.setItem(QUESTIONNAIRE_STORAGE_KEY, JSON.stringify(payload));
@@ -240,6 +292,7 @@ export function QuestionnaireExperience({
     selectedEntry,
     selectedUserType,
     activeSessionId,
+    touchedQuestions,
     isRestored,
   ]);
 
@@ -253,6 +306,7 @@ export function QuestionnaireExperience({
         entry: selectedEntry,
         userType: selectedUserType,
         sessionId: activeSessionId,
+        touched: touchedQuestions,
         timestamp: Date.now(),
       };
       window.localStorage.setItem(
@@ -267,6 +321,7 @@ export function QuestionnaireExperience({
     showAdvancedSections,
     selectedUserType,
     activeSessionId,
+    touchedQuestions,
   ]);
 
   const totalRequiredQuestions = useMemo(() => {
@@ -279,11 +334,14 @@ export function QuestionnaireExperience({
   const totalCompletedRequired = useMemo(() => {
     return sectionStates.reduce((count, state) => {
       const answered = state.baseQuestions.filter(
-        (q) => q.required !== false && isQuestionAnswered(q, answers[q.id]),
+      (q) =>
+        q.required !== false &&
+        touchedQuestions[q.id] &&
+        isQuestionAnswered(q, answers[q.id]),
       );
       return count + answered.length;
     }, 0);
-  }, [answers, sectionStates]);
+}, [answers, sectionStates, touchedQuestions]);
 
   const overallProgress =
     totalRequiredQuestions === 0
@@ -298,6 +356,7 @@ export function QuestionnaireExperience({
       delete next[questionId];
       return next;
     });
+    markTouched(questionId);
   };
 
   const handleMultiSelect = (questionId: string, value: string) => {
@@ -309,18 +368,22 @@ export function QuestionnaireExperience({
         : [...current, value];
       return { ...prev, [questionId]: updated };
     });
+    markTouched(questionId);
   };
 
   const handleScaleChange = (questionId: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    markTouched(questionId);
   };
 
   const handleToggle = (questionId: string, value: boolean) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    markTouched(questionId);
   };
 
   const handleTextChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    markTouched(questionId);
   };
 
   const handleSkipQuestion = (questionId: string, skip = true) => {
@@ -347,12 +410,21 @@ export function QuestionnaireExperience({
       });
       return updated;
     });
+    setTouchedQuestions((prev) => {
+      const updated = { ...prev };
+      const section = questionnaireSections.find((s) => s.id === sectionId);
+      section?.questions.forEach((question) => {
+        delete updated[question.id];
+      });
+      return updated;
+    });
   };
 
   const handleReset = () => {
-    setAnswers(buildDefaultAnswers(questionnaireSections, selectedUserType));
+    setAnswers({});
     setSkippedQuestions({});
     setShowAdvancedSections({});
+    setTouchedQuestions({});
     setActiveSectionIndex(0);
   };
 
@@ -365,6 +437,7 @@ export function QuestionnaireExperience({
         answers,
         entry: selectedEntry,
         userType: selectedUserType,
+        agencySummary: selectedUserType === "agency" ? agencySummary : undefined,
       });
       const response = await fetch("/api/calculations", {
         method: "POST",
@@ -403,9 +476,10 @@ export function QuestionnaireExperience({
     });
     setDismissedSuggestions((prev) => {
       const next = { ...prev };
-      delete next[suggestion.questionId];
+        delete next[suggestion.questionId];
       return next;
     });
+    markTouched(suggestion.questionId);
   };
 
   const handleDismissSuggestion = (questionId: string) => {
@@ -531,6 +605,7 @@ export function QuestionnaireExperience({
                   suggestion={suggestionMap[question.id]}
                   onAcceptSuggestion={handleApplySuggestion}
                   onDismissSuggestion={handleDismissSuggestion}
+                  touched={Boolean(touchedQuestions[question.id])}
                 />
               ))
             )}
@@ -589,6 +664,18 @@ export function QuestionnaireExperience({
                 </div>
               </div>
             )}
+
+            {selectedUserType === "agency" &&
+              activeSectionState.section.id === "timeline" && (
+                <AgencyTeamConfigurator
+                  state={agencyTeamState}
+                  summary={agencySummary}
+                  onUpsert={upsertMember}
+                  onRemove={removeMember}
+                  onReset={resetAgencyTeam}
+                  onSettingsChange={updateAgencySettings}
+                />
+              )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <Button
@@ -604,16 +691,11 @@ export function QuestionnaireExperience({
             </Button>
             <Button
               className="w-full gap-2 sm:w-auto"
+              disabled={isLastSection ? !canCalculate : false}
               onClick={() => {
                 if (isLastSection) {
-                  if (typeof window !== "undefined") {
-                    const target = document.getElementById("questionnaire-progress-card");
-                    if (target) {
-                      target.scrollIntoView({ behavior: "smooth", block: "start" });
-                    } else {
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }
-                  }
+                  if (!canCalculate) return;
+                  void handleCalculate();
                   return;
                 }
                 setActiveSectionIndex((index) =>
@@ -623,8 +705,17 @@ export function QuestionnaireExperience({
             >
               {isLastSection ? (
                 <>
-                  Review progress
+                  {isCalculating ? (
+                    <>
+                      Calculating…
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      Calculate project cost
                   <Sparkles className="h-4 w-4" />
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -658,9 +749,6 @@ export function QuestionnaireExperience({
           </InsightCard>
 
           <InsightCard kicker="Next step" title="Ready for calculation?" icon={Sparkles}>
-            <p className="text-sm text-muted-foreground">
-              Once every section hits 100%, send answers to the deterministic cost engine.
-            </p>
             <Button
               className="mt-3 w-full gap-2"
               variant="outline"
@@ -750,6 +838,7 @@ function QuestionCard({
   answer,
   skipped,
   suggestion,
+  touched,
   onSingleSelect,
   onMultiSelect,
   onScaleChange,
@@ -763,6 +852,7 @@ function QuestionCard({
   answer: QuestionnaireAnswer;
   skipped?: boolean;
   suggestion?: CrawlSuggestion;
+  touched: boolean;
   onSingleSelect: (id: string, value: string) => void;
   onMultiSelect: (id: string, value: string) => void;
   onScaleChange: (id: string, value: number) => void;
@@ -773,15 +863,16 @@ function QuestionCard({
   onDismissSuggestion?: (questionId: string) => void;
 }) {
   const suggestionApplied =
-    suggestion && answersEqual(answer, suggestion.value);
+    suggestion && touched && answersEqual(answer, suggestion.value);
   const showSuggestion = Boolean(suggestion && !skipped && !suggestionApplied);
+  const suggestionPending = showSuggestion && !touched;
 
   return (
     <div
       className={cn(
         "rounded-2xl border bg-white/[0.01] p-5 transition-shadow duration-300",
-        showSuggestion
-          ? "border-primary/40 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.2)]"
+        suggestionPending
+          ? "border-primary/60 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.25)] animate-pulse-glow"
           : "border-white/10",
       )}
     >
@@ -822,32 +913,41 @@ function QuestionCard({
         )}
       </div>
       {showSuggestion && suggestion && (
-        <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm">
-          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
+        <div className="mb-3">
+          <div
+            tabIndex={0}
+            className="group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            <Sparkles className="h-3 w-3" />
             AI suggestion
-          </div>
-          <p className="text-sm font-semibold text-white">{suggestion.valueLabel}</p>
-          {suggestion.rationale && (
-            <p className="text-xs text-primary/80">{suggestion.rationale}</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="h-8 gap-1 border-primary/40 bg-primary/90 text-xs"
-              onClick={() => onAcceptSuggestion?.(suggestion)}
-            >
-              Accept
-              <Check className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 border-white/20 text-xs text-muted-foreground"
-              onClick={() => onDismissSuggestion?.(question.id)}
-            >
-              Dismiss
-            </Button>
+            <div className="pointer-events-none absolute left-0 top-full z-20 hidden w-72 rounded-2xl border border-white/10 bg-[#070810] p-4 text-left text-xs text-muted-foreground shadow-2xl group-hover:pointer-events-auto group-hover:block group-focus-visible:pointer-events-auto group-focus-visible:block">
+              <p className="text-sm font-semibold text-white">
+                {suggestion.valueLabel}
+              </p>
+              {suggestion.rationale && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {suggestion.rationale}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="h-8 gap-1 border-primary/40 bg-primary/90 text-xs"
+                  onClick={() => onAcceptSuggestion?.(suggestion)}
+                >
+                  Accept
+                  <Check className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-muted-foreground"
+                  onClick={() => onDismissSuggestion?.(question.id)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -868,7 +968,7 @@ function QuestionCard({
       )}
       {!skipped && (
         <div className="mt-4">
-          {renderByType(question, answer, {
+          {renderByType(question, answer, touched, {
             onSingleSelect,
             onMultiSelect,
             onScaleChange,
@@ -891,9 +991,27 @@ function answersEqual(a: QuestionnaireAnswer, b: QuestionnaireAnswer): boolean {
   return a === b;
 }
 
+function deriveTouchedFromAnswers(answers: QuestionnaireAnswerMap) {
+  const touched: Record<string, boolean> = {};
+  Object.entries(answers).forEach(([key, value]) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+    if (typeof value === "string" && value.trim().length === 0) {
+      return;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      return;
+    }
+    touched[key] = true;
+  });
+  return touched;
+}
+
 function renderByType(
   question: QuestionDefinition,
   answer: QuestionnaireAnswer,
+  touched: boolean,
   handlers: {
     onSingleSelect: (id: string, value: string) => void;
     onMultiSelect: (id: string, value: string) => void;
@@ -907,7 +1025,8 @@ function renderByType(
       return (
         <div className="grid gap-3 md:grid-cols-2">
           {question.options?.map((option) => {
-            const isSelected = answer === option.value;
+            const currentAnswer = touched ? answer : undefined;
+            const isSelected = currentAnswer === option.value;
             return (
               <button
                 key={option.value}
@@ -938,7 +1057,8 @@ function renderByType(
       return (
         <div className="flex flex-wrap gap-2">
           {question.options?.map((option) => {
-            const selections = Array.isArray(answer) ? (answer as string[]) : [];
+            const selections =
+              touched && Array.isArray(answer) ? (answer as string[]) : [];
             const isSelected = selections.includes(option.value);
             return (
               <button
@@ -959,6 +1079,11 @@ function renderByType(
         </div>
       );
     case "scale":
+      {
+        const displayValue =
+          touched && typeof answer === "number"
+            ? (answer as number)
+            : question.min ?? 0;
       return (
         <div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -970,46 +1095,50 @@ function renderByType(
             min={question.min}
             max={question.max}
             step={question.step ?? 1}
-            value={typeof answer === "number" ? answer : question.min}
+              value={displayValue}
             onChange={(event) =>
               handlers.onScaleChange(question.id, Number(event.target.value))
             }
             className="mt-2 w-full accent-primary"
           />
           <div className="mt-1 text-sm text-white">
-            {typeof answer === "number" ? answer : question.min}
+              {displayValue}
           </div>
         </div>
       );
+      }
     case "toggle":
+      {
+        const currentValue = touched ? Boolean(answer) : false;
       return (
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => handlers.onToggle(question.id, !(answer as boolean))}
+              onClick={() => handlers.onToggle(question.id, !currentValue)}
             className={cn(
               "relative inline-flex h-6 w-11 items-center rounded-full border border-white/15 transition",
-              answer ? "bg-primary/80" : "bg-white/10",
+                currentValue ? "bg-primary/80" : "bg-white/10",
             )}
             role="switch"
-            aria-checked={Boolean(answer)}
+              aria-checked={currentValue}
           >
             <span
               className={cn(
                 "inline-block h-4 w-4 rounded-full bg-white transition",
-                answer ? "translate-x-5" : "translate-x-1",
+                  currentValue ? "translate-x-5" : "translate-x-1",
               )}
             />
           </button>
           <span className="text-sm text-muted-foreground">
-            {answer ? "Enabled" : "Disabled"}
+              {currentValue ? "Enabled" : "Disabled"}
           </span>
         </div>
       );
+      }
     case "text":
       return (
         <textarea
-          value={typeof answer === "string" ? answer : ""}
+          value={touched && typeof answer === "string" ? answer : ""}
           onChange={(event) => handlers.onTextChange(question.id, event.target.value)}
           placeholder={question.placeholder}
           className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm text-white outline-none ring-primary/40 focus:ring"

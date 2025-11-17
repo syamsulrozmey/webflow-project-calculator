@@ -1,6 +1,7 @@
 "use client";
 
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
+import type { AgencyRateSummary } from "@/lib/agency/types";
 import type { CalculationResult } from "@/lib/calculator/types";
 
 const STORAGE_KEY = "wpc-last-calculation";
@@ -9,6 +10,8 @@ export interface CalculationMeta {
   hourlyRate: number;
   currency: SupportedCurrency;
   margin: number;
+  internalHourlyRate?: number;
+  agencyRateSummary?: AgencyRateSummary;
 }
 
 export interface StoredCalculation {

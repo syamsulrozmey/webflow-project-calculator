@@ -13,6 +13,7 @@ import {
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 import type { CalculationResult, LineItem } from "@/lib/calculator/types";
 import { loadCalculationResult, type CalculationMeta } from "@/lib/calculator/storage";
+import type { AgencyRateSummary } from "@/lib/agency/types";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -23,6 +24,7 @@ import {
   Clock3,
   Share2,
   Sparkles,
+  Users,
 } from "lucide-react";
 
 const hoursFormatter = new Intl.NumberFormat("en-US", {
@@ -47,6 +49,8 @@ export function ResultsExperience({
     hourlyRate: result.effectiveHourlyRate,
     currency: fallbackCurrency,
     margin: 0.25,
+    internalHourlyRate: undefined,
+    agencyRateSummary: undefined,
   });
   const [margin, setMargin] = useState(meta.margin);
   const [viewMode, setViewMode] = useState<ViewMode>("detailed");
@@ -170,7 +174,11 @@ export function ResultsExperience({
             <SummaryStat
               label="Hourly rate"
               value={`${formatMoney(meta.hourlyRate)} / hr`}
-              helper={`Adjust via questionnaire or margin slider`}
+            helper={
+              meta.internalHourlyRate
+                ? `Internal cost ${formatMoney(meta.internalHourlyRate)}`
+                : "Adjust via questionnaire or margin slider"
+            }
             />
             <SummaryStat
               label="Maintenance"
@@ -241,10 +249,93 @@ export function ResultsExperience({
             totalCost={adjustedResult.totalCost}
             onChange={setMargin}
           />
+          {meta.agencyRateSummary && (
+            <AgencyEconomicsCard
+              summary={meta.agencyRateSummary}
+              formatCurrency={formatMoney}
+            />
+          )}
           <InsightCard result={adjustedResult} source={resultSource} />
           <ShareNote />
         </aside>
       </div>
+    </div>
+  );
+}
+
+function AgencyEconomicsCard({
+  summary,
+  formatCurrency,
+}: {
+  summary: AgencyRateSummary;
+  formatCurrency: (value: number) => string;
+}) {
+  const visibleMembers = summary.teamSnapshot.slice(0, 3);
+  const extraCount = summary.teamSnapshot.length - visibleMembers.length;
+
+  return (
+    <Card className="border-white/10 bg-white/[0.03]">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Agency economics</CardTitle>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Internal blended rate vs client-facing quote and roster snapshot.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-0">
+        <div className="grid gap-3">
+          <MiniStat label="Internal cost" value={`${formatCurrency(summary.blendedCostRate)} / hr`} />
+          <MiniStat
+            label="Client quote"
+            value={`${formatCurrency(summary.recommendedBillableRate)} / hr`}
+            helper={`Margin ${(summary.margin * 100).toFixed(0)}%`}
+          />
+          <MiniStat
+            label="Weekly capacity"
+            value={`${summary.totalWeeklyCapacity} hrs`}
+            helper={`${summary.memberCount} roles`}
+          />
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Team roster</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {visibleMembers.map((member) => (
+              <li key={member.id} className="flex items-center justify-between gap-3">
+                <span className="text-white">{member.name || member.role}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatCurrency(member.costRate)} → $
+                  {(member.billableRate ?? member.costRate * 2).toFixed(0)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {extraCount > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              +{extraCount} more role{extraCount > 1 ? "s" : ""} tracked
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+      <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
+      <p className="text-lg font-semibold text-white">{value}</p>
+      {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
     </div>
   );
 }

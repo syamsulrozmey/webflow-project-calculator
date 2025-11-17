@@ -18,6 +18,7 @@ export interface StoredQuestionnaireState {
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
   sessionId?: string | null;
+  touched?: Record<string, boolean>;
   timestamp: number;
 }
 

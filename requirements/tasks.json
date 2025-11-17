@@ -802,28 +802,34 @@
       "phase": "Phase 2: Extended Features (M+4-6)",
       "title": "Add Agency user type with team features",
       "priority": "high",
-      "estimated_hours": 20,
-      "status": "pending",
+      "estimated_hours": 36,
+      "status": "completed",
       "assignee": "Full-stack Developer + Backend Engineer",
       "dependencies": ["auth-1"],
       "subtasks": [
         {
           "id": "features-phase2-1.1",
           "title": "Extend user schema for agency details",
-          "details": "Team size, hourly rate, margin targets",
-          "status": "pending"
+          "details": "Add AgencyProfile + TeamMember models (role, cost rate, billable rate, capacity, utilization targets) and migrate database (prisma schema + migration + client regen)",
+          "status": "completed"
         },
         {
           "id": "features-phase2-1.2",
-          "title": "Implement team member management",
-          "details": "Add/remove team members, roles",
-          "status": "pending"
+          "title": "Implement team member management APIs/UI",
+          "details": "Built /api/agency/profile route + local session storage hook and AgencyTeamConfigurator UI (add/remove/edit members, margin slider, optimistic UX)",
+          "status": "completed"
         },
         {
           "id": "features-phase2-1.3",
-          "title": "Add team-wide project templates",
-          "details": "Pre-configured projects for common agency work",
-          "status": "pending"
+          "title": "Add blended rate logic tied to agency session",
+          "details": "Session-aware hook persists team config, calculates blended internal cost + recommended client rate, and auto-injects hourly rate for agency flows",
+          "status": "completed"
+        },
+        {
+          "id": "features-phase2-1.4",
+          "title": "Update results view for agency outputs",
+          "details": "Results page now stores agency metadata, shows internal vs client quote, margin slider, and agency economics card with roster snapshot",
+          "status": "completed"
         }
       ]
     },

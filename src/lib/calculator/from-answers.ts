@@ -10,6 +10,7 @@ import type {
   QuestionnaireAnswerMap,
   QuestionnaireUserType,
 } from "@/config/questionnaire";
+import type { AgencyRateSummary } from "@/lib/agency/types";
 
 type QuestionnaireValue = string | number | boolean | string[] | null | undefined;
 
@@ -178,6 +179,8 @@ export interface CalculatedPayload {
     hourlyRate: number;
     currency: SupportedCurrency;
     margin: number;
+    internalHourlyRate?: number;
+    agencyRateSummary?: AgencyRateSummary;
   };
 }
 
@@ -213,6 +216,7 @@ export function buildCalculationPayload(opts: {
   answers: QuestionnaireAnswerMap;
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
+  agencySummary?: AgencyRateSummary;
 }): CalculatedPayload {
   const projectType = mapProjectType(asString(opts.answers.project_type));
   const multipliers: ComplexityMultipliers = {
@@ -226,7 +230,14 @@ export function buildCalculationPayload(opts: {
   const tier = mapTier(projectType, opts.answers);
   const hourlyRate = mapHourlyRate(opts.answers, opts.userType);
   const currency = mapCurrency(asString(opts.answers.rate_currency));
-  const margin = mapMargin(opts.userType);
+  let margin = mapMargin(opts.userType);
+  const internalHourlyRate =
+    opts.agencySummary && opts.userType === "agency"
+      ? opts.agencySummary.blendedCostRate
+      : undefined;
+  if (opts.agencySummary && opts.userType === "agency") {
+    margin = opts.agencySummary.margin;
+  }
 
   const input: CalculationInput = {
     projectType,
@@ -244,6 +255,9 @@ export function buildCalculationPayload(opts: {
       hourlyRate,
       currency,
       margin,
+      internalHourlyRate,
+      agencyRateSummary:
+        opts.userType === "agency" ? opts.agencySummary : undefined,
     },
   };
 }

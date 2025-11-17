@@ -34,8 +34,6 @@ import {
   BarChart3,
   CheckCircle2,
   Clock4,
-  ExternalLink,
-  FileChartColumn,
   Globe,
   History,
   Info,
@@ -43,7 +41,6 @@ import {
   PlugZap,
   Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const HISTORY_KEY = "wpc-url-analysis-history";
@@ -768,49 +765,6 @@ function SummaryDetails({
         </div>
       )}
     </>
-  );
-}
-
-function SummaryMetrics({
-  result,
-  progressPercent,
-}: {
-  result: AnalysisResult;
-  progressPercent: number;
-}) {
-  return (
-    <div className="space-y-3 text-sm text-muted-foreground">
-      <p className="text-white">{result.normalizedUrl}</p>
-      <p>
-        {result.metrics.pages} pages · {result.stack.platform} ·{" "}
-        {result.stack.technologies.slice(0, 2).join(", ")}
-      </p>
-      <div className="space-y-1">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-primary/70">
-          Crawl progress
-        </p>
-        <div className="flex items-center gap-3">
-          <div className="h-1.5 flex-1 rounded-full bg-white/10">
-            <div
-              className="h-1.5 rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(Math.max(progressPercent, 0), 100)}%` }}
-            />
-          </div>
-          <span className="text-xs text-white">{Math.min(Math.max(progressPercent, 0), 100)}%</span>
-        </div>
-      </div>
-      <p>Complexity score: {result.complexityScore}/100</p>
-      <p>Estimated {result.estimatedHours} migration hours</p>
-      <a
-        href={result.normalizedUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-2 text-xs text-primary hover:underline"
-      >
-        Visit site
-        <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-    </div>
   );
 }
 
