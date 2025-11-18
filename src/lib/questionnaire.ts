@@ -18,6 +18,8 @@ export interface StoredQuestionnaireState {
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
   sessionId?: string | null;
+  projectId?: string | null;
+  projectTitle?: string;
   touched?: Record<string, boolean>;
   timestamp: number;
 }

@@ -14,13 +14,15 @@ interface QuestionnairePageProps {
     entry?: EntryFlow;
     userType?: QuestionnaireUserType;
     session?: string;
+    projectId?: string;
   };
 }
 
 export default function QuestionnairePage({ searchParams }: QuestionnairePageProps) {
   const entry = searchParams?.entry ?? null;
   const userType = searchParams?.userType ?? null;
-  const sessionId = searchParams?.session ?? null;
+  const projectId = searchParams?.projectId ?? null;
+  const sessionId = searchParams?.session ?? projectId ?? null;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#05060a] via-[#05060a] to-[#0b0f1b] pb-16 text-white">
@@ -38,7 +40,12 @@ export default function QuestionnairePage({ searchParams }: QuestionnairePagePro
             cost engine.
           </p>
         </div>
-        <QuestionnaireExperience entry={entry} userType={userType} sessionId={sessionId} />
+        <QuestionnaireExperience
+          entry={entry}
+          userType={userType}
+          sessionId={sessionId}
+          projectId={projectId}
+        />
       </div>
     </main>
   );

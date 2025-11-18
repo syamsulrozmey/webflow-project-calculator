@@ -628,7 +628,7 @@ Total Cost = (Base Hours × Hourly Rate) × Complexity Multipliers + Fixed Costs
 - Questionnaire expansion (technical specs, timeline)
 - Complexity tier view
 - Industry comparison
-- Save projects functionality
+- Save projects functionality *(Pro tier only — includes save/load/duplicate flows gated behind billing status)*
 
 **Goal:** Serve agencies, improve data accuracy
 
@@ -824,6 +824,11 @@ Total Cost = (Base Hours × Hourly Rate) × Complexity Multipliers + Fixed Costs
 - **PostgreSQL** (Dockerized) : User data, project data, analysis results
 - **Redis**: Caching for crawl results (30-day TTL), rate limiting
 - **S3/Cloud Storage**: PDF exports, screenshots, report generation
+
+#### User Subscription Tracking
+- Store `subscription_tier` on every `User` (`free`, `pro`, `enterprise`) with Stripe-derived source of truth.
+- Save/load/duplicate project APIs must require `subscription_tier = pro` (or higher) before persisting questionnaire state.
+- Persist `subscription_renewed_at` and `subscription_expires_at` timestamps to support temporary grace periods and auditing.
 
 **Authentication:**
 - **Clerk**: User authentication, multi-tenant support

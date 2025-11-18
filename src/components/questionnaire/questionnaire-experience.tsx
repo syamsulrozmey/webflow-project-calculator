@@ -4,6 +4,7 @@ import {
   type ComponentType,
   type ReactNode,
   type SVGProps,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -39,6 +40,7 @@ import { saveCalculationResult } from "@/lib/calculator/storage";
 import { cn } from "@/lib/utils";
 import { useLatestAnalysis } from "@/hooks/use-latest-analysis";
 import { useAgencyTeamConfig } from "@/hooks/use-agency-team";
+import { useProjects } from "@/hooks/use-projects";
 import {
   buildCrawlSuggestions,
   type CrawlSuggestion,
@@ -52,18 +54,22 @@ import {
   ClipboardList,
   Clock4,
   CloudDownload,
+  CloudUpload,
   HelpCircle,
   Loader2,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CalculationResult } from "@/lib/calculator/types";
+import type { ProjectDetail, ProjectRequestPayload } from "@/lib/projects/types";
 
 interface QuestionnaireExperienceProps {
   entry?: EntryFlow | null;
   userType?: QuestionnaireUserType | null;
   sessionId?: string | null;
+  projectId?: string | null;
 }
 
 interface SectionState {
@@ -78,31 +84,35 @@ export function QuestionnaireExperience({
   entry,
   userType,
   sessionId,
+  projectId,
 }: QuestionnaireExperienceProps) {
   const router = useRouter();
   const [answers, setAnswers] = useState<QuestionnaireAnswerMap>({});
   const [touchedQuestions, setTouchedQuestions] = useState<Record<string, boolean>>({});
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
-  const [skippedQuestions, setSkippedQuestions] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [showAdvancedSections, setShowAdvancedSections] = useState<
-    Record<string, boolean>
-  >({});
-  const [isRestored, setIsRestored] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<EntryFlow | null>(
-    entry ?? null,
-  );
+  const [skippedQuestions, setSkippedQuestions] = useState<Record<string, boolean>>({});
+  const [showAdvancedSections, setShowAdvancedSections] = useState<Record<string, boolean>>({});
+  const [selectedEntry, setSelectedEntry] = useState<EntryFlow | null>(entry ?? null);
   const [selectedUserType, setSelectedUserType] =
     useState<QuestionnaireUserType | null>(userType ?? null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
-    sessionId ?? null,
+    sessionId ?? projectId ?? null,
   );
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
-  const [dismissedSuggestions, setDismissedSuggestions] = useState<
-    Record<string, boolean>
-  >({});
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Record<string, boolean>>({});
+  const [projectTitle, setProjectTitle] = useState("");
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(projectId ?? null);
+  const [projectSyncMessage, setProjectSyncMessage] = useState<string | null>(null);
+  const [projectSyncError, setProjectSyncError] = useState<string | null>(null);
+  const [isProjectSaving, setIsProjectSaving] = useState(false);
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
+  const [isLocalHydrated, setIsLocalHydrated] = useState(false);
+  const [isProjectHydrated, setIsProjectHydrated] = useState(projectId ? false : true);
+  const [isRestored, setIsRestored] = useState(false);
+  const { fetchProjectDetail, createProject, updateProject } = useProjects({
+    autoFetch: false,
+  });
   const {
     state: agencyTeamState,
     summary: agencySummary,
@@ -111,6 +121,29 @@ export function QuestionnaireExperience({
     updateSettings: updateAgencySettings,
     resetState: resetAgencyTeam,
   } = useAgencyTeamConfig(activeSessionId);
+
+  const applyProjectDetail = useCallback(
+    (detail: ProjectDetail) => {
+      const incomingAnswers = detail.answers ?? {};
+      setAnswers(incomingAnswers);
+      setSkippedQuestions({});
+      setShowAdvancedSections({});
+      setTouchedQuestions(deriveTouchedFromAnswers(incomingAnswers));
+      setSelectedEntry(detail.flow);
+      setSelectedUserType(detail.persona ?? null);
+      setActiveProjectId(detail.id);
+      setActiveSessionId(detail.id);
+      setProjectTitle(detail.title);
+      setDismissedSuggestions({});
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (isLocalHydrated && isProjectHydrated) {
+      setIsRestored(true);
+    }
+  }, [isLocalHydrated, isProjectHydrated]);
 
   const markTouched = (questionId: string) => {
     setTouchedQuestions((prev) => {
@@ -172,19 +205,20 @@ export function QuestionnaireExperience({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
-    const incomingSession = sessionId ?? null;
+    const incomingSession = sessionId ?? projectId ?? null;
 
     const hydrateWithDefaults = () => {
       setAnswers({});
       setSkippedQuestions({});
       setShowAdvancedSections({});
       setTouchedQuestions({});
+      setProjectTitle("");
     };
 
     if (!stored) {
       hydrateWithDefaults();
       setActiveSessionId(incomingSession);
-      setIsRestored(true);
+      setIsLocalHydrated(true);
       return;
     }
 
@@ -216,14 +250,58 @@ export function QuestionnaireExperience({
         setSelectedUserType(parsed.userType);
       }
       setActiveSessionId(storedSession ?? incomingSession);
+      if (!projectId && parsed.projectId) {
+        setActiveProjectId(parsed.projectId);
+      }
+      if (parsed.projectTitle) {
+        setProjectTitle(parsed.projectTitle);
+      }
     } catch (error) {
       console.warn("Failed to parse questionnaire state", error);
       hydrateWithDefaults();
       setActiveSessionId(incomingSession);
     } finally {
-      setIsRestored(true);
+      setIsLocalHydrated(true);
     }
-  }, [entry, userType, sessionId]);
+  }, [entry, userType, sessionId, projectId]);
+
+  useEffect(() => {
+    if (!projectId) {
+      setProjectLoadError(null);
+      setIsProjectHydrated(true);
+      return;
+    }
+
+    let cancelled = false;
+    setProjectLoadError(null);
+    setProjectSyncMessage(null);
+    setProjectSyncError(null);
+    setIsProjectHydrated(false);
+
+    fetchProjectDetail(projectId)
+      .then((detail) => {
+        if (cancelled) return;
+        applyProjectDetail(detail);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setProjectLoadError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load this saved project.",
+        );
+        setActiveProjectId(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsProjectHydrated(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, fetchProjectDetail, applyProjectDetail]);
 
   useEffect(() => {
     setDismissedSuggestions({});
@@ -281,6 +359,8 @@ export function QuestionnaireExperience({
       entry: selectedEntry,
       userType: selectedUserType,
       sessionId: activeSessionId,
+      projectId: activeProjectId,
+      projectTitle,
       touched: touchedQuestions,
       timestamp: Date.now(),
     };
@@ -292,6 +372,8 @@ export function QuestionnaireExperience({
     selectedEntry,
     selectedUserType,
     activeSessionId,
+    activeProjectId,
+    projectTitle,
     touchedQuestions,
     isRestored,
   ]);
@@ -306,6 +388,8 @@ export function QuestionnaireExperience({
         entry: selectedEntry,
         userType: selectedUserType,
         sessionId: activeSessionId,
+        projectId: activeProjectId,
+        projectTitle,
         touched: touchedQuestions,
         timestamp: Date.now(),
       };
@@ -321,6 +405,8 @@ export function QuestionnaireExperience({
     showAdvancedSections,
     selectedUserType,
     activeSessionId,
+    activeProjectId,
+    projectTitle,
     touchedQuestions,
   ]);
 
@@ -348,6 +434,7 @@ export function QuestionnaireExperience({
       ? 1
       : totalCompletedRequired / totalRequiredQuestions;
   const canCalculate = overallProgress >= 1 && !isCalculating;
+  const canSyncProject = isRestored && !isProjectSaving;
 
   const handleSingleSelect = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -426,6 +513,10 @@ export function QuestionnaireExperience({
     setShowAdvancedSections({});
     setTouchedQuestions({});
     setActiveSectionIndex(0);
+    setActiveProjectId(null);
+    setProjectTitle("");
+    setProjectSyncMessage(null);
+    setProjectSyncError(null);
   };
 
   const handleCalculate = async () => {
@@ -464,6 +555,73 @@ export function QuestionnaireExperience({
       );
     } finally {
       setIsCalculating(false);
+    }
+  };
+
+  const buildProjectPayload = (): ProjectRequestPayload => {
+    const normalizedTitle =
+      projectTitle.trim().length > 0 ? projectTitle.trim() : "Untitled Project";
+    const hourlyValue = answers.hourly_rate;
+    const hourlyRate =
+      typeof hourlyValue === "number" && !Number.isNaN(hourlyValue)
+        ? hourlyValue
+        : undefined;
+    const rawCurrency = answers.rate_currency;
+    const allowedCurrencies = ["usd", "eur", "gbp"] as const;
+    const currency = allowedCurrencies.includes(rawCurrency as (typeof allowedCurrencies)[number])
+      ? (rawCurrency as ProjectRequestPayload["currency"])
+      : "usd";
+
+    return {
+      title: normalizedTitle,
+      status: "draft",
+      flow: selectedEntry ?? "fresh",
+      persona: selectedUserType ?? null,
+      hourlyRate,
+      currency,
+      notes: undefined,
+      answers,
+    };
+  };
+
+  const updateProjectQueryParams = useCallback(
+    (nextProjectId: string) => {
+      if (typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      params.set("projectId", nextProjectId);
+      params.set("session", nextProjectId);
+      if (selectedEntry) {
+        params.set("entry", selectedEntry);
+      }
+      if (selectedUserType) {
+        params.set("userType", selectedUserType);
+      }
+      router.replace(`/questionnaire?${params.toString()}`, { scroll: false });
+    },
+    [router, selectedEntry, selectedUserType],
+  );
+
+  const handleProjectSync = async () => {
+    setProjectSyncMessage(null);
+    setProjectSyncError(null);
+    setIsProjectSaving(true);
+    const payload = buildProjectPayload();
+    const isUpdate = Boolean(activeProjectId);
+    try {
+      const detail = isUpdate && activeProjectId
+        ? await updateProject(activeProjectId, payload)
+        : await createProject(payload);
+      applyProjectDetail(detail);
+      updateProjectQueryParams(detail.id);
+      setProjectSyncMessage(
+        isUpdate ? "Project updated in workspace." : "Project saved to workspace.",
+      );
+    } catch (error) {
+      setProjectSyncError(
+        error instanceof Error ? error.message : "Unable to sync project.",
+      );
+    } finally {
+      setIsProjectSaving(false);
     }
   };
 
@@ -546,6 +704,67 @@ export function QuestionnaireExperience({
                 <Link href="/onboarding">Back to onboarding</Link>
               </Button>
             </div>
+          </div>
+          <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                  Workspace sync · Pro
+                </p>
+                <input
+                  type="text"
+                  value={projectTitle}
+                  onChange={(event) => setProjectTitle(event.target.value)}
+                  maxLength={140}
+                  placeholder="Client name · scope nickname"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-4 py-3 text-sm text-white outline-none ring-primary/40 transition focus:ring"
+                  disabled={!isRestored}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {activeProjectId
+                    ? `Synced as ${activeProjectId.slice(0, 8)}… — updates are instantly available on your Projects dashboard.`
+                    : "Name this snapshot before saving it to the Projects dashboard."}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button
+                  className="w-full gap-2 sm:w-auto"
+                  onClick={handleProjectSync}
+                  disabled={!canSyncProject}
+                >
+                  {isProjectSaving ? (
+                    <>
+                      Syncing
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      {activeProjectId ? "Update project" : "Save to projects"}
+                      <CloudUpload className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-muted-foreground hover:text-white sm:w-auto"
+                  asChild
+                >
+                  <Link href="/projects">View projects</Link>
+                </Button>
+              </div>
+            </div>
+            {projectSyncMessage && (
+              <p className="text-xs text-emerald-300">{projectSyncMessage}</p>
+            )}
+            {projectSyncError && (
+              <p className="text-xs text-destructive">{projectSyncError}</p>
+            )}
+            {projectLoadError && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                <TriangleAlert className="h-4 w-4" />
+                {projectLoadError}
+              </div>
+            )}
           </div>
           <Stepper
             sections={sectionStates}

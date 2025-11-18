@@ -683,7 +683,7 @@
       "phase": "Phase 1: MVP",
       "title": "Implement basic PDF export functionality",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "estimated_hours": 12,
       "assignee": "Frontend Developer",
       "subtasks": [
@@ -847,26 +847,26 @@
         {
           "id": "features-phase2-2.1",
           "title": "Create projects dashboard UI",
-          "details": "List view of all user's saved projects",
-          "status": "pending"
+          "details": "List view of all Pro users' saved projects with load/duplicate actions gated behind billing status",
+          "status": "completed"
         },
         {
           "id": "features-phase2-2.2",
           "title": "Implement project CRUD API endpoints",
-          "details": "Create, read, update, delete projects",
-          "status": "pending"
+          "details": "Create, read, update, delete projects (Pro-only access enforced via subscription tier)",
+          "status": "completed"
         },
         {
           "id": "features-phase2-2.3",
           "title": "Add edit project functionality",
-          "details": "Allow users to modify saved project answers",
-          "status": "pending"
+          "details": "Allow Pro users to modify saved project answers",
+          "status": "completed"
         },
         {
           "id": "features-phase2-2.4",
           "title": "Add duplicate project functionality",
-          "details": "Clone existing project for similar new estimate",
-          "status": "pending"
+          "details": "Clone existing project for similar new estimate (Pro tier only)",
+          "status": "completed"
         }
       ]
     },
