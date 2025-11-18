@@ -80,6 +80,18 @@ interface SectionState {
   completionRatio: number;
 }
 
+const CURRENCY_DISPLAY = {
+  usd: { symbol: "$", code: "USD" },
+  eur: { symbol: "€", code: "EUR" },
+  gbp: { symbol: "£", code: "GBP" },
+} as const;
+
+type CurrencyDisplayKey = keyof typeof CURRENCY_DISPLAY;
+
+function isCurrencyDisplayKey(value: string): value is CurrencyDisplayKey {
+  return value in CURRENCY_DISPLAY;
+}
+
 export function QuestionnaireExperience({
   entry,
   userType,
@@ -201,6 +213,13 @@ export function QuestionnaireExperience({
       return acc;
     }, {});
   }, [rawSuggestions, dismissedSuggestions]);
+  const hasTouchedHourlyRate = Boolean(touchedQuestions["hourly_rate"]);
+  const selectedCurrencyAnswer = answers["rate_currency"];
+  const selectedCurrencyKey: CurrencyDisplayKey =
+    typeof selectedCurrencyAnswer === "string" && isCurrencyDisplayKey(selectedCurrencyAnswer)
+      ? selectedCurrencyAnswer
+      : "usd";
+  const selectedCurrencyDisplay = CURRENCY_DISPLAY[selectedCurrencyKey];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -310,18 +329,19 @@ export function QuestionnaireExperience({
   useEffect(() => {
     if (selectedUserType !== "agency") return;
     if (!agencySummary?.recommendedBillableRate) return;
-    if (touchedQuestions.hourly_rate) return;
+    if (hasTouchedHourlyRate) return;
     setAnswers((prev) => {
       const recommended = Math.round(agencySummary.recommendedBillableRate);
-      if (typeof prev.hourly_rate === "number" && prev.hourly_rate === recommended) {
+      const currentValue = prev["hourly_rate"];
+      if (typeof currentValue === "number" && currentValue === recommended) {
         return prev;
       }
-      return { ...prev, hourly_rate: recommended };
+      return { ...prev, ["hourly_rate"]: recommended };
     });
   }, [
     selectedUserType,
     agencySummary?.recommendedBillableRate,
-    touchedQuestions.hourly_rate,
+    hasTouchedHourlyRate,
   ]);
 
   useEffect(() => {
@@ -524,12 +544,15 @@ export function QuestionnaireExperience({
     setIsCalculating(true);
     setCalculationError(null);
     try {
-      const { input, metadata } = buildCalculationPayload({
+      const calculationOptions: Parameters<typeof buildCalculationPayload>[0] = {
         answers,
         entry: selectedEntry,
         userType: selectedUserType,
-        agencySummary: selectedUserType === "agency" ? agencySummary : undefined,
-      });
+      };
+      if (selectedUserType === "agency" && agencySummary) {
+        calculationOptions.agencySummary = agencySummary;
+      }
+      const { input, metadata } = buildCalculationPayload(calculationOptions);
       const response = await fetch("/api/calculations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -561,27 +584,27 @@ export function QuestionnaireExperience({
   const buildProjectPayload = (): ProjectRequestPayload => {
     const normalizedTitle =
       projectTitle.trim().length > 0 ? projectTitle.trim() : "Untitled Project";
-    const hourlyValue = answers.hourly_rate;
+    const hourlyValue = answers["hourly_rate"];
     const hourlyRate =
       typeof hourlyValue === "number" && !Number.isNaN(hourlyValue)
         ? hourlyValue
-        : undefined;
-    const rawCurrency = answers.rate_currency;
+        : null;
+    const rawCurrency = answers["rate_currency"];
     const allowedCurrencies = ["usd", "eur", "gbp"] as const;
     const currency = allowedCurrencies.includes(rawCurrency as (typeof allowedCurrencies)[number])
       ? (rawCurrency as ProjectRequestPayload["currency"])
       : "usd";
 
-    return {
+    const payload: ProjectRequestPayload = {
       title: normalizedTitle,
       status: "draft",
       flow: selectedEntry ?? "fresh",
       persona: selectedUserType ?? null,
       hourlyRate,
       currency,
-      notes: undefined,
       answers,
     };
+    return payload;
   };
 
   const updateProjectQueryParams = useCallback(
@@ -660,6 +683,43 @@ export function QuestionnaireExperience({
   ];
 
   const hasAdvancedQuestions = activeSectionState.advancedQuestions.length > 0;
+  const SectionIcon = activeSectionState.section.icon;
+  const isTimelineSection = activeSectionState.section.id === "timeline";
+  const timelineQuestionIds = new Set(["hourly_rate", "rate_currency"]);
+  const timelineHourlyQuestion = isTimelineSection
+    ? displayedQuestions.find((question) => question.id === "hourly_rate")
+    : undefined;
+  const timelineCurrencyQuestion = isTimelineSection
+    ? displayedQuestions.find((question) => question.id === "rate_currency")
+    : undefined;
+  const questionsToRender = isTimelineSection
+    ? displayedQuestions.filter((question) => !timelineQuestionIds.has(question.id))
+    : displayedQuestions;
+  const canShowAgencyConfigurator =
+    isTimelineSection && selectedUserType === "agency" && agencySummary;
+  const shouldShowTimelineEconomicsCard =
+    isTimelineSection &&
+    (timelineHourlyQuestion || timelineCurrencyQuestion || canShowAgencyConfigurator);
+
+  const buildQuestionCardProps = (question: QuestionDefinition) => ({
+    question,
+    answer: answers[question.id],
+    onSingleSelect: handleSingleSelect,
+    onMultiSelect: handleMultiSelect,
+    onScaleChange: handleScaleChange,
+    onToggle: handleToggle,
+    onTextChange: handleTextChange,
+    onSkip: handleSkipQuestion,
+    skipped: skippedQuestions[question.id],
+    suggestion: suggestionMap[question.id],
+    onAcceptSuggestion: handleApplySuggestion,
+    onDismissSuggestion: handleDismissSuggestion,
+    touched: Boolean(touchedQuestions[question.id]),
+  });
+
+  const renderQuestionCard = (question: QuestionDefinition) => (
+    <QuestionCard key={question.id} {...buildQuestionCardProps(question)} />
+  );
 
   return (
     <div className="space-y-8">
@@ -778,7 +838,7 @@ export function QuestionnaireExperience({
         <Card className="border-white/5 bg-white/[0.02]">
           <CardHeader className="flex flex-col gap-4 border-b border-white/5 pb-6">
             <div className="flex items-center gap-3">
-              <activeSectionState.section.icon className="h-5 w-5 text-primary" />
+              <SectionIcon className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
                   {activeSectionState.section.badge}
@@ -804,29 +864,47 @@ export function QuestionnaireExperience({
             </div>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            {displayedQuestions.length === 0 ? (
+            {shouldShowTimelineEconomicsCard ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {timelineHourlyQuestion && (
+                    <QuestionCard
+                      key={timelineHourlyQuestion.id}
+                      {...buildQuestionCardProps(timelineHourlyQuestion)}
+                      className="rounded-none border-none bg-transparent p-0 shadow-none"
+                    />
+                  )}
+                  {timelineCurrencyQuestion && (
+                    <QuestionCard
+                      key={timelineCurrencyQuestion.id}
+                      {...buildQuestionCardProps(timelineCurrencyQuestion)}
+                      className="rounded-none border-none bg-transparent p-0 shadow-none"
+                    />
+                  )}
+                </div>
+                {canShowAgencyConfigurator && agencySummary && (
+                  <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-1 sm:p-2">
+                    <AgencyTeamConfigurator
+                      state={agencyTeamState}
+                      summary={agencySummary}
+                      onUpsert={upsertMember}
+                      onRemove={removeMember}
+                      onReset={resetAgencyTeam}
+                      onSettingsChange={updateAgencySettings}
+                      variant="embedded"
+                      currencySymbol={selectedCurrencyDisplay.symbol}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {questionsToRender.length === 0 && !shouldShowTimelineEconomicsCard ? (
               <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-muted-foreground">
                 No questions to show yet. Adjust previous answers or reveal advanced prompts.
               </div>
             ) : (
-              displayedQuestions.map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  answer={answers[question.id]}
-                  onSingleSelect={handleSingleSelect}
-                  onMultiSelect={handleMultiSelect}
-                  onScaleChange={handleScaleChange}
-                  onToggle={handleToggle}
-                  onTextChange={handleTextChange}
-                  onSkip={handleSkipQuestion}
-                  skipped={skippedQuestions[question.id]}
-                  suggestion={suggestionMap[question.id]}
-                  onAcceptSuggestion={handleApplySuggestion}
-                  onDismissSuggestion={handleDismissSuggestion}
-                  touched={Boolean(touchedQuestions[question.id])}
-                />
-              ))
+              questionsToRender.map((question) => renderQuestionCard(question))
             )}
 
             {hasAdvancedQuestions && !showAdvancedSections[activeSectionState.section.id] && (
@@ -884,17 +962,6 @@ export function QuestionnaireExperience({
               </div>
             )}
 
-            {selectedUserType === "agency" &&
-              activeSectionState.section.id === "timeline" && (
-                <AgencyTeamConfigurator
-                  state={agencyTeamState}
-                  summary={agencySummary}
-                  onUpsert={upsertMember}
-                  onRemove={removeMember}
-                  onReset={resetAgencyTeam}
-                  onSettingsChange={updateAgencySettings}
-                />
-              )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <Button
@@ -943,6 +1010,9 @@ export function QuestionnaireExperience({
                 </>
               )}
             </Button>
+            {isLastSection && calculationError && (
+              <p className="w-full text-center text-sm text-destructive">{calculationError}</p>
+            )}
           </CardFooter>
         </Card>
 
@@ -965,35 +1035,6 @@ export function QuestionnaireExperience({
                 </li>
               ))}
             </ul>
-          </InsightCard>
-
-          <InsightCard kicker="Next step" title="Ready for calculation?" icon={Sparkles}>
-            <Button
-              className="mt-3 w-full gap-2"
-              variant="outline"
-              disabled={!canCalculate}
-              onClick={handleCalculate}
-            >
-              {isCalculating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Calculating…
-                </>
-              ) : (
-                <>
-                  Calculate project cost
-                  <Sparkles className="h-4 w-4 text-primary" />
-                </>
-              )}
-            </Button>
-            {overallProgress < 1 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Answer all required questions to unlock the calculator.
-              </p>
-            )}
-            {calculationError && (
-              <p className="mt-2 text-xs text-destructive">{calculationError}</p>
-            )}
           </InsightCard>
 
           <InsightCard kicker="Reminder" title="Timeline tips" icon={Clock4}>
@@ -1058,6 +1099,7 @@ function QuestionCard({
   skipped,
   suggestion,
   touched,
+  className,
   onSingleSelect,
   onMultiSelect,
   onScaleChange,
@@ -1072,6 +1114,7 @@ function QuestionCard({
   skipped?: boolean;
   suggestion?: CrawlSuggestion;
   touched: boolean;
+  className?: string;
   onSingleSelect: (id: string, value: string) => void;
   onMultiSelect: (id: string, value: string) => void;
   onScaleChange: (id: string, value: number) => void;
@@ -1093,6 +1136,7 @@ function QuestionCard({
         suggestionPending
           ? "border-primary/60 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.25)] animate-pulse-glow"
           : "border-white/10",
+        className,
       )}
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -1242,15 +1286,27 @@ function renderByType(
   switch (question.type) {
     case "single":
       return (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div
+          className={cn(
+            "grid gap-3",
+            question.id === "rate_currency" ? "sm:grid-cols-3" : "md:grid-cols-2",
+          )}
+        >
           {question.options?.map((option) => {
             const currentAnswer = touched ? answer : undefined;
             const isSelected = currentAnswer === option.value;
+            const isCurrencyQuestion = question.id === "rate_currency";
+            const currencyDisplay =
+              isCurrencyQuestion && typeof option.value === "string" && isCurrencyDisplayKey(option.value)
+                ? CURRENCY_DISPLAY[option.value]
+                : undefined;
+            const buttonAriaLabel = isCurrencyQuestion ? option.label : undefined;
             return (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handlers.onSingleSelect(question.id, option.value)}
+                aria-label={buttonAriaLabel}
                 className={cn(
                   "rounded-xl border px-4 py-3 text-left transition",
                   isSelected
@@ -1258,9 +1314,19 @@ function renderByType(
                     : "border-white/10 hover:border-white/30",
                 )}
               >
-                <p className="text-sm font-medium text-white">{option.label}</p>
-                {option.description && (
-                  <p className="text-xs text-muted-foreground">{option.description}</p>
+                {currencyDisplay ? (
+                  <div className="flex items-center justify-center">
+                    <span className="text-xl font-semibold text-white">
+                      {currencyDisplay.symbol}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-white">{option.label}</p>
+                    {option.description && (
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    )}
+                  </>
                 )}
                 {option.badge && (
                   <span className="mt-2 inline-block rounded-full border border-white/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
@@ -1406,4 +1472,3 @@ function InsightCard({
     </Card>
   );
 }
-

@@ -19,6 +19,9 @@ interface AgencyTeamConfiguratorProps {
   state: AgencyTeamState;
   summary: AgencyRateSummary;
   hidden?: boolean;
+  variant?: "default" | "embedded";
+  className?: string;
+  currencySymbol?: string;
   onUpsert: (member: AgencyTeamMember) => void;
   onRemove: (id: string) => void;
   onReset: () => void;
@@ -29,20 +32,34 @@ export function AgencyTeamConfigurator({
   state,
   summary,
   hidden,
+  variant = "default",
+  className,
+  currencySymbol,
   onUpsert,
   onRemove,
   onReset,
   onSettingsChange,
 }: AgencyTeamConfiguratorProps) {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const displayCurrencySymbol = currencySymbol ?? "$";
 
   if (hidden) {
     return null;
   }
 
   return (
-    <Card className="border-primary/40 bg-primary/5">
-      <CardHeader>
+    <Card
+      className={cn(
+        "border-primary/40 bg-primary/5",
+        variant === "embedded" && "border-none bg-transparent p-0 shadow-none",
+        className,
+      )}
+    >
+      <CardHeader
+        className={cn(
+          variant === "embedded" ? "px-0 pt-0 pb-0 md:pb-2" : undefined,
+        )}
+      >
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-primary">Agency economics</p>
@@ -55,19 +72,26 @@ export function AgencyTeamConfigurator({
             <p>
               Internal:{" "}
               <span className="font-semibold text-white">
-                ${summary.blendedCostRate.toFixed(2)} / hr
+                {displayCurrencySymbol}
+                {summary.blendedCostRate.toFixed(2)} / hr
               </span>
             </p>
             <p>
               Client quote:{" "}
               <span className="font-semibold text-white">
-                ${summary.recommendedBillableRate.toFixed(2)} / hr
+                {displayCurrencySymbol}
+                {summary.recommendedBillableRate.toFixed(2)} / hr
               </span>
             </p>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent
+        className={cn(
+          "space-y-6",
+          variant === "embedded" && "px-0 pb-0 pt-4 sm:pt-6",
+        )}
+      >
         <div className="grid gap-4 md:grid-cols-3">
           <Metric label="Members" value={`${summary.memberCount}`} helper="Delivery roles" />
           <Metric
@@ -134,9 +158,13 @@ export function AgencyTeamConfigurator({
                     variant="outline"
                     size="sm"
                     className="gap-1 border-white/20"
-                    onClick={() => setEditingMemberId(member.id)}
+                    onClick={() =>
+                      setEditingMemberId((current) =>
+                        current === member.id ? null : member.id,
+                      )
+                    }
                   >
-                    Edit
+                    {editingMemberId === member.id ? "Done" : "Edit"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -153,13 +181,13 @@ export function AgencyTeamConfigurator({
                 <div className="mt-4 grid gap-4 md:grid-cols-4">
                   <Field
                     label="Cost rate"
-                    prefix="$"
+                    prefix={displayCurrencySymbol}
                     value={member.costRate}
                     onChange={(value) => onUpsert({ ...member, costRate: value })}
                   />
                   <Field
                     label="Billable rate"
-                    prefix="$"
+                    prefix={displayCurrencySymbol}
                     value={member.billableRate ?? 0}
                     onChange={(value) => onUpsert({ ...member, billableRate: value })}
                   />

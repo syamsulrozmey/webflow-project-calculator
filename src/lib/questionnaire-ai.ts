@@ -105,6 +105,11 @@ export function buildAiSummaryPayload(
     summaryParts.push(`Content plan: ${contentSupport}`);
   }
 
+  const hostingStrategy = getOptionLabel("hosting_strategy", answers.hosting_strategy as string);
+  if (hostingStrategy) {
+    summaryParts.push(`Hosting: ${hostingStrategy}`);
+  }
+
   const seoSupport = getOptionLabel("seo_support", answers.seo_support as string);
   if (seoSupport) {
     summaryParts.push(`SEO: ${seoSupport}`);
@@ -117,9 +122,34 @@ export function buildAiSummaryPayload(
     missing.push("Timeline urgency");
   }
 
+  const deadlineConfidence = getOptionLabel(
+    "deadline_confidence",
+    answers.deadline_confidence as string,
+  );
+  if (deadlineConfidence) {
+    constraints.push(`Deadline: ${deadlineConfidence}`);
+  }
+
+  if (typeof answers.review_cycles === "number") {
+    signals.reviewCycles = answers.review_cycles;
+  }
+
   const maintenancePlan = getOptionLabel("maintenance_plan", answers.maintenance_plan as string);
   if (maintenancePlan) {
     constraints.push(`Maintenance: ${maintenancePlan}`);
+  }
+
+  const maintenanceCadence = getOptionLabel(
+    "maintenance_cadence",
+    answers.maintenance_cadence as string,
+  );
+  if (maintenanceCadence) {
+    constraints.push(`Maintenance cadence: ${maintenanceCadence}`);
+  }
+
+  const maintenanceOwner = getOptionLabel("maintenance_owner", answers.maintenance_owner as string);
+  if (maintenanceOwner) {
+    constraints.push(`Maintenance owner: ${maintenanceOwner}`);
   }
 
   if (typeof answers.page_volume === "number") {
@@ -138,6 +168,11 @@ export function buildAiSummaryPayload(
 
   if (typeof answers.stakeholders === "number") {
     signals.approvers = answers.stakeholders;
+  }
+
+  const hostingNotes = typeof answers.hosting_notes === "string" ? answers.hosting_notes : null;
+  if (hostingNotes) {
+    summaryParts.push(`Hosting notes captured`);
   }
 
   const integrationTargets = listOptions(
@@ -159,6 +194,24 @@ export function buildAiSummaryPayload(
   );
   if (performanceTargets.length) {
     constraints.push(...performanceTargets.map((item) => `Performance: ${item}`));
+  }
+
+  const securityPosture = getOptionLabel("security_posture", answers.security_posture as string);
+  if (securityPosture) {
+    constraints.push(`Security: ${securityPosture}`);
+  }
+
+  const accessibilityTarget = getOptionLabel(
+    "accessibility_target",
+    answers.accessibility_target as string,
+  );
+  if (accessibilityTarget) {
+    constraints.push(`Accessibility: ${accessibilityTarget}`);
+  }
+
+  const browserSupport = listOptions("browser_support", answers.browser_support as string[]);
+  if (browserSupport.length) {
+    constraints.push(...browserSupport.map((item) => `Browser/device: ${item}`));
   }
 
   const summary = summaryParts.join(". ");

@@ -324,6 +324,18 @@ export const questionnaireSections: QuestionnaireSection[] = [
     badge: "Technical",
     questions: [
       {
+        id: "hosting_strategy",
+        title: "Hosting & deployment posture",
+        type: "single",
+        options: [
+          { value: "webflow_core", label: "Webflow core hosting" },
+          { value: "webflow_enterprise", label: "Webflow Enterprise" },
+          { value: "hybrid", label: "Hybrid (reverse proxy / multi-host)" },
+          { value: "custom_stack", label: "Custom stack / other CMS" },
+        ],
+        defaultValue: "webflow_core",
+      },
+      {
         id: "seo_support",
         title: "SEO support scope",
         type: "single",
@@ -350,6 +362,19 @@ export const questionnaireSections: QuestionnaireSection[] = [
         ],
       },
       {
+        id: "security_posture",
+        title: "Security posture expectations",
+        type: "single",
+        options: [
+          { value: "standard", label: "Standard SSL + role-based access" },
+          { value: "sso", label: "SSO / enforced MFA" },
+          { value: "enterprise", label: "Enterprise review + pen-test" },
+          { value: "regulated", label: "Regulated industry controls" },
+        ],
+        defaultValue: "standard",
+        advanced: true,
+      },
+      {
         id: "compliance_needs",
         title: "Compliance frameworks",
         type: "multi",
@@ -360,6 +385,32 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "soc2", label: "SOC 2" },
           { value: "other", label: "Other / custom" },
         ],
+      },
+      {
+        id: "accessibility_target",
+        title: "Accessibility target",
+        type: "single",
+        options: [
+          { value: "wcag_a", label: "WCAG A" },
+          { value: "wcag_aa", label: "WCAG AA" },
+          { value: "wcag_aaa", label: "WCAG AAA" },
+          { value: "custom", label: "Custom accessibility plan" },
+        ],
+        defaultValue: "wcag_aa",
+        advanced: true,
+      },
+      {
+        id: "browser_support",
+        title: "Browser & device support",
+        type: "multi",
+        helper: "Select any requirements beyond evergreen browsers.",
+        options: [
+          { value: "legacy_safari", label: "Legacy Safari / iOS 14" },
+          { value: "ie_mode", label: "IE mode / legacy Edge" },
+          { value: "android_low", label: "Low-end Android devices" },
+          { value: "desktop_kiosk", label: "Desktop kiosks / large displays" },
+        ],
+        advanced: true,
       },
       {
         id: "hosting_notes",
@@ -411,8 +462,35 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "relaxed", label: "Flexible / ASAP" },
           { value: "standard", label: "4-8 weeks" },
           { value: "rush", label: "Need rush delivery (<4 weeks)" },
+          { value: "critical", label: "Non-negotiable launch date" },
         ],
         defaultValue: "standard",
+      },
+      {
+        id: "deadline_confidence",
+        title: "How firm is that launch date?",
+        description: "Clarify slip tolerance so we can plan contingency buffers.",
+        type: "single",
+        options: [
+          { value: "fixed", label: "Fixed go-live date" },
+          { value: "target_window", label: "Target month/quarter" },
+          { value: "flexible", label: "Flexible, milestone-driven" },
+        ],
+        defaultValue: "target_window",
+      },
+      {
+        id: "review_cycles",
+        title: "Expected stakeholder review cycles",
+        type: "scale",
+        min: 1,
+        max: 6,
+        step: 1,
+        helper: "Count full review + feedback loops needed before launch.",
+        defaultsByUserType: {
+          freelancer: 2,
+          agency: 3,
+          company: 4,
+        },
       },
       {
         id: "stakeholders",
@@ -438,6 +516,30 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "retainer", label: "Ongoing retainer (6+ months)" },
         ],
         defaultValue: "support",
+      },
+      {
+        id: "maintenance_cadence",
+        title: "How often should updates happen?",
+        type: "single",
+        helper: "Think content refreshes, CMS tweaks, or feature iterations.",
+        options: [
+          { value: "ad_hoc", label: "Ad-hoc / as requested" },
+          { value: "monthly", label: "Monthly iteration cycle" },
+          { value: "quarterly", label: "Quarterly refresh" },
+          { value: "weekly", label: "Weekly or sprint-based" },
+        ],
+        defaultValue: "monthly",
+      },
+      {
+        id: "maintenance_owner",
+        title: "Who owns maintenance?",
+        type: "single",
+        options: [
+          { value: "client_team", label: "Client team handles updates" },
+          { value: "shared", label: "Shared responsibility" },
+          { value: "provider", label: "Our team maintains everything" },
+        ],
+        defaultValue: "shared",
       },
       {
         id: "training_needs",

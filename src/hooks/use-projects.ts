@@ -150,4 +150,3 @@ function summarize(detail: ProjectDetail): ProjectSummary {
   const { answers: _answers, ...summary } = detail;
   return summary;
 }
-

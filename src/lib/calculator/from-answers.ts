@@ -21,6 +21,53 @@ const PROJECT_TYPE_MAP: Record<string, ProjectType> = {
   webapp: "web_app",
 };
 
+const DEADLINE_LABELS: Record<string, string> = {
+  fixed: "Fixed go-live date",
+  target_window: "Target month/quarter",
+  flexible: "Flexible milestone window",
+};
+
+const MAINTENANCE_CADENCE_LABELS: Record<string, string> = {
+  ad_hoc: "Ad-hoc",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  weekly: "Weekly / sprint-based",
+};
+
+const MAINTENANCE_OWNER_LABELS: Record<string, string> = {
+  client_team: "Client-owned",
+  shared: "Shared responsibility",
+  provider: "Provider-owned",
+};
+
+const HOSTING_STRATEGY_LABELS: Record<string, string> = {
+  webflow_core: "Webflow core hosting",
+  webflow_enterprise: "Webflow Enterprise",
+  hybrid: "Hybrid / reverse proxy",
+  custom_stack: "Custom stack",
+};
+
+const SECURITY_POSTURE_LABELS: Record<string, string> = {
+  standard: "Standard SSL + RBAC",
+  sso: "SSO / enforced MFA",
+  enterprise: "Enterprise review + pen-test",
+  regulated: "Regulated controls",
+};
+
+const ACCESSIBILITY_TARGET_LABELS: Record<string, string> = {
+  wcag_a: "WCAG A",
+  wcag_aa: "WCAG AA",
+  wcag_aaa: "WCAG AAA",
+  custom: "Custom accessibility plan",
+};
+
+const BROWSER_SUPPORT_LABELS: Record<string, string> = {
+  legacy_safari: "Legacy Safari / iOS 14",
+  ie_mode: "IE mode / legacy Edge",
+  android_low: "Low-end Android devices",
+  desktop_kiosk: "Desktop kiosks / large displays",
+};
+
 const DEFAULT_TIER: Record<ProjectType, TierLookup> = {
   landing_page: "moderate",
   small_business: "standard",
@@ -128,9 +175,33 @@ function mapTechnicalMultiplier(
   const performance = asStringArray(answers.performance_targets);
   const compliance = asStringArray(answers.compliance_needs);
   const hasIntegrations = asStringArray(answers.feature_stack).includes("integrations");
-  if (compliance.length > 0) return "regulated";
-  if (hasIntegrations || performance.length >= 2) return "complex";
-  if (performance.length === 1) return "integrations";
+  const security = asString(answers.security_posture);
+  const accessibility = asString(answers.accessibility_target);
+  const browserSupport = asStringArray(answers.browser_support);
+
+  if (compliance.length > 0 || security === "regulated") {
+    return "regulated";
+  }
+
+  if (
+    hasIntegrations ||
+    performance.length >= 2 ||
+    security === "enterprise" ||
+    accessibility === "wcag_aaa" ||
+    browserSupport.length >= 2
+  ) {
+    return "complex";
+  }
+
+  if (
+    performance.length === 1 ||
+    security === "sso" ||
+    accessibility === "wcag_aa" ||
+    browserSupport.length === 1
+  ) {
+    return "integrations";
+  }
+
   return "basic";
 }
 
@@ -146,10 +217,41 @@ function mapTimelineMultiplier(
 
 function mapMaintenanceLevel(answers: QuestionnaireAnswerMap): MaintenanceLevel {
   const value = asString(answers.maintenance_plan);
-  if (value === "handoff") return "none";
-  if (value === "support") return "light";
-  if (value === "retainer") return "retainer";
-  return "standard";
+  const cadence = asString(answers.maintenance_cadence);
+  const owner = asString(answers.maintenance_owner);
+
+  let level: MaintenanceLevel;
+  switch (value) {
+    case "handoff":
+      level = "none";
+      break;
+    case "support":
+      level = "light";
+      break;
+    case "retainer":
+      level = "retainer";
+      break;
+    default:
+      level = "standard";
+  }
+
+  if (cadence === "weekly" || owner === "provider") {
+    return "retainer";
+  }
+
+  if (cadence === "monthly" && level === "light") {
+    level = "standard";
+  }
+
+  if (cadence === "quarterly" && level === "none") {
+    level = "light";
+  }
+
+  if (cadence === "ad_hoc" && owner === "client_team") {
+    level = "none";
+  }
+
+  return level;
 }
 
 function buildAssumptions(answers: QuestionnaireAnswerMap): string | undefined {
@@ -165,6 +267,51 @@ function buildAssumptions(answers: QuestionnaireAnswerMap): string | undefined {
   const integrationTargets = asStringArray(answers.integration_targets);
   if (integrationTargets.length > 0) {
     notes.push(`Integrations: ${integrationTargets.join(", ")}`);
+  }
+  const hostingStrategy = asString(answers.hosting_strategy);
+  if (hostingStrategy) {
+    notes.push(`Hosting strategy: ${HOSTING_STRATEGY_LABELS[hostingStrategy] ?? hostingStrategy}`);
+  }
+  const securityPosture = asString(answers.security_posture);
+  if (securityPosture) {
+    notes.push(
+      `Security posture: ${SECURITY_POSTURE_LABELS[securityPosture] ?? securityPosture}`,
+    );
+  }
+  const accessibilityTarget = asString(answers.accessibility_target);
+  if (accessibilityTarget) {
+    notes.push(
+      `Accessibility target: ${
+        ACCESSIBILITY_TARGET_LABELS[accessibilityTarget] ?? accessibilityTarget
+      }`,
+    );
+  }
+  const browserSupport = asStringArray(answers.browser_support)
+    .map((value) => BROWSER_SUPPORT_LABELS[value] ?? value)
+    .filter(Boolean);
+  if (browserSupport.length > 0) {
+    notes.push(`Browser/device support: ${browserSupport.join(", ")}`);
+  }
+  const deadlineConfidence = asString(answers.deadline_confidence);
+  if (deadlineConfidence) {
+    notes.push(`Deadline firmness: ${DEADLINE_LABELS[deadlineConfidence] ?? deadlineConfidence}`);
+  }
+  if (typeof answers.review_cycles === "number") {
+    notes.push(`Review cycles: ${answers.review_cycles}`);
+  }
+  const maintenanceCadence = asString(answers.maintenance_cadence);
+  if (maintenanceCadence) {
+    notes.push(
+      `Maintenance cadence: ${
+        MAINTENANCE_CADENCE_LABELS[maintenanceCadence] ?? maintenanceCadence
+      }`,
+    );
+  }
+  const maintenanceOwner = asString(answers.maintenance_owner);
+  if (maintenanceOwner) {
+    notes.push(
+      `Maintenance owner: ${MAINTENANCE_OWNER_LABELS[maintenanceOwner] ?? maintenanceOwner}`,
+    );
   }
   if (notes.length === 0) {
     return undefined;

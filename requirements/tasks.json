@@ -840,7 +840,7 @@
       "title": "Implement save/load projects functionality",
       "priority": "high",
       "estimated_hours": 16,
-      "status": "pending",
+      "status": "completed",
       "assignee": "Frontend Developer + Backend Engineer",
       "dependencies": ["database-1", "auth-1"],
       "subtasks": [
@@ -883,20 +883,20 @@
         {
           "id": "features-phase2-3.1",
           "title": "Add timeline/urgency questions",
-          "details": "When does project need to launch? Rush or standard?",
-          "status": "pending"
+          "details": "Capture expanded urgency tiers (incl. critical), deadline firmness, and review cycle expectations",
+          "status": "completed"
         },
         {
           "id": "features-phase2-3.2",
           "title": "Add maintenance requirements questions",
-          "details": "Ongoing updates frequency, support needs",
-          "status": "pending"
+          "details": "Surface maintenance plan + cadence + ownership to drive deterministic maintenance multipliers",
+          "status": "completed"
         },
         {
           "id": "features-phase2-3.3",
           "title": "Add technical specifications section",
-          "details": "Hosting requirements, SEO needs, security",
-          "status": "pending"
+          "details": "Add hosting posture, security/accessibility tiers, and browser support requirements",
+          "status": "completed"
         }
       ]
     },

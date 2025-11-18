@@ -190,16 +190,17 @@ Three distinct user types with tailored experiences:
    - Multi-language support
 
 4. **Technical Specifications**
-   - Hosting requirements (shared, VPS, dedicated, cloud)
+   - Hosting requirements (Webflow core vs enterprise, hybrid, reverse proxy)
    - SEO setup (keyword research, on-page optimization, technical SEO)
-   - Security needs (SSL, security audit, compliance)
-   - Accessibility standards (WCAG compliance level)
+   - Security needs (SSL, SSO, pen-test, compliance tiers)
+   - Accessibility standards (WCAG compliance level expectations)
    - Performance requirements
-   - Browser support requirements
+   - Browser/device support expectations
 
 5. **Project Parameters**
-   - Timeline/rush requirements
-   - Ongoing maintenance needs
+   - Timeline urgency tiers (flexible, standard, rush, critical)
+   - Deadline firmness + approval/feedback cadence
+   - Ongoing maintenance expectations (plan vs cadence/ownership)
    - Content updates frequency
    - Training requirements
    - Documentation needs
