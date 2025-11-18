@@ -109,8 +109,14 @@ Visit `http://localhost:3000` to view the marketing placeholder and start buildi
 
 - `/results` renders the MVP cost breakdown surface built in `src/components/results/results-experience.tsx`.
 - Data falls back to `getDemoCalculation()` but is now automatically replaced after finishing `/questionnaire`.
-- Features: total cost hero, detailed vs tiered breakdown toggle, expandable line items, visual timeline (gantt/phases), AI insight highlights, profit-margin slider, currency-aware formatting, and share link shortcut.
+- Features: total cost hero, detailed vs tiered breakdown toggle, expandable line items, visual timeline (gantt/phases), AI insight highlights, profit-margin slider, currency-aware formatting, share link shortcut, and PDF export.
 - Extend `src/lib/demo/calculation.ts` or wire additional flows (e.g., `/analysis`) to feed live project data.
+
+### Export & Sharing
+
+- Basic PDF exports are powered by `pdf-lib` under `src/lib/export`. `basic-template.ts` normalizes calculation results into shareable sections, and `basic-pdf.ts` renders the watermark, summary grid, breakdown table, timeline, and scope notes.
+- Free tier exports apply a `Webflow Calculator · Free Tier` watermark. Use `localStorage.setItem("wpc-feature-tier", "pro")` or set `NEXT_PUBLIC_FEATURE_TIER=pro` in `.env.local` to preview Pro formatting (no watermark + branding hooks).
+- The Results surface now exposes a `Download PDF` action that streams the generated blob to the browser for instant sharing.
 
 ### Project Structure
 

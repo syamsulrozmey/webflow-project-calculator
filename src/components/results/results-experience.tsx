@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 import type { CalculationResult, LineItem } from "@/lib/calculator/types";
 import { loadCalculationResult, type CalculationMeta } from "@/lib/calculator/storage";
 import type { AgencyRateSummary } from "@/lib/agency/types";
+import { generateBasicPdfReport } from "@/lib/export/basic-pdf";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -22,6 +23,8 @@ import {
   ChevronUp,
   ClipboardCheck,
   Clock3,
+  FileDown,
+  Loader2,
   Share2,
   Sparkles,
   Users,
@@ -56,7 +59,10 @@ export function ResultsExperience({
   const [viewMode, setViewMode] = useState<ViewMode>("detailed");
   const [timelineView, setTimelineView] = useState<TimelineView>("gantt");
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<"idle" | "success" | "error">("idle");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const exportStatusTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -103,6 +109,67 @@ export function ResultsExperience({
     }
   }, []);
 
+  const scheduleExportStatusReset = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (exportStatusTimeout.current) {
+      window.clearTimeout(exportStatusTimeout.current);
+    }
+    exportStatusTimeout.current = window.setTimeout(() => {
+      setExportStatus("idle");
+      exportStatusTimeout.current = null;
+    }, 3200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (exportStatusTimeout.current) {
+        window.clearTimeout(exportStatusTimeout.current);
+      }
+    };
+  }, []);
+
+  const handleExportPdf = useCallback(async () => {
+    if (isExporting || typeof window === "undefined") return;
+    setIsExporting(true);
+    try {
+      const pdfBytes = await generateBasicPdfReport({
+        result: adjustedResult,
+        meta: { ...meta, margin },
+        source: resultSource,
+      });
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = buildExportFileName(adjustedResult);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportStatus("success");
+    } catch (error) {
+      console.error("Failed to export PDF", error);
+      setExportStatus("error");
+    } finally {
+      setIsExporting(false);
+      scheduleExportStatusReset();
+    }
+  }, [adjustedResult, meta, margin, resultSource, isExporting, scheduleExportStatusReset]);
+
+  const exportButtonLabel = useMemo(() => {
+    if (isExporting) return "Generating…";
+    if (exportStatus === "success") return "PDF saved";
+    if (exportStatus === "error") return "Retry export";
+    return "Download PDF";
+  }, [exportStatus, isExporting]);
+
+  const exportFeedback =
+    exportStatus === "error"
+      ? "Export failed. Please retry."
+      : exportStatus === "success"
+        ? "PDF downloaded to your device."
+        : null;
+
   const handleToggle = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -127,42 +194,66 @@ export function ResultsExperience({
                 Pricing currency: {meta.currency.toUpperCase()}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <SegmentedControl
-                label="View mode"
-                value={viewMode}
-                options={[
-                  { label: "Detailed", value: "detailed" },
-                  { label: "Tiered", value: "tiers" },
-                ]}
-                onChange={(value) => setViewMode(value as ViewMode)}
-              />
-              <SegmentedControl
-                label="Timeline"
-                value={timelineView}
-                options={[
-                  { label: "Gantt", value: "gantt" },
-                  { label: "Phases", value: "phases" },
-                ]}
-                onChange={(value) => setTimelineView(value as TimelineView)}
-              />
-              <Button
-                variant="outline"
-                className="gap-2 border-white/20 text-sm"
-                onClick={handleCopyLink}
-              >
-                {copyStatus === "copied" ? (
-                  <>
-                    <ClipboardCheck className="h-4 w-4 text-primary" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="h-4 w-4" />
-                    Copy link
-                  </>
-                )}
-              </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <SegmentedControl
+                  label="View mode"
+                  value={viewMode}
+                  options={[
+                    { label: "Detailed", value: "detailed" },
+                    { label: "Tiered", value: "tiers" },
+                  ]}
+                  onChange={(value) => setViewMode(value as ViewMode)}
+                />
+                <SegmentedControl
+                  label="Timeline"
+                  value={timelineView}
+                  options={[
+                    { label: "Gantt", value: "gantt" },
+                    { label: "Phases", value: "phases" },
+                  ]}
+                  onChange={(value) => setTimelineView(value as TimelineView)}
+                />
+                <Button
+                  variant="outline"
+                  className="gap-2 border-white/20 text-sm"
+                  onClick={handleCopyLink}
+                >
+                  {copyStatus === "copied" ? (
+                    <>
+                      <ClipboardCheck className="h-4 w-4 text-primary" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="h-4 w-4" />
+                      Copy link
+                    </>
+                  )}
+                </Button>
+                <Button
+                  className="gap-2 bg-primary text-primary-foreground"
+                  onClick={handleExportPdf}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown className="h-4 w-4" />
+                  )}
+                  {exportButtonLabel}
+                </Button>
+              </div>
+              {exportFeedback && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    exportStatus === "error" ? "text-red-400" : "text-emerald-400",
+                  )}
+                >
+                  {exportFeedback}
+                </p>
+              )}
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
@@ -595,14 +686,14 @@ function ShareNote() {
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Share-ready</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Copy the public link or export a PDF (coming soon) once you are ready to handoff.
+          Copy the public link or export a PDF whenever you are ready to share with stakeholders.
         </p>
       </CardHeader>
       <CardContent className="pt-0 text-sm text-muted-foreground">
         <ul className="space-y-2">
           <li>• Copy link for async reviews</li>
+          <li>• Export PDF (watermark removed on Pro)</li>
           <li>• Embed results in proposals</li>
-          <li>• Export with branding on Pro</li>
         </ul>
       </CardContent>
     </Card>
@@ -738,6 +829,12 @@ function applyMargin(
 function round(value: number, decimals = 0) {
   const multiplier = 10 ** decimals;
   return Math.round(value * multiplier) / multiplier;
+}
+
+function buildExportFileName(result: CalculationResult) {
+  const slug = `${result.projectType}-${result.tier}`.replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "");
+  const date = new Date().toISOString().slice(0, 10);
+  return `webflow-estimate-${slug}-${date}.pdf`;
 }
 
 
