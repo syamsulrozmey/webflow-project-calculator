@@ -89,7 +89,7 @@ export function ProjectsDashboard() {
       <Card className="border-white/10 bg-white/[0.05] bg-gradient-to-br from-white/5 via-white/0 to-white/0 text-white shadow-[0_20px_120px_rgba(80,63,205,0.25)]">
         <CardHeader className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.35em] text-primary/80">
+            <p className="text-xs text-primary/80">
               Pro workspace
             </p>
             <div>
@@ -171,7 +171,7 @@ function ProjectTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-white/5">
       <table className="min-w-full divide-y divide-white/5 text-sm">
-        <thead className="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-white/60">
+        <thead className="bg-white/5 text-left text-xs text-white/60">
           <tr>
             <th className="px-6 py-4">Project</th>
             <th className="px-6 py-4">Flow</th>
@@ -349,7 +349,7 @@ function BadgePill({
       : "border-white/15 text-white/70";
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] uppercase tracking-[0.3em] ${classes}`}
+      className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] ${classes}`}
     >
       {label}
     </span>

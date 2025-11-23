@@ -201,6 +201,7 @@ Three distinct user types with tailored experiences:
    - Timeline urgency tiers (flexible, standard, rush, critical)
    - Deadline firmness + approval/feedback cadence
    - Ongoing maintenance expectations (plan vs cadence/ownership)
+   - Maintenance coverage focus (core upkeep vs roadmap work)
    - Content updates frequency
    - Training requirements
    - Documentation needs
@@ -230,6 +231,7 @@ Three distinct user types with tailored experiences:
    - Testing and QA
    - Deployment and launch
    - Maintenance (first month/year)
+   - Maintenance calibration keeps ongoing support between 5-20% of build hours and flags anything above 25 hrs/mo for project-level scoping
 
 4. **Cost Outputs**
    - Total project cost
@@ -489,6 +491,45 @@ Total Cost = (Base Hours × Hourly Rate) × Complexity Multipliers + Fixed Costs
 - Timeline Urgency: 1.0 (standard) to 1.5+ (rush)
 - Maintenance: 0.1 to 0.3 (added to total)
 
+#### 7.2.1 Deterministic Complexity Scoring + Buffers
+
+Research from the Webflow pricing + retainer guides now drives a deterministic “complexity score” that always accompanies the multiplier engine. The questionnaire feeds seven weighted categories (0-3/4 pts each) and maps the total to a named tier + contingency buffer:
+
+| Category | Signals | Scoring Notes |
+| --- | --- | --- |
+| Page volume | `page_volume` | 1: ≤10 pages, 2: 11-30, 3: 31-50, 4: 50+ |
+| CMS depth | `cms_collections` | 0: none, 1: 1-3, 2: 4-10, 3: 10+ |
+| Integrations | `feature_stack`, `integration_targets` | 0: none, 1: 1-2, 2: 3-4, 3: 5+ / custom APIs |
+| Commerce footprint | `feature_stack`, `commerce_catalog` | 0: none, 2: lite, 3: standard, 4: enterprise |
+| Custom functionality | memberships, auth, custom API logic | 0-3 based on gated areas + bespoke code |
+| Design & motion | `design_depth`, `motion_strategy`, `motion_complexity` | Template (0) → net-new immersive (4) |
+| Compliance & QA | `performance_targets`, `compliance_needs`, `security_posture`, `accessibility_target` | 0: baseline, 4: regulated + multiple audits |
+
+Tier mapping + contingency buffers:
+
+- **Starter (0-5 pts):** 20% buffer
+- **Professional (6-10 pts):** 25% buffer
+- **Growth (11-15 pts):** 30% buffer
+- **Enterprise (16+ pts):** 40% buffer
+
+The buffer is stored separately from base hours so the UI/PDF can show “Production Hours + Contingency + Maintenance”. Any feature that surfaces estimates must reference this shared rubric.
+
+#### 7.2.2 Retainer Estimator Inputs
+
+To support the retainer pricing guide, the questionnaire now captures:
+
+- **Maintenance hours target:** slider (4-40 hrs/mo) so users can declare expected coverage.
+- **Support SLA:** Business hours, next-business-day, or 24/7 on-call expectations.
+- **Maintenance ownership + hosting posture:** Used to decide if hosting management is baked into the retainer.
+
+The estimator returns three packages (Starter/Professional/Growth) using the guide’s formula:
+
+```
+Recommended Fee = (Monthly Hours × Hourly Rate × Value Multiplier) + Hosting Overhead
+```
+
+Multipliers: cadence, scope (core/content/feature), SLA, and complexity tier (Starter 1.0 → Enterprise 1.3). Hosting that remains in the provider workspace automatically adds ~1.5 hrs/mo for management overhead.
+
 **Time Estimates (examples):**
 - Custom landing page design: 8-16 hours
 - Small business website: 40-80 hours
@@ -548,6 +589,7 @@ Total Cost = (Base Hours × Hourly Rate) × Complexity Multipliers + Fixed Costs
 - Smart defaults based on project type
 - Skip option for optional advanced questions
 - Pricing inputs captured up front (hourly rate slider + USD/EUR/GBP currency selector for freelancer/agency flows)
+- Currency selector sources live USD⇄EUR⇄GBP exchange rates via currencyapi.com every few hours (Redis cached, <1h TTL) with an offline fallback to the last known rates so calculations never block.
 
 ### 9.3 Results Presentation
 - At-a-glance total cost with factors

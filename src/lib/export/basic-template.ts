@@ -1,5 +1,6 @@
 import type { CalculationMeta } from "@/lib/calculator/storage";
 import type { CalculationResult, LineItem, SupportedCurrency } from "@/lib/calculator/types";
+import { selectPaymentPlan } from "@/lib/calculator/payment-plan";
 import type { FeatureTier } from "@/lib/export/feature-tier";
 
 const DEFAULT_SCOPE_NOTES = [
@@ -67,6 +68,24 @@ export interface PdfAgencySection {
   teamSnapshot: Array<{ id: string; name: string; role: string; rateLabel: string }>;
 }
 
+export interface PdfComplexitySection {
+  tierLabel: string;
+  scoreLabel: string;
+  bufferLabel: string;
+  narrative: string;
+  chips: Array<{ label: string; value: string; helper: string }>;
+}
+
+export interface PdfPaymentSection {
+  label: string;
+  narrative: string;
+  milestones: Array<{ label: string; percent: number; amount: string; note: string }>;
+}
+
+export interface PdfRetainerSection {
+  packages: Array<{ label: string; fee: string; hours: string; notes: string[] }>;
+}
+
 export interface PdfFactorEntry {
   label: string;
   value: string;
@@ -86,8 +105,11 @@ export interface PdfHeaderSection {
 export interface BasicPdfSections {
   header: PdfHeaderSection;
   summary: PdfSummaryStat[];
+  complexity: PdfComplexitySection;
   breakdown: PdfBreakdownRow[];
   timeline: PdfTimelineEntry[];
+  payments: PdfPaymentSection;
+  retainers: PdfRetainerSection;
   factors: PdfFactorEntry[];
   scope: PdfScopeSection;
   agency?: PdfAgencySection;
@@ -117,7 +139,7 @@ export function buildBasicPdfSections({
   const projectDescriptor = `${toTitleCase(result.projectType.replace(/_/g, " "))} · ${tierLabel}`;
   const totalLabel = currencyFormatter.format(result.totalCost);
   const maintenanceLabel = `${hoursFormatter.format(result.maintenanceHours)} hrs / mo`;
-  const timelineRange = buildTimelineRange(result.totalHours);
+  const timelineRange = buildTimelineRange(result.productionHours);
   const confidence = Math.round((result.ai?.confidence ?? 0.65) * 100);
   const summary: PdfSummaryStat[] = [
     {
@@ -143,17 +165,35 @@ export function buildBasicPdfSections({
       helper: maintenanceLabel,
     },
     {
+      label: "Contingency buffer",
+      value: `${currencyFormatter.format(result.bufferCost)} · ${Math.round(result.bufferPercentage * 100)}%`,
+      helper: `${hoursFormatter.format(result.bufferHours)} hrs (${result.complexity.tier} tier)`,
+    },
+    {
       label: "Confidence",
       value: `${confidence}%`,
       helper: result.ai?.rationale ?? "Blend of deterministic engine + benchmarks",
     },
   ];
 
-  const breakdown = buildBreakdownRows(result.lineItems, result.totalHours, currencyFormatter, hoursFormatter);
-  const timeline = buildTimelineEntries(result.lineItems, result.totalHours, currencyFormatter, hoursFormatter);
+  const breakdown = buildBreakdownRows(
+    result.lineItems,
+    result.productionHours,
+    currencyFormatter,
+    hoursFormatter,
+  );
+  const timeline = buildTimelineEntries(
+    result.lineItems,
+    result.productionHours,
+    currencyFormatter,
+    hoursFormatter,
+  );
   const factors = buildFactorEntries(result);
   const scope = buildScopeSection(result);
   const agency = buildAgencySection(meta, currencyFormatter);
+  const complexitySection = buildComplexitySection(result, currencyFormatter, hoursFormatter);
+  const paymentSection = buildPaymentSection(result, currencyFormatter);
+  const retainerSection = buildRetainerSection(result, currencyFormatter);
 
   return {
     header: {
@@ -167,8 +207,11 @@ export function buildBasicPdfSections({
       watermarkText: tier === "free" ? "Webflow Calculator · Free Tier" : undefined,
     },
     summary,
+    complexity: complexitySection,
     breakdown,
     timeline,
+    payments: paymentSection,
+    retainers: retainerSection,
     factors,
     scope,
     agency,
@@ -177,7 +220,7 @@ export function buildBasicPdfSections({
 
 function buildBreakdownRows(
   items: LineItem[],
-  totalHours: number,
+  hoursPool: number,
   currencyFormatter: Intl.NumberFormat,
   hoursFormatter: Intl.NumberFormat,
 ): PdfBreakdownRow[] {
@@ -187,20 +230,20 @@ function buildBreakdownRows(
     hoursLabel: `${hoursFormatter.format(item.hours)} hrs`,
     costLabel: currencyFormatter.format(item.cost),
     description: item.description,
-    percent: Math.round((item.hours / totalHours) * 100),
+    percent: hoursPool === 0 ? 0 : Math.round((item.hours / hoursPool) * 100),
   }));
 }
 
 function buildTimelineEntries(
   items: LineItem[],
-  totalHours: number,
+  hoursPool: number,
   currencyFormatter: Intl.NumberFormat,
   hoursFormatter: Intl.NumberFormat,
 ): PdfTimelineEntry[] {
   let cumulative = 0;
   return items.map((item) => {
-    const startPercent = totalHours === 0 ? 0 : (cumulative / totalHours) * 100;
-    const rawWidthPercent = totalHours === 0 ? 0 : (item.hours / totalHours) * 100;
+    const startPercent = hoursPool === 0 ? 0 : (cumulative / hoursPool) * 100;
+    const rawWidthPercent = hoursPool === 0 ? 0 : (item.hours / hoursPool) * 100;
     const widthPercent = Math.max(Math.min(Math.round(rawWidthPercent), 100), 4);
     cumulative += item.hours;
     return {
@@ -211,7 +254,7 @@ function buildTimelineEntries(
       widthPercent,
       narrative: `Begins around week ${estimateWeek(startPercent)} — ${rawWidthPercent.toFixed(
         0,
-      )}% of total effort.`,
+      )}% of production effort.`,
     };
   });
 }
@@ -234,6 +277,80 @@ function buildScopeSection(result: CalculationResult): PdfScopeSection {
     : [];
 
   return { highlights, risks, assumptions };
+}
+
+function buildPaymentSection(
+  result: CalculationResult,
+  currencyFormatter: Intl.NumberFormat,
+): PdfPaymentSection {
+  const plan = selectPaymentPlan(result.totalCost);
+  return {
+    label: plan.label,
+    narrative: plan.narrative,
+    milestones: plan.milestones.map((milestone) => ({
+      label: milestone.label,
+      percent: Math.round(milestone.percent * 100),
+      amount: currencyFormatter.format(result.totalCost * milestone.percent),
+      note: milestone.note,
+    })),
+  };
+}
+
+function buildRetainerSection(
+  result: CalculationResult,
+  currencyFormatter: Intl.NumberFormat,
+): PdfRetainerSection {
+  if (!result.retainers?.length) {
+    return { packages: [] };
+  }
+  return {
+    packages: result.retainers.map((pkg) => ({
+      label: pkg.label,
+      fee: currencyFormatter.format(pkg.monthlyFee),
+      hours: `${pkg.hours.toFixed(1)} hrs/mo`,
+      notes: pkg.notes,
+    })),
+  };
+}
+
+function buildComplexitySection(
+  result: CalculationResult,
+  currencyFormatter: Intl.NumberFormat,
+  hoursFormatter: Intl.NumberFormat,
+): PdfComplexitySection {
+  const tierMeta: Record<
+    CalculationResult["complexity"]["tier"],
+    { label: string; narrative: string }
+  > = {
+    starter: {
+      label: "Starter",
+      narrative: "Lean scope, low CMS complexity. 20% contingency carried for revisions.",
+    },
+    professional: {
+      label: "Professional",
+      narrative: "Balanced marketing build with integrations. 25% buffer recommended.",
+    },
+    growth: {
+      label: "Growth",
+      narrative: "High CMS or automation surface. 30% contingency baked in.",
+    },
+    enterprise: {
+      label: "Enterprise",
+      narrative: "Mission-critical, multi-integration program. 40% contingency minimum.",
+    },
+  };
+
+  return {
+    tierLabel: `${tierMeta[result.complexity.tier].label} tier`,
+    scoreLabel: `${result.complexity.total} pts`,
+    bufferLabel: `${currencyFormatter.format(result.bufferCost)} (${hoursFormatter.format(result.bufferHours)} hrs · ${Math.round(result.bufferPercentage * 100)}%)`,
+    narrative: tierMeta[result.complexity.tier].narrative,
+    chips: result.complexity.categories.map((category) => ({
+      label: category.label,
+      value: `${category.score}/${category.max}`,
+      helper: category.rationale,
+    })),
+  };
 }
 
 function buildAgencySection(
@@ -261,8 +378,8 @@ function buildAgencySection(
   };
 }
 
-function buildTimelineRange(totalHours: number): string {
-  const roughWeeks = totalHours / 35;
+function buildTimelineRange(productionHours: number): string {
+  const roughWeeks = productionHours / 35;
   const minWeeks = Math.max(4, Math.round(roughWeeks));
   return `${minWeeks}-${minWeeks + 2} weeks`;
 }

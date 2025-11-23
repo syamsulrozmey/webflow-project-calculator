@@ -925,7 +925,7 @@
         {
           "id": "features-phase2-4.3",
           "title": "Implement complexity tier calculator",
-          "details": "Determine if project is low/medium/high complexity",
+          "details": "Determine if project is low/medium/high complexity and wire integration/add-on pricing surfaced from research",
           "status": "pending"
         },
         {
@@ -938,6 +938,36 @@
           "id": "features-phase2-4.5",
           "title": "Show user estimate vs industry average comparison",
           "details": "Visual comparison chart or indicator",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "features-phase2-5",
+      "category": "Extended Features",
+      "phase": "Phase 2: Extended Features (M+4-6)",
+      "title": "Live currency conversion experience",
+      "priority": "high",
+      "estimated_hours": 18,
+      "status": "pending",
+      "assignee": "Full-stack Developer",
+      "subtasks": [
+        {
+          "id": "features-phase2-5.1",
+          "title": "Integrate FX provider + caching layer",
+          "details": "Fetch USD/EUR/GBP rates from currencyapi.com, cache in Redis, add offline fallback",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-5.2",
+          "title": "Wire calculations + UI to selected currency",
+          "details": "Post selected currency with calculations, convert all totals/line items, and display freshness hints in the questionnaire/results",
+          "status": "pending"
+        },
+        {
+          "id": "features-phase2-5.3",
+          "title": "QA regression + automated tests",
+          "details": "Add unit tests for currency helpers and verify multi-currency flows end-to-end",
           "status": "pending"
         }
       ]

@@ -21,7 +21,7 @@ describe("buildBasicPdfSections", () => {
     });
 
     expect(sections.header.watermarkText).toContain("Free Tier");
-    expect(sections.summary).toHaveLength(5);
+    expect(sections.summary).toHaveLength(6);
     expect(sections.breakdown).toHaveLength(baseResult.lineItems.length);
     expect(sections.timeline[0]?.label).toEqual(baseResult.lineItems[0]?.label);
     expect(sections.scope.highlights.length).toBeGreaterThan(0);

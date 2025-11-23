@@ -107,9 +107,9 @@ export const TIMELINE_MULTIPLIERS: Record<TimelineUrgency, number> = {
 
 export const MAINTENANCE_FACTORS: Record<MaintenanceLevel, number> = {
   none: 0,
-  light: 0.1,
-  standard: 0.2,
-  retainer: 0.35,
+  light: 0.05,
+  standard: 0.12,
+  retainer: 0.2,
 };
 
 export const MIN_HOURLY_RATE = 25;

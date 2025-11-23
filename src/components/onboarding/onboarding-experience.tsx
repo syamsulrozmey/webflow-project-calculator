@@ -252,7 +252,7 @@ export function OnboardingExperience({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="border-white/5 bg-gradient-to-b from-[#0f1324] to-[#080a15]">
         <CardHeader>
-          <p className="text-xs uppercase tracking-[0.35em] text-primary">
+          <p className="text-xs text-primary">
             Guided onboarding
           </p>
           <CardTitle className="text-2xl">
@@ -441,7 +441,7 @@ function renderStep({
     return (
       <div className="space-y-6">
         <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-6 shadow-soft-card">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary">
+          <p className="text-xs text-primary">
             You’re locked in
           </p>
           <h3 className="mt-2 text-xl font-semibold text-white">
@@ -466,7 +466,7 @@ function renderStep({
         </div>
 
         <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          <h4 className="text-sm font-semibold text-primary">
             Kickoff checklist
           </h4>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -532,7 +532,7 @@ function EntryOptionCard({
             <option.icon className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+            <p className="text-xs text-primary/70">
               {option.tagline}
             </p>
             <p className="text-lg font-semibold text-white">{option.title}</p>
@@ -571,11 +571,15 @@ function UserTypeCard({
   onSelect: () => void;
 }) {
   const tooltipId = `${type.id}-tooltip`;
+
+  const handleInfoClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+  };
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-describedby={tooltipId}
       className={cn(
         "group relative flex h-full flex-col gap-4 rounded-2xl border bg-white/[0.02] p-5 text-left transition-all duration-300",
         selected
@@ -590,7 +594,7 @@ function UserTypeCard({
           </div>
           <div>
             <p className="text-lg font-semibold text-white">{type.title}</p>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+            <p className="text-xs text-primary/70">
               User profile
             </p>
           </div>
@@ -615,14 +619,27 @@ function UserTypeCard({
           </li>
         ))}
       </ul>
-      <div
-        id={tooltipId}
-        role="tooltip"
-        className="pointer-events-none absolute right-4 top-4 z-20 hidden w-60 rounded-xl border border-white/10 bg-background/95 p-3 text-xs text-muted-foreground shadow-2xl transition group-hover:flex group-focus-visible:flex"
-      >
-        <div className="flex items-start gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <span>{type.tooltip}</span>
+      <div className="mt-1 flex items-center text-xs">
+        <div className="group/tooltip relative inline-flex">
+          <button
+            type="button"
+            aria-describedby={tooltipId}
+            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-white focus-visible:text-white"
+            onClick={handleInfoClick}
+          >
+            <Info className="h-3.5 w-3.5 text-primary" />
+            Need context?{" "}
+            <span className="underline decoration-dotted decoration-white/30 underline-offset-4">
+              Learn more
+            </span>
+          </button>
+          <div
+            id={tooltipId}
+            role="tooltip"
+            className="pointer-events-none absolute left-0 top-full z-20 hidden w-64 rounded-2xl border border-white/10 bg-background/95 p-3 text-left text-xs text-muted-foreground shadow-2xl group-hover/tooltip:flex group-focus-within/tooltip:flex"
+          >
+            {type.tooltip}
+          </div>
         </div>
       </div>
     </button>
@@ -649,7 +666,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
           >
             {index + 1}
           </div>
-          <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {step.label}
           </span>
           {index < steps.length - 1 && (
@@ -673,7 +690,7 @@ function InsightCard({
   return (
     <Card className="border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
       <CardHeader className="pb-3">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary/80">
+        <p className="text-xs text-primary/80">
           {kicker}
         </p>
         <CardTitle className="text-lg">{title}</CardTitle>
@@ -695,7 +712,7 @@ function InsightList({
   const Icon = icon;
   return (
     <div className="space-y-3 text-muted-foreground">
-      <p className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground/70">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground/70">
         <Icon className="h-3.5 w-3.5 text-primary" />
         {muted}
       </p>
@@ -722,7 +739,7 @@ function SummaryTile({
 }) {
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
-      <p className="text-xs uppercase tracking-[0.3em] text-primary">
+      <p className="text-xs text-primary">
         {title}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">{meta}</p>

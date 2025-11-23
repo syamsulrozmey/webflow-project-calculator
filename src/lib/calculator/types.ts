@@ -1,3 +1,7 @@
+import type { AddonInput } from "./addons";
+import type { ComplexityScore } from "./complexity-score";
+import type { RetainerPackage } from "./retainer";
+
 export const PROJECT_TYPES = [
   "landing_page",
   "small_business",
@@ -53,6 +57,7 @@ export const MAINTENANCE_LEVELS = [
   "standard",
   "retainer",
 ] as const;
+export const MAINTENANCE_SCOPES = ["core", "content_ops", "feature_sprints"] as const;
 
 export type DesignComplexity = (typeof DESIGN_COMPLEXITIES)[number];
 export type FunctionalityComplexity = (typeof FUNCTIONALITY_COMPLEXITIES)[number];
@@ -60,6 +65,7 @@ export type ContentComplexity = (typeof CONTENT_COMPLEXITIES)[number];
 export type TechnicalComplexity = (typeof TECHNICAL_COMPLEXITIES)[number];
 export type TimelineUrgency = (typeof TIMELINE_URGENCY)[number];
 export type MaintenanceLevel = (typeof MAINTENANCE_LEVELS)[number];
+export type MaintenanceScope = (typeof MAINTENANCE_SCOPES)[number];
 
 export type TierLookup = LandingPageTier | SmallBusinessTier | EcommerceTier | WebAppTier;
 
@@ -77,6 +83,17 @@ export interface CalculationInput {
   hourlyRate: number;
   multipliers: ComplexityMultipliers;
   maintenance: MaintenanceLevel;
+  maintenanceScope?: MaintenanceScope;
+  addons?: AddonInput[];
+  retainerContext?: {
+    cadence?: string;
+    owner?: string;
+    plan?: string;
+    hostingStrategy?: string;
+    hoursTarget?: number;
+    sla?: string;
+  };
+  complexity: ComplexityScore;
   assumptions?: string;
 }
 
@@ -102,6 +119,18 @@ export interface LineItem {
   hours: number;
   cost: number;
   description: string;
+  kind?: "phase" | "addon" | "timeline";
+  category?: string;
+}
+
+export interface AddonSummary {
+  id: string;
+  label: string;
+  category: string;
+  driver: string;
+  hours: number;
+  cost: number;
+  description: string;
 }
 
 export interface CalculationResult {
@@ -110,6 +139,10 @@ export interface CalculationResult {
   effectiveHourlyRate: number;
   maintenanceHours: number;
   maintenanceCost: number;
+  productionHours: number;
+  bufferHours: number;
+  bufferCost: number;
+  bufferPercentage: number;
   baseHours: number;
   factors: {
     design: number;
@@ -120,11 +153,15 @@ export interface CalculationResult {
   };
   multipliersApplied: ComplexityMultipliers;
   maintenanceLevel: MaintenanceLevel;
+  maintenanceScope?: MaintenanceScope;
+  addons: AddonSummary[];
+  retainers: RetainerPackage[];
   projectType: ProjectType;
   tier: TierLookup;
   lineItems: LineItem[];
   assumptions?: string;
   ai?: AiAdjustmentMetadata;
   deterministicTotals?: DeterministicSnapshot;
+  complexity: ComplexityScore;
 }
 

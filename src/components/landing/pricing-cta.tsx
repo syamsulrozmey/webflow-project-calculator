@@ -37,7 +37,7 @@ export function PricingCTA() {
     <section id="pricing" className="bg-background">
       <div className="mx-auto max-w-6xl px-6 py-16 md:px-10 lg:px-16">
         <div className="mb-10 text-center">
-          <p className="text-sm uppercase tracking-[0.4em] text-primary">
+          <p className="text-sm text-primary">
             Launch Timeline: Phase 5
           </p>
           <h2 className="text-3xl font-semibold md:text-4xl">

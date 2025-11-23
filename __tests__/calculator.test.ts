@@ -1,6 +1,13 @@
 import { calculateCost } from "@/lib/calculator";
 import { PROJECT_BASE_HOURS } from "@/lib/calculator/config";
 
+const stubComplexity = {
+  total: 5,
+  tier: "starter" as const,
+  bufferPercentage: 0.2,
+  categories: [],
+};
+
 describe("calculateCost", () => {
   it("calculates cost for a simple landing page", () => {
     const input = {
@@ -15,6 +22,7 @@ describe("calculateCost", () => {
         timeline: "standard",
       },
       maintenance: "light" as const,
+      complexity: stubComplexity,
     };
 
     const result = calculateCost(input);
@@ -39,6 +47,7 @@ describe("calculateCost", () => {
         timeline: "standard",
       },
       maintenance: "none" as const,
+      complexity: stubComplexity,
     };
 
     expect(() => calculateCost(input)).toThrow(/Tier "standard_crud"/);
@@ -57,12 +66,34 @@ describe("calculateCost", () => {
         timeline: "rush",
       },
       maintenance: "retainer" as const,
+      complexity: stubComplexity,
     };
 
     const result = calculateCost(input);
     expect(result.maintenanceHours).toBeGreaterThan(0);
     expect(result.maintenanceCost).toBeGreaterThan(0);
     expect(result.totalCost).toBeGreaterThan(result.maintenanceCost);
+  });
+
+  it("returns maintenance scope metadata on the result", () => {
+    const input = {
+      projectType: "small_business" as const,
+      tier: "basic" as const,
+      hourlyRate: 120,
+      multipliers: {
+        design: "standard",
+        functionality: "basic",
+        content: "existing",
+        technical: "basic",
+        timeline: "standard",
+      },
+      maintenance: "standard" as const,
+      maintenanceScope: "content_ops" as const,
+      complexity: stubComplexity,
+    };
+
+    const result = calculateCost(input);
+    expect(result.maintenanceScope).toBe("content_ops");
   });
 });
 

@@ -35,12 +35,17 @@ import {
   type QuestionnaireAnswerMap,
   type StoredQuestionnaireState,
 } from "@/lib/questionnaire";
-import { buildCalculationPayload } from "@/lib/calculator/from-answers";
+import {
+  SUPPORTED_CURRENCIES,
+  buildCalculationPayload,
+  type SupportedCurrency,
+} from "@/lib/calculator/from-answers";
 import { saveCalculationResult } from "@/lib/calculator/storage";
 import { cn } from "@/lib/utils";
 import { useLatestAnalysis } from "@/hooks/use-latest-analysis";
 import { useAgencyTeamConfig } from "@/hooks/use-agency-team";
 import { useProjects } from "@/hooks/use-projects";
+import { formatFxRelativeTime, useCurrencyRates } from "@/hooks/use-currency-rates";
 import {
   buildCrawlSuggestions,
   type CrawlSuggestion,
@@ -122,6 +127,12 @@ export function QuestionnaireExperience({
   const [isLocalHydrated, setIsLocalHydrated] = useState(false);
   const [isProjectHydrated, setIsProjectHydrated] = useState(projectId ? false : true);
   const [isRestored, setIsRestored] = useState(false);
+  const selectedCurrencyAnswer = answers["rate_currency"];
+  const selectedCurrencyKey: CurrencyDisplayKey =
+    typeof selectedCurrencyAnswer === "string" && isCurrencyDisplayKey(selectedCurrencyAnswer)
+      ? selectedCurrencyAnswer
+      : "usd";
+  const selectedCurrencyDisplay = CURRENCY_DISPLAY[selectedCurrencyKey];
   const { fetchProjectDetail, createProject, updateProject } = useProjects({
     autoFetch: false,
   });
@@ -133,6 +144,19 @@ export function QuestionnaireExperience({
     updateSettings: updateAgencySettings,
     resetState: resetAgencyTeam,
   } = useAgencyTeamConfig(activeSessionId);
+  const {
+    rates: currencyRates,
+    loading: isCurrencyLoadingRates,
+    error: currencyError,
+    refresh: refreshCurrencyRates,
+    convert: convertCurrencyValue,
+  } = useCurrencyRates();
+  const previousCurrencyRef = useRef<CurrencyDisplayKey>(selectedCurrencyKey);
+  const [isRateAutoConversionPaused, setIsRateAutoConversionPaused] = useState(false);
+  const [manualConversionContext, setManualConversionContext] = useState<{
+    from: CurrencyDisplayKey;
+    to: CurrencyDisplayKey;
+  } | null>(null);
 
   const applyProjectDetail = useCallback(
     (detail: ProjectDetail) => {
@@ -147,6 +171,14 @@ export function QuestionnaireExperience({
       setActiveSessionId(detail.id);
       setProjectTitle(detail.title);
       setDismissedSuggestions({});
+      const incomingCurrency = incomingAnswers["rate_currency"];
+      if (typeof incomingCurrency === "string" && isCurrencyDisplayKey(incomingCurrency)) {
+        previousCurrencyRef.current = incomingCurrency;
+      } else {
+        previousCurrencyRef.current = "usd";
+      }
+      setIsRateAutoConversionPaused(false);
+      setManualConversionContext(null);
     },
     [],
   );
@@ -214,12 +246,89 @@ export function QuestionnaireExperience({
     }, {});
   }, [rawSuggestions, dismissedSuggestions]);
   const hasTouchedHourlyRate = Boolean(touchedQuestions["hourly_rate"]);
-  const selectedCurrencyAnswer = answers["rate_currency"];
-  const selectedCurrencyKey: CurrencyDisplayKey =
-    typeof selectedCurrencyAnswer === "string" && isCurrencyDisplayKey(selectedCurrencyAnswer)
-      ? selectedCurrencyAnswer
-      : "usd";
-  const selectedCurrencyDisplay = CURRENCY_DISPLAY[selectedCurrencyKey];
+  const hourlyRateValue = answers["hourly_rate"];
+  const formattedHourlyRate =
+    typeof hourlyRateValue === "number" && !Number.isNaN(hourlyRateValue)
+      ? hourlyRateValue
+      : null;
+  const currencyHelperCopy = useMemo(() => {
+    let base = "Using default FX baseline until live rates load.";
+    if (isCurrencyLoadingRates) {
+      base = "Fetching live FX rates…";
+    } else if (currencyError) {
+      base = `${currencyError} · Falling back to the last cached rates.`;
+    } else if (currencyRates) {
+      const freshness = formatFxRelativeTime(currencyRates);
+      const freshnessLabel = freshness ? `updated ${freshness}` : "synced";
+      base = `Live ${currencyRates.base.toUpperCase()} FX (${currencyRates.stale ? "cached" : "live"}) · ${freshnessLabel}.`;
+    }
+    if (manualConversionContext) {
+      return `${base} Hourly rate left untouched after your last manual edit.`;
+    }
+    return base;
+  }, [
+    currencyError,
+    currencyRates,
+    isCurrencyLoadingRates,
+    manualConversionContext,
+  ]);
+
+  useEffect(() => {
+    const previousCurrency = previousCurrencyRef.current;
+    if (selectedCurrencyKey === previousCurrency) {
+      return;
+    }
+    previousCurrencyRef.current = selectedCurrencyKey;
+    const currentValue = answersRef.current["hourly_rate"];
+    const numericRate =
+      typeof currentValue === "number" && !Number.isNaN(currentValue) ? currentValue : null;
+    if (!numericRate) {
+      setManualConversionContext(null);
+      return;
+    }
+    if (isRateAutoConversionPaused) {
+      setManualConversionContext({ from: previousCurrency, to: selectedCurrencyKey });
+      return;
+    }
+    const convertedValue = convertCurrencyValue(
+      numericRate,
+      previousCurrency as SupportedCurrency,
+      selectedCurrencyKey as SupportedCurrency,
+    );
+    setAnswers((prev) => ({ ...prev, hourly_rate: convertedValue }));
+    setManualConversionContext(null);
+    setIsRateAutoConversionPaused(false);
+  }, [
+    convertCurrencyValue,
+    isRateAutoConversionPaused,
+    selectedCurrencyKey,
+    setAnswers,
+  ]);
+
+  const convertHourlyRateManually = useCallback(() => {
+    if (!manualConversionContext || !currencyRates) {
+      return;
+    }
+    const currentValue = answersRef.current["hourly_rate"];
+    const numericRate =
+      typeof currentValue === "number" && !Number.isNaN(currentValue) ? currentValue : null;
+    if (!numericRate) {
+      return;
+    }
+    const convertedValue = convertCurrencyValue(
+      numericRate,
+      manualConversionContext.from as SupportedCurrency,
+      manualConversionContext.to as SupportedCurrency,
+    );
+    setAnswers((prev) => ({ ...prev, hourly_rate: convertedValue }));
+    setManualConversionContext(null);
+    setIsRateAutoConversionPaused(false);
+  }, [convertCurrencyValue, currencyRates, manualConversionContext, setAnswers]);
+
+  const handleResumeAutoConversion = useCallback(() => {
+    setIsRateAutoConversionPaused(false);
+    setManualConversionContext(null);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -480,6 +589,10 @@ export function QuestionnaireExperience({
 
   const handleScaleChange = (questionId: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    if (questionId === "hourly_rate") {
+      setIsRateAutoConversionPaused(true);
+      setManualConversionContext(null);
+    }
     markTouched(questionId);
   };
 
@@ -537,6 +650,9 @@ export function QuestionnaireExperience({
     setProjectTitle("");
     setProjectSyncMessage(null);
     setProjectSyncError(null);
+    setIsRateAutoConversionPaused(false);
+    setManualConversionContext(null);
+    previousCurrencyRef.current = "usd";
   };
 
   const handleCalculate = async () => {
@@ -553,10 +669,14 @@ export function QuestionnaireExperience({
         calculationOptions.agencySummary = agencySummary;
       }
       const { input, metadata } = buildCalculationPayload(calculationOptions);
+      const calculationPayload = {
+        ...input,
+        currency: metadata.currency,
+      };
       const response = await fetch("/api/calculations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify(calculationPayload),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         data?: CalculationResult;
@@ -590,8 +710,7 @@ export function QuestionnaireExperience({
         ? hourlyValue
         : null;
     const rawCurrency = answers["rate_currency"];
-    const allowedCurrencies = ["usd", "eur", "gbp"] as const;
-    const currency = allowedCurrencies.includes(rawCurrency as (typeof allowedCurrencies)[number])
+    const currency = SUPPORTED_CURRENCIES.includes(rawCurrency as SupportedCurrency)
       ? (rawCurrency as ProjectRequestPayload["currency"])
       : "usd";
 
@@ -701,21 +820,25 @@ export function QuestionnaireExperience({
     isTimelineSection &&
     (timelineHourlyQuestion || timelineCurrencyQuestion || canShowAgencyConfigurator);
 
-  const buildQuestionCardProps = (question: QuestionDefinition) => ({
-    question,
-    answer: answers[question.id],
-    onSingleSelect: handleSingleSelect,
-    onMultiSelect: handleMultiSelect,
-    onScaleChange: handleScaleChange,
-    onToggle: handleToggle,
-    onTextChange: handleTextChange,
-    onSkip: handleSkipQuestion,
-    skipped: skippedQuestions[question.id],
-    suggestion: suggestionMap[question.id],
-    onAcceptSuggestion: handleApplySuggestion,
-    onDismissSuggestion: handleDismissSuggestion,
-    touched: Boolean(touchedQuestions[question.id]),
-  });
+  const buildQuestionCardProps = (question: QuestionDefinition) => {
+    const decoratedQuestion =
+      question.id === "rate_currency" ? { ...question, helper: currencyHelperCopy } : question;
+    return {
+      question: decoratedQuestion,
+      answer: answers[question.id],
+      onSingleSelect: handleSingleSelect,
+      onMultiSelect: handleMultiSelect,
+      onScaleChange: handleScaleChange,
+      onToggle: handleToggle,
+      onTextChange: handleTextChange,
+      onSkip: handleSkipQuestion,
+      skipped: skippedQuestions[question.id],
+      suggestion: suggestionMap[question.id],
+      onAcceptSuggestion: handleApplySuggestion,
+      onDismissSuggestion: handleDismissSuggestion,
+      touched: Boolean(touchedQuestions[question.id]),
+    };
+  };
 
   const renderQuestionCard = (question: QuestionDefinition) => (
     <QuestionCard key={question.id} {...buildQuestionCardProps(question)} />
@@ -730,7 +853,7 @@ export function QuestionnaireExperience({
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-primary/80">
+              <p className="text-xs text-primary/80">
                 Project context
               </p>
               <p className="text-base text-muted-foreground">
@@ -768,7 +891,7 @@ export function QuestionnaireExperience({
           <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                <p className="text-xs text-primary/70">
                   Workspace sync · Pro
                 </p>
                 <input
@@ -840,7 +963,7 @@ export function QuestionnaireExperience({
             <div className="flex items-center gap-3">
               <SectionIcon className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                <p className="text-xs text-primary/70">
                   {activeSectionState.section.badge}
                 </p>
                 <CardTitle>{activeSectionState.section.title}</CardTitle>
@@ -882,6 +1005,52 @@ export function QuestionnaireExperience({
                     />
                   )}
                 </div>
+                {(currencyRates ||
+                  currencyError ||
+                  isCurrencyLoadingRates ||
+                  manualConversionContext) && (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm font-semibold text-white">Live FX status</span>
+                      {isCurrencyLoadingRates && <span>Refreshing…</span>}
+                      {!isCurrencyLoadingRates && currencyRates && (
+                        <span>
+                          {currencyRates.stale ? "Cached" : "Live"} ·{" "}
+                          {formatFxRelativeTime(currencyRates) ?? "auto-synced"}
+                        </span>
+                      )}
+                      {currencyError && (
+                        <span className="text-amber-300">{currencyError}</span>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs text-white/80 hover:text-white"
+                        onClick={refreshCurrencyRates}
+                      >
+                        Refresh rates
+                      </Button>
+                    </div>
+                    {manualConversionContext && (
+                      <div className="mt-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 text-xs text-muted-foreground">
+                        <p className="text-sm text-white">
+                          {formattedHourlyRate !== null
+                            ? `Hourly rate left at ${formattedHourlyRate.toFixed(0)} ${manualConversionContext.from.toUpperCase()} after your last override.`
+                            : `Hourly rate left in ${manualConversionContext.from.toUpperCase()} after your last override.`}{" "}
+                          Convert it to {manualConversionContext.to.toUpperCase()}?
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button size="sm" onClick={convertHourlyRateManually}>
+                            Convert now
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={handleResumeAutoConversion}>
+                            Resume auto convert
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {canShowAgencyConfigurator && agencySummary && (
                   <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-1 sm:p-2">
                     <AgencyTeamConfigurator
@@ -949,7 +1118,7 @@ export function QuestionnaireExperience({
                         setAnswers((prev) => {
                           const updated = { ...prev };
                           advancedIds.forEach((id) => {
-                            updated[id] = null;
+                            delete updated[id];
                           });
                           return updated;
                         });
@@ -1074,7 +1243,7 @@ function Stepper({
                 : "border-white/10 bg-transparent hover:border-primary/30",
             )}
           >
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{index + 1}</span>
               {state.completionRatio === 1 && (
                 <Check className="h-4 w-4 text-primary" />
@@ -1124,21 +1293,59 @@ function QuestionCard({
   onAcceptSuggestion?: (suggestion: CrawlSuggestion) => void;
   onDismissSuggestion?: (questionId: string) => void;
 }) {
+  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
+  const isAnswered = touched && !skipped && isQuestionAnswered(question, answer);
+  const formattedSuggestionLabel = suggestion
+    ? formatAiSuggestionText(suggestion.valueLabel)
+    : null;
+  const formattedSuggestionRationale = suggestion
+    ? formatAiSuggestionText(suggestion.rationale)
+    : null;
   const suggestionApplied =
     suggestion && touched && answersEqual(answer, suggestion.value);
   const showSuggestion = Boolean(suggestion && !skipped && !suggestionApplied);
   const suggestionPending = showSuggestion && !touched;
+  const isCollapseEligible = question.type !== "multi";
+  const shouldAutoCollapse = isCollapseEligible && isAnswered && !suggestionPending;
+  const isCollapsed = shouldAutoCollapse && !isManuallyExpanded;
+  const answerSummary = useMemo(
+    () => summarizeAnswer(question, answer),
+    [question, answer],
+  );
+  const containerClasses = cn(
+    "rounded-2xl border bg-white/[0.01] p-5 transition-shadow duration-300",
+    suggestionPending
+      ? "border-primary/60 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.25)] animate-pulse-glow"
+      : "border-white/10",
+    className,
+  );
+
+  if (isCollapsed) {
+    return (
+      <div className={containerClasses}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs text-primary/70">Answered</p>
+            <p className="text-base font-semibold text-white">{question.title}</p>
+            {answerSummary && (
+              <p className="text-sm text-muted-foreground">{answerSummary}</p>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/20"
+            onClick={() => setIsManuallyExpanded(true)}
+          >
+            Edit
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-white/[0.01] p-5 transition-shadow duration-300",
-        suggestionPending
-          ? "border-primary/60 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.25)] animate-pulse-glow"
-          : "border-white/10",
-        className,
-      )}
-    >
+    <div className={containerClasses}>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -1149,7 +1356,7 @@ function QuestionCard({
               <Tooltip label={question.tooltip} />
             )}
             {question.advanced && (
-              <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-muted-foreground">
                 Advanced
               </span>
             )}
@@ -1165,31 +1372,42 @@ function QuestionCard({
             </p>
           )}
         </div>
-        {question.advanced && (
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-white"
-            onClick={() => onSkip(question.id, true)}
-          >
-            Skip question
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {shouldAutoCollapse && (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-white"
+              onClick={() => setIsManuallyExpanded(false)}
+            >
+              Collapse
+            </button>
+          )}
+          {question.advanced && (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-white"
+              onClick={() => onSkip(question.id, true)}
+            >
+              Skip question
+            </button>
+          )}
+        </div>
       </div>
       {showSuggestion && suggestion && (
         <div className="mb-3">
           <div
             tabIndex={0}
-            className="group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
             <Sparkles className="h-3 w-3" />
             AI suggestion
             <div className="pointer-events-none absolute left-0 top-full z-20 hidden w-72 rounded-2xl border border-white/10 bg-[#070810] p-4 text-left text-xs text-muted-foreground shadow-2xl group-hover:pointer-events-auto group-hover:block group-focus-visible:pointer-events-auto group-focus-visible:block">
               <p className="text-sm font-semibold text-white">
-                {suggestion.valueLabel}
+                {formattedSuggestionLabel ?? suggestion.valueLabel}
               </p>
-              {suggestion.rationale && (
+              {formattedSuggestionRationale && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {suggestion.rationale}
+                  {formattedSuggestionRationale}
                 </p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1329,7 +1547,7 @@ function renderByType(
                   </>
                 )}
                 {option.badge && (
-                  <span className="mt-2 inline-block rounded-full border border-white/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                  <span className="mt-2 inline-block rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-muted-foreground">
                     {option.badge}
                   </span>
                 )}
@@ -1435,6 +1653,66 @@ function renderByType(
   }
 }
 
+function summarizeAnswer(
+  question: QuestionDefinition,
+  answer: QuestionnaireAnswer,
+): string {
+  if (answer === null || answer === undefined) {
+    return "";
+  }
+
+  switch (question.type) {
+    case "single": {
+      const value = String(answer);
+      const label = question.options?.find((option) => option.value === value)?.label;
+      return label ?? value;
+    }
+    case "multi": {
+      if (!Array.isArray(answer) || answer.length === 0) {
+        return "";
+      }
+      const labels = answer
+        .map((value) => {
+          const label = question.options?.find((option) => option.value === value)?.label;
+          return label ?? value;
+        })
+        .filter(Boolean);
+      return labels.join(", ");
+    }
+    case "scale":
+      return typeof answer === "number" ? answer.toString() : "";
+    case "toggle":
+      return Boolean(answer) ? "Enabled" : "Disabled";
+    case "text":
+      return typeof answer === "string" ? answer.slice(0, 120) : "";
+    default:
+      if (Array.isArray(answer)) {
+        return answer.join(", ");
+      }
+      return String(answer);
+  }
+}
+
+function formatAiSuggestionText(text?: string | null): string | null {
+  if (!text) {
+    return null;
+  }
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  const hasLetters = /[a-zA-Z]/.test(trimmed);
+  if (!hasLetters) {
+    return trimmed;
+  }
+  const isAllCaps = trimmed === trimmed.toUpperCase();
+  if (!isAllCaps) {
+    return trimmed;
+  }
+  const lower = trimmed.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 function Tooltip({ label }: { label: string }) {
   return (
     <div className="relative group">
@@ -1460,7 +1738,7 @@ function InsightCard({
   return (
     <Card className="border-white/10 bg-white/[0.03]">
       <CardHeader className="pb-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary/70">{kicker}</p>
+        <p className="text-xs text-primary/70">{kicker}</p>
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-primary" />
           <CardTitle className="text-base">{title}</CardTitle>

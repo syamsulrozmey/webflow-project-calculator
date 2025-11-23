@@ -509,7 +509,10 @@ export const questionnaireSections: QuestionnaireSection[] = [
       {
         id: "maintenance_plan",
         title: "Post-launch maintenance preference",
+        description:
+          "Maintenance retains security/uptime coverage; roadmap or feature pushes should live in scoped projects.",
         type: "single",
+        helper: "Choose the duration/commitment level for true upkeep support.",
         options: [
           { value: "handoff", label: "One-time handoff" },
           { value: "support", label: "Support for 1-3 months" },
@@ -539,7 +542,54 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "shared", label: "Shared responsibility" },
           { value: "provider", label: "Our team maintains everything" },
         ],
+        helper: "Provider-owned retainer implies you own uptime, monitoring, and emergency fixes.",
         defaultValue: "shared",
+      },
+      {
+        id: "maintenance_scope",
+        title: "What should maintenance actually cover?",
+        description: "Clarify if you only need upkeep or if you're trying to include feature iterations.",
+        type: "single",
+        options: [
+          {
+            value: "core",
+            label: "Core upkeep & monitoring",
+            description: "Security patches, uptime checks, bug fixes.",
+          },
+          {
+            value: "content_ops",
+            label: "Content + SEO refresh",
+            description: "Monthly page tweaks, landing page swaps, CMS edits.",
+          },
+          {
+            value: "feature_sprints",
+            label: "Feature iterations / roadmap",
+            description: "Net-new sections, experiments, sprints.",
+            badge: "Scope to projects",
+          },
+        ],
+        defaultValue: "core",
+      },
+      {
+        id: "maintenance_hours_target",
+        title: "How many hours per month should the retainer include?",
+        type: "scale",
+        min: 4,
+        max: 40,
+        step: 2,
+        helper: "Use your best estimate—we’ll benchmark against market data.",
+        advanced: true,
+      },
+      {
+        id: "maintenance_sla",
+        title: "Support SLA expectations",
+        type: "single",
+        advanced: true,
+        options: [
+          { value: "business_hours", label: "Business hours response" },
+          { value: "next_business_day", label: "Next business day turnaround" },
+          { value: "twentyfour_seven", label: "24/7 on-call support" },
+        ],
       },
       {
         id: "training_needs",

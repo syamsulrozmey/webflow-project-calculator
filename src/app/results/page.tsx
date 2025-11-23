@@ -16,7 +16,7 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-gradient-to-b from-[#05060a] via-[#05060a] to-[#0b0f1b] pb-20 text-white">
       <section className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:px-12">
         <div className="mb-10 space-y-3">
-          <p className="text-xs uppercase tracking-[0.35em] text-primary">Cost breakdown</p>
+          <p className="text-xs text-primary">Cost breakdown</p>
           <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
             Share a client-ready cost story in minutes.
           </h1>

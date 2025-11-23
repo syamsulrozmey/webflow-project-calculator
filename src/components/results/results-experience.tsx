@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type SVGProps,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +19,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
-import type { CalculationResult, LineItem } from "@/lib/calculator/types";
+import type { CalculationResult, LineItem, MaintenanceScope } from "@/lib/calculator/types";
 import { loadCalculationResult, type CalculationMeta } from "@/lib/calculator/storage";
 import type { AgencyRateSummary } from "@/lib/agency/types";
+import { selectPaymentPlan } from "@/lib/calculator/payment-plan";
 import { generateBasicPdfReport } from "@/lib/export/basic-pdf";
 import { cn } from "@/lib/utils";
+import { formatFxRelativeTime, useCurrencyRates } from "@/hooks/use-currency-rates";
 import {
   BarChart3,
   CheckCircle2,
@@ -24,7 +34,10 @@ import {
   ClipboardCheck,
   Clock3,
   FileDown,
+  Gauge,
+  Layers3,
   Loader2,
+  PlugZap,
   Share2,
   Sparkles,
   Users,
@@ -63,6 +76,11 @@ export function ResultsExperience({
   const [exportStatus, setExportStatus] = useState<"idle" | "success" | "error">("idle");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const exportStatusTimeout = useRef<number | null>(null);
+  const {
+    rates: currencyRates,
+    loading: isCurrencyRatesLoading,
+    error: currencyError,
+  } = useCurrencyRates();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -87,13 +105,47 @@ export function ResultsExperience({
   );
   const tierRows = useMemo(() => buildTierRows(adjustedResult), [adjustedResult]);
   const confidence = Math.round((adjustedResult.ai?.confidence ?? 0.65) * 100);
-  const roughWeeks = adjustedResult.totalHours / 35;
+  const roughWeeks = adjustedResult.productionHours / 35;
   const minWeeks = Math.max(4, Math.round(roughWeeks));
   const timelineCopy = `${minWeeks}-${minWeeks + 2} weeks`;
+  const maintenancePercent =
+    adjustedResult.totalHours > 0
+      ? adjustedResult.maintenanceHours / adjustedResult.totalHours
+      : 0;
+  const bufferPercentLabel = Math.round(adjustedResult.bufferPercentage * 100);
+  const maintenanceScope = adjustedResult.maintenanceScope ?? "core";
+  const maintenanceWarning =
+    adjustedResult.maintenanceHours > 25 || maintenancePercent > 0.2;
+  const hourlyBenchmarkCopy = useMemo(() => {
+    const rate = meta.hourlyRate;
+    if (rate < 60) {
+      return "Below the researched $75-$125/hr sweet spot; consider raising for sustainability.";
+    }
+    if (rate <= 125) {
+      return "Within the $75-$125/hr freelancer/agency sweet spot cited in the 2025 guide.";
+    }
+    if (rate <= 175) {
+      return "Aligned with boutique agency benchmarks ($100-$150/hr).";
+    }
+    return "Premium enterprise positioning ($150+/hr) — communicate the added value.";
+  }, [meta.hourlyRate]);
   const formatMoney = useCallback(
     (value: number) => formatCurrencyValue(value, meta.currency),
     [meta.currency],
   );
+  const currencyMetaLabel = useMemo(() => {
+    if (isCurrencyRatesLoading) {
+      return "Syncing FX…";
+    }
+    if (currencyError) {
+      return currencyError;
+    }
+    if (currencyRates) {
+      const freshness = formatFxRelativeTime(currencyRates);
+      return `${currencyRates.stale ? "Cached" : "Live"} FX · ${freshness ?? "synced"}`;
+    }
+    return null;
+  }, [currencyError, currencyRates, isCurrencyRatesLoading]);
 
   const handleCopyLink = useCallback(async () => {
     try {
@@ -180,7 +232,7 @@ export function ResultsExperience({
         <CardContent className="space-y-6 pt-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-primary/80">
+              <p className="text-xs text-primary/80">
                 Estimate summary
               </p>
               <h2 className="text-3xl font-semibold md:text-4xl">
@@ -190,8 +242,9 @@ export function ResultsExperience({
                 {hoursFormatter.format(adjustedResult.totalHours)} hours · Tier{" "}
                 {adjustedResult.tier.toString().replace(/_/g, " ")}
               </p>
-              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Pricing currency: {meta.currency.toUpperCase()}
+                {currencyMetaLabel ? <> · {currencyMetaLabel}</> : null}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -256,37 +309,77 @@ export function ResultsExperience({
               )}
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <SummaryStat
               label="Timeline"
               value={timelineCopy}
-              helper="Based on total hours + 2 sprint buffer"
+              helper="Based on production hours + 2 sprint buffer"
             />
             <SummaryStat
               label="Hourly rate"
               value={`${formatMoney(meta.hourlyRate)} / hr`}
             helper={
               meta.internalHourlyRate
-                ? `Internal cost ${formatMoney(meta.internalHourlyRate)}`
-                : "Adjust via questionnaire or margin slider"
+                ? `${hourlyBenchmarkCopy} · Internal cost ${formatMoney(meta.internalHourlyRate)}`
+                : hourlyBenchmarkCopy
             }
             />
             <SummaryStat
               label="Maintenance"
               value={formatMoney(adjustedResult.maintenanceCost)}
-              helper={`${hoursFormatter.format(adjustedResult.maintenanceHours)} hours / mo`}
+              helper={
+                maintenanceWarning
+                  ? `${hoursFormatter.format(adjustedResult.maintenanceHours)} hrs/mo · scope as mini-project`
+                  : `${hoursFormatter.format(adjustedResult.maintenanceHours)} hours / mo`
+              }
             />
             <SummaryStat
-              label="Confidence"
-              value={`${confidence}%`}
-              helper={adjustedResult.ai?.rationale ?? "Blend of deterministic + historical benchmarks"}
+              label="Contingency"
+              value={`${formatMoney(adjustedResult.bufferCost)} · ${bufferPercentLabel}%`}
+              helper={`${hoursFormatter.format(adjustedResult.bufferHours)} hrs reserved for revisions + QA`}
+            />
+            <SummaryStat
+              label="Margin"
+              value={`${Math.round(margin * 100)}%`}
+              helper={
+                Math.abs(margin - meta.margin) < 0.005
+                  ? "Baseline margin"
+                  : margin > meta.margin
+                    ? `+${Math.round((margin - meta.margin) * 100)} pts over baseline`
+                    : `${Math.round((margin - meta.margin) * 100)} pts under baseline`
+              }
             />
           </div>
+          <ComplexityCard
+            complexity={adjustedResult.complexity}
+            bufferHours={adjustedResult.bufferHours}
+            bufferCost={adjustedResult.bufferCost}
+            bufferPercent={bufferPercentLabel}
+            formatMoney={formatMoney}
+          />
+        <MaintenanceGuidance
+          maintenanceHours={adjustedResult.maintenanceHours}
+          maintenanceCost={adjustedResult.maintenanceCost}
+          totalHours={adjustedResult.totalHours}
+          maintenanceScope={maintenanceScope}
+          maintenancePercent={maintenancePercent}
+          maintenanceWarning={maintenanceWarning}
+          formatMoney={formatMoney}
+        />
+          <MarginControl
+            margin={margin}
+            baseline={meta.margin}
+            currencyFormatter={formatMoney}
+            totalCost={adjustedResult.totalCost}
+            onChange={setMargin}
+          />
+          <PaymentMilestonesCard totalCost={adjustedResult.totalCost} formatCurrency={formatMoney} />
+
           <div className="flex flex-wrap gap-2 text-xs">
             {Object.entries(adjustedResult.factors).map(([key, factor]) => (
               <span
                 key={key}
-                className="rounded-full border border-white/15 px-3 py-1 uppercase tracking-[0.3em] text-muted-foreground"
+                className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground"
               >
                 {key}: {factor.toFixed(2)}x
               </span>
@@ -295,24 +388,28 @@ export function ResultsExperience({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <Card className="border-white/10 bg-white/[0.03]">
-          <CardHeader className="flex flex-col gap-3 border-b border-white/5 pb-6">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-primary/70">
-                  Cost breakdown
-                </p>
-                <CardTitle>Where the hours go</CardTitle>
-              </div>
+      {adjustedResult.retainers.length > 0 && (
+        <RetainerCard packages={adjustedResult.retainers} formatCurrency={formatMoney} />
+      )}
+
+      <Card className="border-white/10 bg-white/[0.03]">
+        <CardHeader className="flex flex-col gap-3 border-b border-white/5 pb-6">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xs text-primary/70">
+                Cost breakdown
+              </p>
+              <CardTitle>Where the hours go</CardTitle>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Switch between detailed line items and tiered summary. Expand each section for
-              rationale and included tasks.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Switch between detailed line items and tiered summary. Expand each section for rationale
+            and included tasks.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-8 pt-6">
+          <section className="space-y-4">
             {viewMode === "detailed" ? (
               <DetailedBreakdown
                 lineItems={adjustedResult.lineItems}
@@ -323,33 +420,71 @@ export function ResultsExperience({
             ) : (
               <TierView tiers={tierRows} formatCurrency={formatMoney} />
             )}
-          </CardContent>
-        </Card>
+          </section>
 
-        <aside className="space-y-4">
-          <TimelineCard
-            lineItems={adjustedResult.lineItems}
-            totalHours={adjustedResult.totalHours}
-            view={timelineView}
-            formatCurrency={formatMoney}
-          />
-          <MarginControl
-            margin={margin}
-            baseline={meta.margin}
-            currencyFormatter={formatMoney}
-            totalCost={adjustedResult.totalCost}
-            onChange={setMargin}
-          />
-          {meta.agencyRateSummary && (
-            <AgencyEconomicsCard
-              summary={meta.agencyRateSummary}
+          {adjustedResult.addons.length > 0 && (
+            <section className="space-y-4 border-t border-white/5 pt-6">
+              <SectionHeader
+                icon={PlugZap}
+                title="Add-ons & modules"
+                description="Transparent hours for integrations, localization, training, and rush coordination pulled from your answers."
+              />
+              <AddonGrid addons={adjustedResult.addons} formatCurrency={formatMoney} />
+            </section>
+          )}
+
+          <section className="space-y-4 border-t border-white/5 pt-6">
+            <SectionHeader
+              icon={Clock3}
+              title="Timeline"
+              description="Sequenced estimate including QA & launch buffer."
+            />
+            <TimelineCard
+              lineItems={adjustedResult.lineItems}
+              totalHours={adjustedResult.productionHours}
+              view={timelineView}
               formatCurrency={formatMoney}
             />
+          </section>
+
+          {meta.agencyRateSummary && (
+            <section className="space-y-4 border-t border-white/5 pt-6">
+              <SectionHeader
+                icon={Users}
+                title="Agency economics"
+                description="Internal blended rate vs client-facing quote and roster snapshot."
+              />
+              <AgencyEconomicsCard
+                summary={meta.agencyRateSummary}
+                formatCurrency={formatMoney}
+                currencySymbol={meta.currency === "eur" ? "€" : meta.currency === "gbp" ? "£" : "$"}
+              />
+            </section>
           )}
-          <InsightCard result={adjustedResult} source={resultSource} />
-          <ShareNote />
-        </aside>
-      </div>
+
+          <section className="space-y-4 border-t border-white/5 pt-6">
+            <SectionHeader
+              icon={Sparkles}
+              title="Scope notes"
+              description="Captured during questionnaire + AI insight."
+            />
+            <InsightCard
+              result={adjustedResult}
+              source={resultSource}
+              className="w-full"
+            />
+          </section>
+
+          <section className="space-y-4 border-t border-white/5 pt-6">
+            <SectionHeader
+              icon={Share2}
+              title="Share-ready"
+              description="Copy the public link or export a PDF whenever you are ready to share with stakeholders."
+            />
+            <ShareNote />
+          </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -357,9 +492,11 @@ export function ResultsExperience({
 function AgencyEconomicsCard({
   summary,
   formatCurrency,
+  currencySymbol,
 }: {
   summary: AgencyRateSummary;
   formatCurrency: (value: number) => string;
+  currencySymbol: string;
 }) {
   const visibleMembers = summary.teamSnapshot.slice(0, 3);
   const extraCount = summary.teamSnapshot.length - visibleMembers.length;
@@ -390,13 +527,13 @@ function AgencyEconomicsCard({
           />
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Team roster</p>
+          <p className="text-xs text-muted-foreground">Team roster</p>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
             {visibleMembers.map((member) => (
               <li key={member.id} className="flex items-center justify-between gap-3">
                 <span className="text-white">{member.name || member.role}</span>
                 <span className="text-xs text-muted-foreground">
-                  {formatCurrency(member.costRate)} → $
+                  {formatCurrency(member.costRate)} → {currencySymbol}
                   {(member.billableRate ?? member.costRate * 2).toFixed(0)}
                 </span>
               </li>
@@ -424,9 +561,244 @@ function MiniStat({
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className="text-lg font-semibold text-white">{value}</p>
       {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
+    </div>
+  );
+}
+
+function ComplexityCard({
+  complexity,
+  bufferHours,
+  bufferCost,
+  bufferPercent,
+  formatMoney,
+}: {
+  complexity: CalculationResult["complexity"];
+  bufferHours: number;
+  bufferCost: number;
+  bufferPercent: number;
+  formatMoney: (value: number) => string;
+}) {
+  if (!complexity) return null;
+
+  const tierMeta: Record<
+    CalculationResult["complexity"]["tier"],
+    { label: string; description: string }
+  > = {
+    starter: {
+      label: "Starter",
+      description: "Lean build with limited CMS + integrations. 20% buffer recommended.",
+    },
+    professional: {
+      label: "Professional",
+      description: "Standard marketing stack with select integrations. 25% buffer recommended.",
+    },
+    growth: {
+      label: "Growth",
+      description: "Large CMS footprint or heavier automation. 30% buffer recommended.",
+    },
+    enterprise: {
+      label: "Enterprise",
+      description: "Mission-critical, multi-system build. 40% buffer minimum.",
+    },
+  };
+
+  const tier = tierMeta[complexity.tier];
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+      <div className="flex items-start gap-3">
+        <Layers3 className="h-5 w-5 text-primary" />
+        <div className="flex-1">
+          <p className="text-xs text-primary/70">Complexity tier</p>
+          <div className="mt-1 flex flex-wrap items-baseline gap-3">
+            <p className="text-2xl font-semibold text-white">{tier.label}</p>
+            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-muted-foreground">
+              {complexity.total} pts
+            </span>
+            <span className="text-xs text-muted-foreground">{tier.description}</span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-white">
+        <p className="text-xs uppercase tracking-wide text-primary/80">Contingency buffer</p>
+        <p className="mt-1 text-lg font-semibold">
+          {formatMoney(bufferCost)} · {bufferPercent}%{" "}
+          <span className="text-xs font-normal text-white/70">
+            ({hoursFormatter.format(bufferHours)} hrs earmarked for revisions + QA)
+          </span>
+        </p>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {complexity.categories.map((category) => (
+          <div
+            key={category.id}
+            className="rounded-xl border border-white/10 bg-white/[0.01] p-3 text-xs text-muted-foreground"
+          >
+            <div className="flex items-center justify-between text-white">
+              <p className="text-sm font-semibold">{category.label}</p>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-muted-foreground">
+                {category.score}/{category.max}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed">{category.rationale}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PaymentMilestonesCard({
+  totalCost,
+  formatCurrency,
+}: {
+  totalCost: number;
+  formatCurrency: (value: number) => string;
+}) {
+  const plan = selectPaymentPlan(totalCost);
+  return (
+    <Card className="border-white/10 bg-white/[0.02]">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Payment milestones</CardTitle>
+        </div>
+        <p className="text-xs text-muted-foreground">{plan.narrative}</p>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <ul className="space-y-3">
+          {plan.milestones.map((milestone) => {
+            const amount = totalCost * milestone.percent;
+            return (
+              <li
+                key={milestone.id}
+                className="rounded-xl border border-white/10 bg-white/[0.01] px-3 py-2 text-sm text-white"
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold">{milestone.label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCurrency(amount)} · {Math.round(milestone.percent * 100)}%
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{milestone.note}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RetainerCard({
+  packages,
+  formatCurrency,
+}: {
+  packages: CalculationResult["retainers"];
+  formatCurrency: (value: number) => string;
+}) {
+  if (!packages.length) return null;
+  return (
+    <Card className="border-white/10 bg-white/[0.03]">
+      <CardHeader className="gap-2 border-b border-white/5 pb-5">
+        <div className="flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Maintenance & retainer outlook</CardTitle>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Benchmarked against the $1k-$5k/month care tiers from the 2025 retainer guide.
+        </p>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          {packages.map((pkg) => (
+            <div key={pkg.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+              <p className="text-xs text-primary/70">{pkg.label}</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{formatCurrency(pkg.monthlyFee)}/mo</p>
+              <p className="text-xs text-muted-foreground">
+                {hoursFormatter.format(pkg.hours)} hrs/mo budget
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{pkg.description}</p>
+              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                {pkg.notes.map((note) => (
+                  <li key={note}>• {note}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MaintenanceGuidance({
+  maintenanceHours,
+  maintenanceCost,
+  totalHours,
+  maintenanceScope,
+  maintenancePercent,
+  maintenanceWarning,
+  formatMoney,
+}: {
+  maintenanceHours: number;
+  maintenanceCost: number;
+  totalHours: number;
+  maintenanceScope: MaintenanceScope;
+  maintenancePercent: number;
+  maintenanceWarning: boolean;
+  formatMoney: (value: number) => string;
+}) {
+  const maintenanceShare = Math.round(maintenancePercent * 100);
+  const scopeNarrative: Record<MaintenanceScope, string> = {
+    core: "Covers uptime monitoring, security patches, and critical fixes.",
+    content_ops: "Adds monthly content and SEO refresh cycles on top of core monitoring.",
+    feature_sprints: "Sized to include roadmap collaboration beyond pure upkeep.",
+  };
+  const featureNarrative: Record<MaintenanceScope, string> = {
+    core: "Use scoped mini-projects for net-new sections, experiments, or campaigns.",
+    content_ops: "Major feature drops should still be quoted separately; this retainer is for steady optimization.",
+    feature_sprints:
+      "Call out roadmap work separately so the client understands which hours belong to iterative development.",
+  };
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border px-5 py-4 transition-colors",
+        maintenanceWarning ? "border-amber-300/70 bg-amber-400/5" : "border-white/10 bg-white/[0.02]",
+      )}
+    >
+      <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+        <Gauge className="h-4 w-4 text-primary" />
+        Maintenance guidance
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-[11px] text-primary/70">Core maintenance</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {hoursFormatter.format(maintenanceHours)} hrs/mo (~{formatMoney(maintenanceCost)}) · roughly{" "}
+            {maintenanceShare}% of total effort. {scopeNarrative[maintenanceScope]}
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] text-primary/70">Feature iteration</p>
+          <p className="mt-1 text-sm text-muted-foreground">{featureNarrative[maintenanceScope]}</p>
+          {maintenanceWarning && (
+            <p className="mt-2 text-xs text-amber-200">
+              Exceeding 25 hrs/mo or 20% of build hours usually signals roadmap work—spin that portion into a
+              sprint or mini-project for clarity.
+            </p>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Total hours: {hoursFormatter.format(totalHours)} · Maintenance focus:{" "}
+        {maintenanceScope.replace(/_/g, " ")}
+      </p>
     </div>
   );
 }
@@ -442,7 +814,7 @@ function SummaryStat({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
       {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
     </div>
@@ -511,7 +883,14 @@ function DetailedBreakdown({
               onClick={() => onToggle(item.id)}
             >
               <div>
-                <p className="text-sm font-semibold text-white">{item.label}</p>
+                <p className="text-sm font-semibold text-white">
+                  {item.label}
+                  {item.kind && item.kind !== "phase" && (
+                    <span className="ml-2 rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {item.kind === "timeline" ? "Timeline" : "Add-on"}
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {hoursFormatter.format(item.hours)} hrs · {formatCurrency(item.cost)}
                 </p>
@@ -534,25 +913,111 @@ function DetailedBreakdown({
   );
 }
 
+function AddonGrid({
+  addons,
+  formatCurrency,
+}: {
+  addons: CalculationResult["addons"];
+  formatCurrency: (value: number) => string;
+}) {
+  if (!addons.length) return null;
+  const grouped = addons.reduce<Record<string, typeof addons>>((acc, addon) => {
+    const key = addon.category ?? "other";
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(addon);
+    return acc;
+  }, {});
+
+  const categoryLabels: Record<string, string> = {
+    integration: "Integrations",
+    seo: "SEO enablement",
+    training: "Training & enablement",
+    localization: "Localization",
+    timeline: "Timeline pressure",
+  };
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {Object.entries(grouped).map(([category, items]) => (
+        <div key={category} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-xs text-primary/70">{categoryLabels[category] ?? "Additional scope"}</p>
+          <div className="mt-3 space-y-3">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-white/10 bg-white/[0.01] p-3 text-sm text-white"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{item.label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCurrency(item.cost)} · {hoursFormatter.format(item.hours)} hrs
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TierView({
   tiers,
   formatCurrency,
 }: {
-  tiers: Array<{ id: string; label: string; description: string; cost: number; hours: number }>;
+  tiers: Array<{
+    id: string;
+    label: string;
+    description: string;
+    cost: number;
+    hours: number;
+    features: string[];
+    priceHint: string;
+  }>;
   formatCurrency: (value: number) => string;
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {tiers.map((tier) => (
         <div key={tier.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary/70">{tier.label}</p>
+          <p className="text-xs text-primary/70">{tier.priceHint}</p>
+          <p className="text-lg font-semibold text-white">{tier.label}</p>
           <p className="text-2xl font-semibold text-white">{formatCurrency(tier.cost)}</p>
           <p className="text-xs text-muted-foreground">
-            {hoursFormatter.format(tier.hours)} hrs
+            {hoursFormatter.format(tier.hours)} hrs (incl. maintenance)
           </p>
           <p className="mt-2 text-sm text-muted-foreground">{tier.description}</p>
+          <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+            {tier.features.map((feature) => (
+              <li key={feature}>• {feature}</li>
+            ))}
+          </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="mt-1 h-4 w-4 text-primary" />
+      <div>
+        <p className="text-base font-semibold text-white">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
     </div>
   );
 }
@@ -629,9 +1094,11 @@ function TimelineCard({
 function InsightCard({
   result,
   source,
+  className,
 }: {
   result: CalculationResult;
   source: string;
+  className?: string;
 }) {
   const highlights =
     result.ai?.highlights ??
@@ -642,7 +1109,7 @@ function InsightCard({
     ];
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
+    <Card className={cn("border-primary/20 bg-primary/5", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -655,14 +1122,14 @@ function InsightCard({
         </p>
       </CardHeader>
       <CardContent className="pt-0">
-        <ul className="space-y-2 text-sm text-white">
+        <div className="space-y-2 text-sm text-white">
           {highlights.map((item) => (
-            <li key={item} className="flex items-start gap-2">
+            <div key={item} className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/10 p-3">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
               <span>{item}</span>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </CardContent>
       {result.ai?.risks && result.ai.risks.length > 0 && (
         <CardFooter className="pt-2">
@@ -680,9 +1147,9 @@ function InsightCard({
   );
 }
 
-function ShareNote() {
+function ShareNote({ className }: { className?: string }) {
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className={cn("border-white/10 bg-white/[0.02]", className)}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Share-ready</CardTitle>
         <p className="text-xs text-muted-foreground">
@@ -690,11 +1157,14 @@ function ShareNote() {
         </p>
       </CardHeader>
       <CardContent className="pt-0 text-sm text-muted-foreground">
-        <ul className="space-y-2">
-          <li>• Copy link for async reviews</li>
-          <li>• Export PDF (watermark removed on Pro)</li>
-          <li>• Embed results in proposals</li>
-        </ul>
+        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.01] p-4">
+          <p className="text-xs text-muted-foreground">Next steps</p>
+          <ul className="mt-2 space-y-1">
+            <li>• Copy link for async reviews</li>
+            <li>• Export PDF (watermark removed on Pro)</li>
+            <li>• Embed results in proposals</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );
@@ -756,31 +1226,37 @@ function MarginControl({
 }
 
 function buildTierRows(result: CalculationResult) {
-  const presets = [
+  const blueprints = [
     {
-      id: "lean",
-      label: "Lean MVP",
-      description: "Prioritize launch-critical pages + baseline interactions.",
-      factor: 0.82,
+      id: "essential",
+      label: "Essential",
+      description: "Template-driven builds, baseline CMS, and a single integration.",
+      priceHint: "Essential · $3k-$6k benchmark",
+      factor: 0.6,
+      features: ["5-7 core pages", "Baseline SEO + redirects", "1 revision round"],
     },
     {
-      id: "recommended",
-      label: "Recommended scope",
-      description: "Balanced polish, animations, and CMS coverage.",
+      id: "professional",
+      label: "Professional (sweet spot)",
+      description: "Custom design system, CMS depth, and 2-3 integrations.",
+      priceHint: "Professional · $8k-$15k benchmark",
       factor: 1,
+      features: ["10-15 pages + blog", "Advanced interactions", "HubSpot/analytics wiring"],
     },
     {
       id: "premium",
       label: "Premium",
-      description: "Full storytelling, advanced localization, and retained QA.",
-      factor: 1.22,
+      description: "Enterprise polish, localization, and retained QA support.",
+      priceHint: "Premium · $20k+ benchmark",
+      factor: 1.4,
+      features: ["20+ pages & localization", "Complex CMS + automations", "90-day hypercare"],
     },
   ] as const;
 
-  return presets.map((preset) => ({
-    ...preset,
-    cost: result.totalCost * preset.factor,
-    hours: result.totalHours * preset.factor,
+  return blueprints.map((tier) => ({
+    ...tier,
+    cost: result.totalCost * tier.factor,
+    hours: result.totalHours * tier.factor,
   }));
 }
 
@@ -810,6 +1286,7 @@ function applyMargin(
   const factor = 1 + delta;
   const totalCost = round(base.totalCost * factor);
   const maintenanceCost = round(base.maintenanceCost * factor);
+  const bufferCost = round(base.bufferCost * factor);
   const effectiveHourlyRate = round(
     (totalCost / base.totalHours) || base.effectiveHourlyRate,
     2,
@@ -818,7 +1295,12 @@ function applyMargin(
     ...base,
     totalCost,
     maintenanceCost,
+    bufferCost,
     effectiveHourlyRate,
+    addons: base.addons.map((addon) => ({
+      ...addon,
+      cost: round(addon.cost * factor),
+    })),
     lineItems: base.lineItems.map((item) => ({
       ...item,
       cost: round(item.cost * factor),

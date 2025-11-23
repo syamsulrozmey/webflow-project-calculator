@@ -98,7 +98,8 @@ export function applyAiMultiplierToResult(
   }
   const factor = clamp(multiplier, 0.8, 1.25);
 
-  const totalHours = round(result.totalHours * factor);
+  const productionHours = round(result.productionHours * factor);
+  const bufferHours = round(result.bufferHours * factor);
   const maintenanceHours = round(result.maintenanceHours * factor);
   const lineItems = result.lineItems.map((item) => {
     const hours = round(item.hours * factor);
@@ -109,16 +110,30 @@ export function applyAiMultiplierToResult(
     };
   });
 
+  const bufferCost = round(bufferHours * hourlyRate);
   const maintenanceCost = round(maintenanceHours * hourlyRate);
+  const totalHours = round(productionHours + maintenanceHours);
   const totalCost = round(totalHours * hourlyRate);
+  const addons = result.addons.map((addon) => {
+    const hours = round(addon.hours * factor);
+    return {
+      ...addon,
+      hours,
+      cost: round(hours * hourlyRate),
+    };
+  });
 
   return {
     ...result,
     lineItems,
     totalHours,
     totalCost,
+    productionHours,
+    bufferHours,
+    bufferCost,
     maintenanceHours,
     maintenanceCost,
+    addons,
   };
 }
 

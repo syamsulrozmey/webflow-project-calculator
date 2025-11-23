@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { calculateCost } from "@/lib/calculator";
+import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/calculator/from-answers";
 import {
   PROJECT_BASE_HOURS,
   MAX_HOURLY_RATE,
@@ -18,14 +19,27 @@ import {
   type CalculationInput,
   type CalculationResult,
 } from "@/lib/calculator/types";
+import type { ComplexityScore } from "@/lib/calculator/complexity-score";
 import {
   applyAiMultiplierToResult,
   buildAiReadyInput,
 } from "@/lib/calculator/ai-enhancement";
+import {
+  convertResultCurrency,
+  getCurrencyRates,
+  normalizeCalculationInputToUsd,
+} from "@/lib/currency/rates";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { ApiError, handleApiError } from "@/lib/http";
 import { rateLimitByKey } from "@/lib/rate-limit";
 import { ComplexityInsightSchema } from "@/types/ai";
+
+const DEFAULT_COMPLEXITY: ComplexityScore = {
+  total: 6,
+  tier: "professional",
+  bufferPercentage: 0.25,
+  categories: [],
+};
 
 const CalculationSchema = z
   .object({
@@ -43,12 +57,29 @@ const CalculationSchema = z
       timeline: z.enum(TIMELINE_URGENCY),
     }),
     maintenance: z.enum(MAINTENANCE_LEVELS),
+    currency: z.enum(SUPPORTED_CURRENCIES).default("usd"),
     assumptions: z
       .string()
       .max(600, "Assumptions must be under 600 characters")
       .optional(),
   })
   .extend({
+    complexity: z
+      .object({
+        total: z.number(),
+        tier: z.enum(["starter", "professional", "growth", "enterprise"] as const),
+        bufferPercentage: z.number(),
+        categories: z.array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            score: z.number(),
+            max: z.number(),
+            rationale: z.string(),
+          }),
+        ),
+      })
+      .optional(),
     aiInsight: ComplexityInsightSchema.optional(),
   });
 
@@ -70,8 +101,10 @@ export async function POST(request: Request) {
       throw new ApiError("Invalid JSON body", 400);
     });
     const parsed = CalculationSchema.parse(json);
-    const { aiInsight, ...calculationInput } = parsed;
+    const { aiInsight, currency, ...calculationInput } = parsed;
+    const requestedCurrency: SupportedCurrency = currency ?? "usd";
     const baseInput = calculationInput as CalculationInput;
+    baseInput.complexity = baseInput.complexity ?? DEFAULT_COMPLEXITY;
 
     const tiers = PROJECT_BASE_HOURS[baseInput.projectType];
     if (!tiers[baseInput.tier]) {
@@ -84,37 +117,57 @@ export async function POST(request: Request) {
       );
     }
 
+    const fxSnapshot = await getCurrencyRates();
+    const normalizedInput = normalizeCalculationInputToUsd(
+      baseInput,
+      requestedCurrency,
+      fxSnapshot,
+    );
+
     const cacheKey = [
-      baseInput.projectType,
-      baseInput.tier,
-      baseInput.hourlyRate,
-      baseInput.maintenance,
-      ...Object.values(baseInput.multipliers),
+      normalizedInput.projectType,
+      normalizedInput.tier,
+      normalizedInput.hourlyRate.toFixed(4),
+      normalizedInput.maintenance,
+      ...Object.values(normalizedInput.multipliers),
     ].join(":");
 
     if (!aiInsight) {
       const cached = await cacheGet<CalculationResult>(cacheKey);
       if (cached) {
-        return NextResponse.json({ data: cached, cached: true });
+        const cachedResult =
+          requestedCurrency === "usd"
+            ? cached
+            : convertResultCurrency(cached, "usd", requestedCurrency, fxSnapshot);
+        return NextResponse.json({ data: cachedResult, cached: true });
       }
     }
 
-    const deterministicResult = calculateCost(baseInput);
+    const deterministicResult = calculateCost(normalizedInput);
 
     if (!aiInsight) {
       cacheSet(cacheKey, deterministicResult).catch(() => {});
-      return NextResponse.json({ data: deterministicResult });
+      const responseResult =
+        requestedCurrency === "usd"
+          ? deterministicResult
+          : convertResultCurrency(deterministicResult, "usd", requestedCurrency, fxSnapshot);
+      return NextResponse.json({ data: responseResult });
     }
 
     const aiInput = buildAiReadyInput(baseInput, aiInsight);
-    const aiResult = calculateCost(aiInput.effectiveInput);
+    const normalizedAiInput = normalizeCalculationInputToUsd(
+      aiInput.effectiveInput,
+      requestedCurrency,
+      fxSnapshot,
+    );
+    const aiResult = calculateCost(normalizedAiInput);
     const adjusted = applyAiMultiplierToResult(
       aiResult,
-      baseInput.hourlyRate,
+      normalizedAiInput.hourlyRate,
       aiInput.multiplier,
     );
 
-    const finalResult: CalculationResult = {
+    const finalResultBase: CalculationResult = {
       ...adjusted,
       ai: {
         source: aiInsight.source ?? "openrouter",
@@ -131,6 +184,11 @@ export async function POST(request: Request) {
         totalCost: deterministicResult.totalCost,
       },
     };
+
+    const finalResult =
+      requestedCurrency === "usd"
+        ? finalResultBase
+        : convertResultCurrency(finalResultBase, "usd", requestedCurrency, fxSnapshot);
 
     return NextResponse.json({ data: finalResult, aiApplied: true });
   } catch (error) {

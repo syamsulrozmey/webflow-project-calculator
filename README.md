@@ -59,6 +59,7 @@ Prisma schema lives in `prisma/schema.prisma` and is seeded with base tables (`U
       "projectType": "landing_page",
       "tier": "simple",
       "hourlyRate": 95,
+      "currency": "usd",
       "multipliers": {
         "design": "standard",
         "functionality": "basic",
@@ -73,6 +74,10 @@ Prisma schema lives in `prisma/schema.prisma` and is seeded with base tables (`U
   - Extras: request rate-limited via Redis (20 req/min per IP) and responses cached for 30 days using the same parameters.
 
 - `POST /api/ai/complexity`
+- `GET /api/currency`
+  - Response: `{ "data": { "base": "usd", "rates": { "usd": 1, "eur": 0.93, "gbp": 0.79 }, "fetchedAt": 1732300000, "source": "live", "stale": false } }`
+  - Used by client components to show FX freshness badges and auto-convert hourly rates when the questionnaire currency selector changes. Rates are cached in Redis for 30 minutes with graceful static fallbacks.
+
   - Request body:
     ```json
     {
@@ -99,6 +104,7 @@ Unit tests for the cost engine are located in `__tests__/calculator.test.ts`. Us
 | Redis       | Rate limiting + crawl cache           | Local compose service, or Upstash URL assigned to `REDIS_URL`         |
 | Firecrawl   | Website analysis                      | Create API key at [firecrawl.dev](https://firecrawl.dev)              |
 | OpenRouter  | AI orchestration                      | Get API key at [openrouter.ai](https://openrouter.ai)                 |
+| currencyapi.com | Live FX rates (USD/EUR/GBP)         | Create a free account at [currencyapi.com](https://currencyapi.com) and set `CURRENCY_API_KEY` |
 | Stripe      | Billing (Phase 5)                     | Generate secret + webhook keys in test mode                           |
 
 Document any production keys inside an internal vault; never commit `.env.local`.

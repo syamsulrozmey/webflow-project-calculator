@@ -15,6 +15,7 @@ function buildAnswers(overrides: Partial<QuestionnaireAnswerMap> = {}): Question
     maintenance_plan: "handoff",
     maintenance_cadence: "ad_hoc",
     maintenance_owner: "client_team",
+    maintenance_scope: "core",
     rate_currency: "usd",
     hourly_rate: 100,
     page_volume: 6,
@@ -47,6 +48,29 @@ describe("buildCalculationPayload mappings", () => {
     });
     const payload = buildCalculationPayload({ answers });
     expect(payload.input.maintenance).toBe("retainer");
+    expect(payload.input.maintenanceScope).toBe("core");
+  });
+
+  it("keeps support with monthly cadence in the standard band", () => {
+    const answers = buildAnswers({
+      maintenance_plan: "support",
+      maintenance_cadence: "monthly",
+      maintenance_owner: "shared",
+    });
+    const payload = buildCalculationPayload({ answers });
+    expect(payload.input.maintenance).toBe("standard");
+  });
+
+  it("captures maintenance scope selections for roadmap work", () => {
+    const answers = buildAnswers({
+      maintenance_plan: "retainer",
+      maintenance_cadence: "weekly",
+      maintenance_owner: "provider",
+      maintenance_scope: "feature_sprints",
+    });
+    const payload = buildCalculationPayload({ answers });
+    expect(payload.input.maintenanceScope).toBe("feature_sprints");
+    expect(payload.input.maintenance).toBe("retainer");
   });
 
   it("keeps maintenance at none for handoff and ad-hoc client updates", () => {
@@ -75,6 +99,18 @@ describe("buildCalculationPayload mappings", () => {
     const answers = buildAnswers({ accessibility_target: "wcag_aa" });
     const payload = buildCalculationPayload({ answers });
     expect(payload.input.multipliers.technical).toBe("integrations");
+  });
+
+  it("passes currency selections through to calculation metadata", () => {
+    const answers = buildAnswers({ rate_currency: "eur" });
+    const payload = buildCalculationPayload({ answers });
+    expect(payload.metadata.currency).toBe("eur");
+  });
+
+  it("defaults currency to USD when an unsupported value is provided", () => {
+    const answers = buildAnswers({ rate_currency: "aud" });
+    const payload = buildCalculationPayload({ answers });
+    expect(payload.metadata.currency).toBe("usd");
   });
 });
 

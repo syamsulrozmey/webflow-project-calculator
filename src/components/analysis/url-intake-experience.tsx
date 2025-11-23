@@ -298,7 +298,7 @@ export function UrlIntakeExperience({
         <CardContent className="space-y-6 pt-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-primary/80">
+              <p className="text-xs text-primary/80">
                 Existing site analysis
               </p>
               <CardTitle className="text-3xl">
@@ -419,7 +419,7 @@ export function UrlIntakeExperience({
         <div className="space-y-6">
           <Card className="border-white/5 bg-white/[0.02]">
             <CardHeader className="border-b border-white/5">
-              <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+              <p className="text-xs text-primary/70">
                 Crawl progress
               </p>
               <CardTitle className="text-2xl">Status timeline</CardTitle>
@@ -439,7 +439,7 @@ export function UrlIntakeExperience({
             <CardContent className="space-y-6 pt-6">
               {status === "completed" ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-muted-foreground">
-                  <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                  <p className="text-xs text-primary/70">
                     Crawl finished
                   </p>
                   <p className="text-white">
@@ -464,7 +464,7 @@ export function UrlIntakeExperience({
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                    <p className="text-xs text-primary/70">
                       Crawl summary
                     </p>
                     <CardTitle className="text-2xl">Site insights</CardTitle>
@@ -481,7 +481,7 @@ export function UrlIntakeExperience({
             <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+                  <p className="text-xs text-primary/70">
                     Ready for questionnaire
                   </p>
                   <p className="text-lg font-semibold text-white">
@@ -548,7 +548,7 @@ export function UrlIntakeExperience({
                     onClick={() => handleHistorySelect(record)}
                   >
                       <p className="text-sm text-white">{record.normalizedUrl}</p>
-                      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {formatHistoryDate(record.timestamp)}
                       </p>
                   </button>
@@ -623,7 +623,7 @@ function SummaryDetails({
   return (
     <>
       <div className="space-y-1">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-primary/70">
+        <p className="text-[11px] text-primary/70">
           Crawl progress
         </p>
         <div className="flex items-center gap-3">
@@ -661,7 +661,7 @@ function SummaryDetails({
             key={item.label}
             className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
           >
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {item.label}
             </p>
             <p className="text-xl font-semibold text-white">{item.value}</p>
@@ -674,7 +674,7 @@ function SummaryDetails({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+          <p className="text-xs text-primary/70">
             Technology stack
           </p>
           <p className="text-sm text-muted-foreground">
@@ -692,7 +692,7 @@ function SummaryDetails({
           </div>
         </div>
         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+          <p className="text-xs text-primary/70">
             Complexity score
           </p>
           <div className="flex items-center gap-4">
@@ -714,7 +714,7 @@ function SummaryDetails({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
+          <h3 className="text-sm font-semibold text-primary/70">
             Page mix
           </h3>
           {result.pageTypes.some((item) => item.count > 0) ? (
@@ -735,7 +735,7 @@ function SummaryDetails({
           )}
         </div>
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/70">
+          <h3 className="text-sm font-semibold text-primary/70">
             Recommendations
           </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
@@ -797,7 +797,7 @@ function InsightCard({
   return (
     <Card className="border-white/10 bg-white/[0.03]">
       <CardHeader className="pb-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary/70">
+        <p className="text-xs text-primary/70">
           {kicker}
         </p>
         <div className="flex items-center gap-2">

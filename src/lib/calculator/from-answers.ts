@@ -2,6 +2,7 @@ import type {
   CalculationInput,
   ComplexityMultipliers,
   MaintenanceLevel,
+  MaintenanceScope,
   ProjectType,
   TierLookup,
 } from "@/lib/calculator/types";
@@ -11,6 +12,8 @@ import type {
   QuestionnaireUserType,
 } from "@/config/questionnaire";
 import type { AgencyRateSummary } from "@/lib/agency/types";
+import { deriveAddonsFromAnswers } from "@/lib/calculator/addons";
+import { evaluateComplexity } from "@/lib/calculator/complexity-score";
 
 type QuestionnaireValue = string | number | boolean | string[] | null | undefined;
 
@@ -38,6 +41,12 @@ const MAINTENANCE_OWNER_LABELS: Record<string, string> = {
   client_team: "Client-owned",
   shared: "Shared responsibility",
   provider: "Provider-owned",
+};
+
+const MAINTENANCE_SCOPE_LABELS: Record<string, string> = {
+  core: "Core upkeep & monitoring",
+  content_ops: "Content/SEO refresh cycles",
+  feature_sprints: "Feature iterations & roadmap",
 };
 
 const HOSTING_STRATEGY_LABELS: Record<string, string> = {
@@ -87,8 +96,8 @@ const USER_MARGIN_MAP: Record<QuestionnaireUserType, number> = {
   company: 0.2,
 };
 
-const CURRENCIES = ["usd", "eur", "gbp"] as const;
-export type SupportedCurrency = (typeof CURRENCIES)[number];
+export const SUPPORTED_CURRENCIES = ["usd", "eur", "gbp"] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 function asString(value: QuestionnaireValue): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -215,10 +224,19 @@ function mapTimelineMultiplier(
   return "standard";
 }
 
-function mapMaintenanceLevel(answers: QuestionnaireAnswerMap): MaintenanceLevel {
+function mapMaintenanceScope(value?: string): MaintenanceScope {
+  if (value === "content_ops") return "content_ops";
+  if (value === "feature_sprints") return "feature_sprints";
+  return "core";
+}
+
+function mapMaintenanceSettings(
+  answers: QuestionnaireAnswerMap,
+): { level: MaintenanceLevel; scope: MaintenanceScope } {
   const value = asString(answers.maintenance_plan);
   const cadence = asString(answers.maintenance_cadence);
   const owner = asString(answers.maintenance_owner);
+  const scope = mapMaintenanceScope(asString(answers.maintenance_scope));
 
   let level: MaintenanceLevel;
   switch (value) {
@@ -229,14 +247,23 @@ function mapMaintenanceLevel(answers: QuestionnaireAnswerMap): MaintenanceLevel 
       level = "light";
       break;
     case "retainer":
-      level = "retainer";
+      level = "standard";
       break;
     default:
       level = "standard";
   }
 
-  if (cadence === "weekly" || owner === "provider") {
-    return "retainer";
+  const providerOwned = owner === "provider";
+  const weeklyCadence = cadence === "weekly";
+
+  if (weeklyCadence && providerOwned) {
+    level = "retainer";
+  } else if (weeklyCadence) {
+    level = level === "none" ? "light" : "standard";
+  }
+
+  if (providerOwned && level === "none") {
+    level = "light";
   }
 
   if (cadence === "monthly" && level === "light") {
@@ -251,7 +278,11 @@ function mapMaintenanceLevel(answers: QuestionnaireAnswerMap): MaintenanceLevel 
     level = "none";
   }
 
-  return level;
+  if (scope === "feature_sprints" && level !== "none") {
+    level = level === "light" ? "standard" : level;
+  }
+
+  return { level, scope };
 }
 
 function buildAssumptions(answers: QuestionnaireAnswerMap): string | undefined {
@@ -313,6 +344,12 @@ function buildAssumptions(answers: QuestionnaireAnswerMap): string | undefined {
       `Maintenance owner: ${MAINTENANCE_OWNER_LABELS[maintenanceOwner] ?? maintenanceOwner}`,
     );
   }
+  const maintenanceScope = asString(answers.maintenance_scope);
+  if (maintenanceScope) {
+    notes.push(
+      `Maintenance coverage: ${MAINTENANCE_SCOPE_LABELS[maintenanceScope] ?? maintenanceScope}`,
+    );
+  }
   if (notes.length === 0) {
     return undefined;
   }
@@ -332,7 +369,7 @@ export interface CalculatedPayload {
 }
 
 function mapCurrency(value?: string): SupportedCurrency {
-  if (value && (CURRENCIES as readonly string[]).includes(value)) {
+  if (value && (SUPPORTED_CURRENCIES as readonly string[]).includes(value)) {
     return value as SupportedCurrency;
   }
   return "usd";
@@ -378,6 +415,9 @@ export function buildCalculationPayload(opts: {
   const hourlyRate = mapHourlyRate(opts.answers, opts.userType);
   const currency = mapCurrency(asString(opts.answers.rate_currency));
   let margin = mapMargin(opts.userType);
+  const maintenanceSettings = mapMaintenanceSettings(opts.answers);
+  const complexity = evaluateComplexity(opts.answers);
+  const addons = deriveAddonsFromAnswers(opts.answers);
   const internalHourlyRate =
     opts.agencySummary && opts.userType === "agency"
       ? opts.agencySummary.blendedCostRate
@@ -391,7 +431,18 @@ export function buildCalculationPayload(opts: {
     tier,
     hourlyRate,
     multipliers,
-    maintenance: mapMaintenanceLevel(opts.answers),
+    maintenance: maintenanceSettings.level,
+    maintenanceScope: maintenanceSettings.scope,
+    addons,
+    retainerContext: {
+      cadence: asString(opts.answers.maintenance_cadence),
+      owner: asString(opts.answers.maintenance_owner),
+      plan: asString(opts.answers.maintenance_plan),
+      hostingStrategy: asString(opts.answers.hosting_strategy),
+      hoursTarget: asNumber(opts.answers.maintenance_hours_target),
+      sla: asString(opts.answers.maintenance_sla),
+    },
+    complexity,
     assumptions: buildAssumptions(opts.answers),
   };
 

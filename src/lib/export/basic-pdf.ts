@@ -33,11 +33,19 @@ export async function generateBasicPdfReport({
   const pageState = createPage(pdfDoc, sections.header.watermarkText, fonts.bold);
   renderHeader(pageState, sections, fonts);
   renderSummary(pageState, sections.summary, fonts);
+  renderSectionTitle(pageState, "Complexity Tier", fonts);
+  renderComplexity(pageState, sections.complexity, fonts);
   renderDivider(pageState);
   renderSectionTitle(pageState, "Cost Breakdown", fonts);
   renderBreakdown(pageState, sections.breakdown, fonts);
   renderSectionTitle(pageState, "Timeline", fonts);
   renderTimeline(pageState, sections.timeline, fonts);
+  renderSectionTitle(pageState, "Payment Milestones", fonts);
+  renderPayments(pageState, sections.payments, fonts);
+  if (sections.retainers.packages.length) {
+    renderSectionTitle(pageState, "Retainer Outlook", fonts);
+    renderRetainers(pageState, sections.retainers, fonts);
+  }
   renderSectionTitle(pageState, "Multipliers", fonts);
   renderFactors(pageState, sections.factors, fonts);
   renderSectionTitle(pageState, "Scope Notes", fonts);
@@ -165,6 +173,68 @@ function renderSummary(state: PageState, summary: BasicPdfSections["summary"], f
   state.cursorY -= 8;
 }
 
+function renderComplexity(state: PageState, complexity: BasicPdfSections["complexity"], fonts: FontMap) {
+  const maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2;
+  ensureSpace(state, 60);
+  state.page.drawText(`${complexity.tierLabel} • ${complexity.scoreLabel}`, {
+    x: PAGE_MARGIN,
+    y: state.cursorY,
+    size: 12,
+    font: fonts.bold,
+    color: rgb(0.1, 0.12, 0.2),
+  });
+  state.cursorY -= 18;
+  drawWrappedText(
+    state,
+    complexity.narrative,
+    fonts.regular,
+    9,
+    maxWidth,
+    rgb(0.45, 0.47, 0.5),
+    PAGE_MARGIN,
+  );
+  state.cursorY -= 12;
+  state.page.drawText(`Contingency: ${complexity.bufferLabel}`, {
+    x: PAGE_MARGIN,
+    y: state.cursorY,
+    size: 10,
+    font: fonts.bold,
+    color: rgb(0.08, 0.45, 0.85),
+  });
+  state.cursorY -= 18;
+  complexity.chips.forEach((chip) => {
+    ensureSpace(state, 32);
+    state.page.drawRectangle({
+      x: PAGE_MARGIN,
+      y: state.cursorY - 6,
+      width: maxWidth,
+      height: 36,
+      borderWidth: 0.5,
+      borderColor: rgb(0.88, 0.9, 0.93),
+      color: rgb(0.97, 0.98, 0.99),
+    });
+    state.page.drawText(`${chip.label} • ${chip.value}`, {
+      x: PAGE_MARGIN + 8,
+      y: state.cursorY + 18,
+      size: 10,
+      font: fonts.bold,
+      color: rgb(0.1, 0.12, 0.2),
+    });
+    drawWrappedText(
+      state,
+      chip.helper,
+      fonts.regular,
+      9,
+      maxWidth - 16,
+      rgb(0.33, 0.35, 0.4),
+      PAGE_MARGIN + 8,
+      state.cursorY + 6,
+      true,
+    );
+    state.cursorY -= 42;
+  });
+}
+
 function renderBreakdown(state: PageState, breakdown: BasicPdfSections["breakdown"], fonts: FontMap) {
   const maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2;
   breakdown.forEach((row) => {
@@ -231,6 +301,94 @@ function renderTimeline(state: PageState, timeline: BasicPdfSections["timeline"]
       true,
     );
     state.cursorY -= 48;
+  });
+}
+
+function renderPayments(state: PageState, payments: BasicPdfSections["payments"], fonts: FontMap) {
+  const maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2;
+  ensureSpace(state, 50);
+  drawWrappedText(
+    state,
+    payments.narrative,
+    fonts.regular,
+    9,
+    maxWidth,
+    rgb(0.33, 0.35, 0.4),
+    PAGE_MARGIN,
+  );
+  state.cursorY -= 10;
+  payments.milestones.forEach((milestone) => {
+    ensureSpace(state, 34);
+    state.page.drawRectangle({
+      x: PAGE_MARGIN,
+      y: state.cursorY - 2,
+      width: maxWidth,
+      height: 34,
+      borderWidth: 0.5,
+      borderColor: rgb(0.88, 0.9, 0.93),
+      color: rgb(0.97, 0.98, 0.99),
+    });
+    state.page.drawText(`${milestone.label} — ${milestone.percent}%`, {
+      x: PAGE_MARGIN + 8,
+      y: state.cursorY + 16,
+      size: 10,
+      font: fonts.bold,
+      color: rgb(0.1, 0.12, 0.2),
+    });
+    state.page.drawText(milestone.amount, {
+      x: PAGE_WIDTH - PAGE_MARGIN - fonts.bold.widthOfTextAtSize(milestone.amount, 10) - 8,
+      y: state.cursorY + 16,
+      size: 10,
+      font: fonts.bold,
+      color: rgb(0.08, 0.45, 0.85),
+    });
+    drawWrappedText(
+      state,
+      milestone.note,
+      fonts.regular,
+      9,
+      maxWidth - 16,
+      rgb(0.45, 0.47, 0.5),
+      PAGE_MARGIN + 8,
+      state.cursorY + 4,
+      true,
+    );
+    state.cursorY -= 38;
+  });
+}
+
+function renderRetainers(state: PageState, retainers: BasicPdfSections["retainers"], fonts: FontMap) {
+  retainers.packages.forEach((pkg) => {
+    ensureSpace(state, 48);
+    state.page.drawText(pkg.label, {
+      x: PAGE_MARGIN,
+      y: state.cursorY,
+      size: 11,
+      font: fonts.bold,
+      color: rgb(0.1, 0.12, 0.2),
+    });
+    state.page.drawText(`${pkg.fee} • ${pkg.hours}`, {
+      x: PAGE_MARGIN,
+      y: state.cursorY - 12,
+      size: 9,
+      font: fonts.regular,
+      color: rgb(0.08, 0.45, 0.85),
+    });
+    const notes = pkg.notes.length ? pkg.notes : ["Core monitoring + monthly updates."];
+    notes.forEach((note, idx) => {
+      drawWrappedText(
+        state,
+        `• ${note}`,
+        fonts.regular,
+        9,
+        PAGE_WIDTH - PAGE_MARGIN * 2,
+        rgb(0.33, 0.35, 0.4),
+        PAGE_MARGIN,
+        state.cursorY - 24 - idx * 12,
+        true,
+      );
+    });
+    state.cursorY -= 36 + notes.length * 12;
   });
 }
 

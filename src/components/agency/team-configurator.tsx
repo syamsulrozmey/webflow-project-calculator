@@ -62,7 +62,7 @@ export function AgencyTeamConfigurator({
       >
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-primary">Agency economics</p>
+            <p className="text-xs text-primary">Agency economics</p>
             <CardTitle className="text-xl">Team blend & margin guardrails</CardTitle>
             <CardDescription>
               Manage internal costs, capacity, and markup to auto-fill the hourly rate question.
@@ -100,7 +100,7 @@ export function AgencyTeamConfigurator({
             helper="Sum of allocated hours"
           />
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Margin</p>
+            <p className="text-xs text-muted-foreground">Margin</p>
             <div className="mt-1 flex items-baseline gap-2">
               <input
                 type="range"
@@ -251,7 +251,7 @@ function Metric({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
       {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
     </div>

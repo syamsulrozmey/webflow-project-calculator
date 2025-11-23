@@ -13,7 +13,7 @@ export function HeroSection() {
     <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-background via-background to-[#0b1021]">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-20 md:px-10 lg:px-16 lg:flex-row lg:items-center">
         <div className="flex-1 space-y-6 text-center md:text-left">
-          <p className="text-sm uppercase tracking-[0.4em] text-primary">
+          <p className="text-sm text-primary">
             Webflow Estimation OS
           </p>
           <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
@@ -51,13 +51,13 @@ export function HeroSection() {
         </div>
         <div className="flex-1">
           <div className="rounded-3xl border border-primary/20 bg-card/70 p-6 shadow-soft-card backdrop-blur">
-            <div className="mb-6 text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+            <div className="mb-6 text-sm font-semibold text-primary">
               Deterministic Engine
             </div>
             <div className="space-y-4 text-sm text-muted-foreground">
               <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-background/60 px-4 py-3">
                 <div>
-                  <p className="text-xs uppercase text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Fresh Project
                   </p>
                   <p className="text-base text-foreground">
@@ -67,7 +67,7 @@ export function HeroSection() {
                 <p className="text-lg font-semibold text-foreground">$18,450</p>
               </div>
               <div className="rounded-2xl border border-white/5 bg-background/60 p-4">
-                <p className="text-xs uppercase text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Breakdown
                 </p>
                 <div className="mt-3 grid gap-3 text-sm">
@@ -86,7 +86,7 @@ export function HeroSection() {
                 </div>
               </div>
               <div className="rounded-2xl border border-white/5 bg-background/60 p-4">
-                <p className="text-xs uppercase text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Multipliers Applied
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">

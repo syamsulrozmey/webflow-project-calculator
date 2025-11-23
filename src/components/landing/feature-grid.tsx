@@ -40,7 +40,7 @@ export function FeatureGrid() {
     <section id="features" className="border-b border-white/5 bg-background">
       <div className="mx-auto max-w-6xl px-6 py-16 md:px-10 lg:px-16">
         <div className="mb-10 space-y-4 text-center">
-          <p className="text-sm uppercase tracking-[0.4em] text-primary">
+          <p className="text-sm text-primary">
             Why Teams Choose It
           </p>
           <h2 className="text-3xl font-semibold md:text-4xl">
