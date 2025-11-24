@@ -17,8 +17,9 @@ interface OnboardingPageProps {
 }
 
 function generateServerSessionId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) {
+    return uuid;
   }
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }

@@ -272,10 +272,12 @@ export function QuestionnaireExperience({
   const activeSectionState = sectionStates[activeSectionIndex];
   const isLastSection = activeSectionIndex === sectionStates.length - 1;
   const analysis = useLatestAnalysis();
-  const rawSuggestions = useMemo(
-    () => buildCrawlSuggestions(analysis, answers),
-    [analysis, answers],
-  );
+  const rawSuggestions = useMemo(() => {
+    if (selectedEntry !== "existing") {
+      return [];
+    }
+    return buildCrawlSuggestions(analysis, answers);
+  }, [analysis, answers, selectedEntry]);
   const suggestionMap = useMemo(() => {
     return rawSuggestions.reduce<Record<string, CrawlSuggestion>>((acc, suggestion) => {
       if (dismissedSuggestions[suggestion.questionId]) {

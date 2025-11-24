@@ -532,6 +532,9 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "weekly", label: "Weekly or sprint-based" },
         ],
         defaultValue: "monthly",
+        visibleWhen: [
+          { kind: "notEquals", questionId: "maintenance_plan", value: "handoff" },
+        ],
       },
       {
         id: "maintenance_owner",
@@ -544,6 +547,9 @@ export const questionnaireSections: QuestionnaireSection[] = [
         ],
         helper: "Provider-owned retainer implies you own uptime, monitoring, and emergency fixes.",
         defaultValue: "shared",
+        visibleWhen: [
+          { kind: "notEquals", questionId: "maintenance_plan", value: "handoff" },
+        ],
       },
       {
         id: "maintenance_scope",
@@ -569,6 +575,9 @@ export const questionnaireSections: QuestionnaireSection[] = [
           },
         ],
         defaultValue: "core",
+        visibleWhen: [
+          { kind: "notEquals", questionId: "maintenance_plan", value: "handoff" },
+        ],
       },
       {
         id: "maintenance_hours_target",
@@ -579,6 +588,9 @@ export const questionnaireSections: QuestionnaireSection[] = [
         step: 2,
         helper: "Use your best estimate—we’ll benchmark against market data.",
         advanced: true,
+        visibleWhen: [
+          { kind: "equals", questionId: "maintenance_plan", value: "retainer" },
+        ],
       },
       {
         id: "maintenance_sla",
@@ -589,6 +601,9 @@ export const questionnaireSections: QuestionnaireSection[] = [
           { value: "business_hours", label: "Business hours response" },
           { value: "next_business_day", label: "Next business day turnaround" },
           { value: "twentyfour_seven", label: "24/7 on-call support" },
+        ],
+        visibleWhen: [
+          { kind: "equals", questionId: "maintenance_plan", value: "retainer" },
         ],
       },
       {

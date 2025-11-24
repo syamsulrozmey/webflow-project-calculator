@@ -1118,15 +1118,15 @@ function MaintenanceGuidance({
         <Gauge className="h-4 w-4 text-primary" />
         Maintenance guidance
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        <div className="flex-1">
           <p className="text-[11px] text-primary/70">Core maintenance</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {hoursFormatter.format(maintenanceHours)} hrs/mo (~{formatMoney(maintenanceCost)}) · roughly{" "}
             {maintenanceShare}% of total effort. {scopeNarrative[maintenanceScope]}
           </p>
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-[11px] text-primary/70">Feature iteration</p>
           <p className="mt-1 text-sm text-muted-foreground">{featureNarrative[maintenanceScope]}</p>
           {maintenanceWarning && (
