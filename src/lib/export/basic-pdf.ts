@@ -562,7 +562,7 @@ function drawParagraph(
   startingY?: number,
   skipCursorUpdate = false,
 ) {
-  let y = startingY ?? state.cursorY;
+  const y = startingY ?? state.cursorY;
   const lineHeight = size + 2;
   lines.forEach((line, index) => {
     state.page.drawText(line, {

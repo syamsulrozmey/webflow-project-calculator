@@ -148,5 +148,6 @@ async function parseEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
 
 function summarize(detail: ProjectDetail): ProjectSummary {
   const { answers: _answers, ...summary } = detail;
+  void _answers;
   return summary;
 }

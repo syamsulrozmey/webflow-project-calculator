@@ -1,6 +1,7 @@
 import { calculateCost } from "@/lib/calculator";
 import type { CalculationInput } from "@/lib/calculator/types";
-import { convertResultCurrency, getCurrencyRates, normalizeCalculationInputToUsd } from "@/lib/currency/rates";
+import { getCurrencyRates, normalizeCalculationInputToUsd } from "@/lib/currency/rates";
+import { convertCalculationResult } from "@/lib/currency/convert";
 import {
   DEFAULT_FX_RATES,
   convertAmount,
@@ -75,7 +76,7 @@ describe("currency shared helpers", () => {
 
   it("converts calculation results to a target currency", () => {
     const usdResult = calculateCost(BASE_INPUT);
-    const eurResult = convertResultCurrency(usdResult, "usd", "eur", SNAPSHOT);
+    const eurResult = convertCalculationResult(usdResult, "usd", "eur", SNAPSHOT);
     expect(eurResult.totalCost).toBeCloseTo(usdResult.totalCost * SNAPSHOT.rates.eur, 2);
     expect(eurResult.retainers[0].monthlyFee).toBeCloseTo(
       usdResult.retainers[0].monthlyFee * SNAPSHOT.rates.eur,

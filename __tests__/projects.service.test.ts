@@ -3,6 +3,18 @@ import { Prisma, ProjectFlow, UserType } from "@prisma/client";
 import { duplicateProject, buildCopyTitle } from "@/lib/projects/service";
 import { prisma } from "@/lib/prisma";
 
+type TransactionClient = {
+  project: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  projectResponse: {
+    deleteMany: jest.Mock;
+    createMany: jest.Mock;
+  };
+};
+
 jest.mock("@/lib/prisma", () => {
   const transactionClient = {
     project: {
@@ -39,7 +51,7 @@ jest.mock("@/lib/prisma", () => {
   return { prisma: prismaMock };
 });
 
-const tx = (prisma as unknown as { __tx: any }).__tx;
+const tx = (prisma as typeof prisma & { __tx: TransactionClient }).__tx;
 
 describe("project service helpers", () => {
   beforeEach(() => {

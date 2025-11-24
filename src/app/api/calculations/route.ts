@@ -24,11 +24,8 @@ import {
   applyAiMultiplierToResult,
   buildAiReadyInput,
 } from "@/lib/calculator/ai-enhancement";
-import {
-  convertResultCurrency,
-  getCurrencyRates,
-  normalizeCalculationInputToUsd,
-} from "@/lib/currency/rates";
+import { getCurrencyRates, normalizeCalculationInputToUsd } from "@/lib/currency/rates";
+import { convertCalculationResult } from "@/lib/currency/convert";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { ApiError, handleApiError } from "@/lib/http";
 import { rateLimitByKey } from "@/lib/rate-limit";
@@ -138,7 +135,7 @@ export async function POST(request: Request) {
         const cachedResult =
           requestedCurrency === "usd"
             ? cached
-            : convertResultCurrency(cached, "usd", requestedCurrency, fxSnapshot);
+            : convertCalculationResult(cached, "usd", requestedCurrency, fxSnapshot);
         return NextResponse.json({ data: cachedResult, cached: true });
       }
     }
@@ -150,7 +147,7 @@ export async function POST(request: Request) {
       const responseResult =
         requestedCurrency === "usd"
           ? deterministicResult
-          : convertResultCurrency(deterministicResult, "usd", requestedCurrency, fxSnapshot);
+          : convertCalculationResult(deterministicResult, "usd", requestedCurrency, fxSnapshot);
       return NextResponse.json({ data: responseResult });
     }
 
@@ -188,7 +185,7 @@ export async function POST(request: Request) {
     const finalResult =
       requestedCurrency === "usd"
         ? finalResultBase
-        : convertResultCurrency(finalResultBase, "usd", requestedCurrency, fxSnapshot);
+        : convertCalculationResult(finalResultBase, "usd", requestedCurrency, fxSnapshot);
 
     return NextResponse.json({ data: finalResult, aiApplied: true });
   } catch (error) {

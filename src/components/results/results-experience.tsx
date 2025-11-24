@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { SupportedCurrency } from "@/lib/calculator/from-answers";
+import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/calculator/from-answers";
 import type { CalculationResult, LineItem, MaintenanceScope } from "@/lib/calculator/types";
 import { loadCalculationResult, type CalculationMeta } from "@/lib/calculator/storage";
 import type { AgencyRateSummary } from "@/lib/agency/types";
@@ -26,17 +26,20 @@ import { selectPaymentPlan } from "@/lib/calculator/payment-plan";
 import { generateBasicPdfReport } from "@/lib/export/basic-pdf";
 import { cn } from "@/lib/utils";
 import { formatFxRelativeTime, useCurrencyRates } from "@/hooks/use-currency-rates";
+import { convertCalculationResult } from "@/lib/currency/convert";
 import {
   BarChart3,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  CircleHelp,
   ClipboardCheck,
   Clock3,
   FileDown,
   Gauge,
   Layers3,
   Loader2,
+  PieChart,
   PlugZap,
   Share2,
   Sparkles,
@@ -46,6 +49,11 @@ import {
 const hoursFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
+
+const currencyOptions = SUPPORTED_CURRENCIES.map((code) => ({
+  label: code.toUpperCase(),
+  value: code,
+}));
 
 type ViewMode = "detailed" | "tiers";
 type TimelineView = "gantt" | "phases";
@@ -75,11 +83,18 @@ export function ResultsExperience({
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState<"idle" | "success" | "error">("idle");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [displayCurrency, setDisplayCurrency] = useState<SupportedCurrency>(meta.currency);
+  const [hasManualCurrencySelection, setHasManualCurrencySelection] = useState(false);
+  const heroCardRef = useRef<HTMLDivElement | null>(null);
+  const [isShareBarVisible, setIsShareBarVisible] = useState(false);
+  const [viewModeToast, setViewModeToast] = useState<string | null>(null);
+  const [timelineToast, setTimelineToast] = useState<string | null>(null);
   const exportStatusTimeout = useRef<number | null>(null);
   const {
     rates: currencyRates,
     loading: isCurrencyRatesLoading,
     error: currencyError,
+    convert: convertCurrencyValue,
   } = useCurrencyRates();
 
   useEffect(() => {
@@ -99,25 +114,101 @@ export function ResultsExperience({
     };
   }, []);
 
+  useEffect(() => {
+    setHasManualCurrencySelection(false);
+  }, [baseResult]);
+
+  useEffect(() => {
+    if (hasManualCurrencySelection) return;
+    setDisplayCurrency(meta.currency);
+  }, [meta.currency, hasManualCurrencySelection]);
+
+  useEffect(() => {
+    if (!heroCardRef.current || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsShareBarVisible(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(heroCardRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const label = viewMode === "detailed" ? "Detailed line items applied" : "Tiered rollup applied";
+    setViewModeToast(label);
+    const timer = window.setTimeout(() => setViewModeToast(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const label = timelineView === "gantt" ? "Gantt timeline active" : "Phase checklist active";
+    setTimelineToast(label);
+    const timer = window.setTimeout(() => setTimelineToast(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [timelineView]);
+
   const adjustedResult = useMemo(
     () => applyMargin(baseResult, meta.margin, margin),
     [baseResult, meta.margin, margin],
   );
-  const tierRows = useMemo(() => buildTierRows(adjustedResult), [adjustedResult]);
-  const confidence = Math.round((adjustedResult.ai?.confidence ?? 0.65) * 100);
-  const roughWeeks = adjustedResult.productionHours / 35;
+  const displayResult = useMemo(
+    () =>
+      displayCurrency === meta.currency
+        ? adjustedResult
+        : convertCalculationResult(adjustedResult, meta.currency, displayCurrency, currencyRates),
+    [adjustedResult, currencyRates, displayCurrency, meta.currency],
+  );
+  const displayMeta = useMemo(() => {
+    const convertOptional = (value?: number) =>
+      typeof value === "number"
+        ? convertCurrencyValue(value, meta.currency, displayCurrency)
+        : undefined;
+    return {
+      ...meta,
+      currency: displayCurrency,
+      hourlyRate: convertCurrencyValue(meta.hourlyRate, meta.currency, displayCurrency),
+      internalHourlyRate: convertOptional(meta.internalHourlyRate),
+      agencyRateSummary: meta.agencyRateSummary
+        ? {
+            ...meta.agencyRateSummary,
+            blendedCostRate: convertCurrencyValue(
+              meta.agencyRateSummary.blendedCostRate,
+              meta.currency,
+              displayCurrency,
+            ),
+            recommendedBillableRate: convertCurrencyValue(
+              meta.agencyRateSummary.recommendedBillableRate,
+              meta.currency,
+              displayCurrency,
+            ),
+            teamSnapshot: meta.agencyRateSummary.teamSnapshot.map((member) => ({
+              ...member,
+              costRate: convertCurrencyValue(member.costRate, meta.currency, displayCurrency),
+              billableRate:
+                typeof member.billableRate === "number"
+                  ? convertCurrencyValue(member.billableRate, meta.currency, displayCurrency)
+                  : member.billableRate,
+            })),
+          }
+        : undefined,
+    };
+  }, [convertCurrencyValue, displayCurrency, meta]);
+  const tierRows = useMemo(() => buildTierRows(displayResult), [displayResult]);
+  const roughWeeks = displayResult.productionHours / 35;
   const minWeeks = Math.max(4, Math.round(roughWeeks));
   const timelineCopy = `${minWeeks}-${minWeeks + 2} weeks`;
   const maintenancePercent =
-    adjustedResult.totalHours > 0
-      ? adjustedResult.maintenanceHours / adjustedResult.totalHours
+    displayResult.totalHours > 0
+      ? displayResult.maintenanceHours / displayResult.totalHours
       : 0;
-  const bufferPercentLabel = Math.round(adjustedResult.bufferPercentage * 100);
-  const maintenanceScope = adjustedResult.maintenanceScope ?? "core";
+  const bufferPercentLabel = Math.round(displayResult.bufferPercentage * 100);
+  const maintenanceScope = displayResult.maintenanceScope ?? "core";
   const maintenanceWarning =
-    adjustedResult.maintenanceHours > 25 || maintenancePercent > 0.2;
+    displayResult.maintenanceHours > 25 || maintenancePercent > 0.2;
   const hourlyBenchmarkCopy = useMemo(() => {
-    const rate = meta.hourlyRate;
+    const rate = displayMeta.hourlyRate;
     if (rate < 60) {
       return "Below the researched $75-$125/hr sweet spot; consider raising for sustainability.";
     }
@@ -128,10 +219,10 @@ export function ResultsExperience({
       return "Aligned with boutique agency benchmarks ($100-$150/hr).";
     }
     return "Premium enterprise positioning ($150+/hr) — communicate the added value.";
-  }, [meta.hourlyRate]);
+  }, [displayMeta.hourlyRate]);
   const formatMoney = useCallback(
-    (value: number) => formatCurrencyValue(value, meta.currency),
-    [meta.currency],
+    (value: number) => formatCurrencyValue(value, displayCurrency),
+    [displayCurrency],
   );
   const currencyMetaLabel = useMemo(() => {
     if (isCurrencyRatesLoading) {
@@ -146,6 +237,87 @@ export function ResultsExperience({
     }
     return null;
   }, [currencyError, currencyRates, isCurrencyRatesLoading]);
+  const marginDeltaCopy =
+    Math.abs(margin - meta.margin) < 0.005
+      ? "Baseline margin"
+      : margin > meta.margin
+        ? `+${Math.round((margin - meta.margin) * 100)} pts over baseline`
+        : `${Math.round((margin - meta.margin) * 100)} pts under baseline`;
+  const summaryGroups = useMemo(
+    () => [
+      {
+        id: "delivery",
+        title: "Delivery assumptions",
+        caption: "Pace & sprinting",
+        stats: [
+          {
+            label: "Timeline",
+            value: timelineCopy,
+            helper: "Production hours translated to weeks + 2 sprint buffer.",
+            tooltip: "We divide production hours by a 35 hr sprint and add two sprints of QA and launch buffer.",
+          },
+          {
+            label: "Hourly rate",
+            value: `${formatMoney(displayMeta.hourlyRate)} / hr`,
+            helper:
+              typeof displayMeta.internalHourlyRate === "number"
+                ? `${hourlyBenchmarkCopy} · Internal cost ${formatMoney(displayMeta.internalHourlyRate)}`
+                : hourlyBenchmarkCopy,
+            tooltip: "Client-facing blended rate derived from your base inputs (auto-converted when FX changes).",
+          },
+        ],
+      },
+      {
+        id: "financial",
+        title: "Financial levers",
+        caption: "Ongoing cost drivers",
+        stats: [
+          {
+            label: "Maintenance",
+            value: formatMoney(displayResult.maintenanceCost),
+            helper: maintenanceWarning
+              ? `${hoursFormatter.format(displayResult.maintenanceHours)} hrs/mo · scope as mini-project`
+              : `${hoursFormatter.format(displayResult.maintenanceHours)} hours / mo`,
+            tooltip: "Monthly upkeep derived from retainer inputs. We flag it when the ratio exceeds 20% of build hours.",
+          },
+          {
+            label: "Margin",
+            value: `${Math.round(margin * 100)}%`,
+            helper: marginDeltaCopy,
+            tooltip: "Slides between 5%-60% so you can test markup scenarios without re-running the engine.",
+          },
+        ],
+      },
+      {
+        id: "risk",
+        title: "Risk buffer",
+        caption: "QA + revisions",
+        stats: [
+          {
+            label: "Contingency",
+            value: `${formatMoney(displayResult.bufferCost)} · ${bufferPercentLabel}%`,
+            helper: `${hoursFormatter.format(displayResult.bufferHours)} hrs reserved for revisions + QA`,
+            tooltip: "Buffer percentage pulled from the complexity tier. Adjust tier or margin to change this reserve.",
+          },
+        ],
+      },
+    ],
+    [
+      bufferPercentLabel,
+      displayMeta.hourlyRate,
+      displayMeta.internalHourlyRate,
+      displayResult.bufferCost,
+      displayResult.bufferHours,
+      displayResult.maintenanceCost,
+      displayResult.maintenanceHours,
+      formatMoney,
+      hourlyBenchmarkCopy,
+      maintenanceWarning,
+      margin,
+      marginDeltaCopy,
+      timelineCopy,
+    ],
+  );
 
   const handleCopyLink = useCallback(async () => {
     try {
@@ -160,6 +332,14 @@ export function ResultsExperience({
       setTimeout(() => setCopyStatus("idle"), 2500);
     }
   }, []);
+
+  const handleCurrencyChange = useCallback(
+    (nextCurrency: SupportedCurrency) => {
+      setDisplayCurrency(nextCurrency);
+      setHasManualCurrencySelection(true);
+    },
+    [],
+  );
 
   const scheduleExportStatusReset = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -185,15 +365,15 @@ export function ResultsExperience({
     setIsExporting(true);
     try {
       const pdfBytes = await generateBasicPdfReport({
-        result: adjustedResult,
-        meta: { ...meta, margin },
+        result: displayResult,
+        meta: { ...displayMeta, margin },
         source: resultSource,
       });
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = buildExportFileName(adjustedResult);
+      link.download = buildExportFileName(displayResult);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -206,7 +386,7 @@ export function ResultsExperience({
       setIsExporting(false);
       scheduleExportStatusReset();
     }
-  }, [adjustedResult, meta, margin, resultSource, isExporting, scheduleExportStatusReset]);
+  }, [displayResult, displayMeta, margin, resultSource, isExporting, scheduleExportStatusReset]);
 
   const exportButtonLabel = useMemo(() => {
     if (isExporting) return "Generating…";
@@ -226,157 +406,183 @@ export function ResultsExperience({
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  useEffect(() => {
+    if (!displayResult.lineItems.length) return;
+    setExpanded((prev) => {
+      if (Object.keys(prev).length > 0) {
+        return prev;
+      }
+      return { [displayResult.lineItems[0].id]: true };
+    });
+  }, [displayResult.lineItems]);
+
   return (
     <div className="space-y-8">
-      <Card className="border-white/10 bg-white/[0.04]">
+      <Card ref={heroCardRef} className="border-white/10 bg-white/[0.04]">
         <CardContent className="space-y-6 pt-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs text-primary/80">
-                Estimate summary
-              </p>
-              <h2 className="text-3xl font-semibold md:text-4xl">
-                {formatMoney(adjustedResult.totalCost)}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {hoursFormatter.format(adjustedResult.totalHours)} hours · Tier{" "}
-                {adjustedResult.tier.toString().replace(/_/g, " ")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Pricing currency: {meta.currency.toUpperCase()}
-                {currencyMetaLabel ? <> · {currencyMetaLabel}</> : null}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <SegmentedControl
-                  label="View mode"
-                  value={viewMode}
-                  options={[
-                    { label: "Detailed", value: "detailed" },
-                    { label: "Tiered", value: "tiers" },
-                  ]}
-                  onChange={(value) => setViewMode(value as ViewMode)}
-                />
-                <SegmentedControl
-                  label="Timeline"
-                  value={timelineView}
-                  options={[
-                    { label: "Gantt", value: "gantt" },
-                    { label: "Phases", value: "phases" },
-                  ]}
-                  onChange={(value) => setTimelineView(value as TimelineView)}
-                />
-                <Button
-                  variant="outline"
-                  className="gap-2 border-white/20 text-sm"
-                  onClick={handleCopyLink}
-                >
-                  {copyStatus === "copied" ? (
-                    <>
-                      <ClipboardCheck className="h-4 w-4 text-primary" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="h-4 w-4" />
-                      Copy link
-                    </>
-                  )}
-                </Button>
-                <Button
-                  className="gap-2 bg-primary text-primary-foreground"
-                  onClick={handleExportPdf}
-                  disabled={isExporting}
-                >
-                  {isExporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileDown className="h-4 w-4" />
-                  )}
-                  {exportButtonLabel}
-                </Button>
-              </div>
-              {exportFeedback && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    exportStatus === "error" ? "text-red-400" : "text-emerald-400",
-                  )}
-                >
-                  {exportFeedback}
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs text-primary/80">
+                  Estimate summary
                 </p>
-              )}
+                <h2 className="text-3xl font-semibold md:text-4xl">
+                  {formatMoney(displayResult.totalCost)}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {hoursFormatter.format(displayResult.totalHours)} hours · Tier{" "}
+                  {displayResult.tier.toString().replace(/_/g, " ")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Pricing currency: {displayCurrency.toUpperCase()}
+                  {displayCurrency !== meta.currency ? (
+                    <> · Base quote {meta.currency.toUpperCase()}</>
+                  ) : null}
+                  {currencyMetaLabel ? <> · {currencyMetaLabel}</> : null}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2 md:hidden">
+                  <SegmentedControl
+                    label="View mode"
+                    value={viewMode}
+                    options={[
+                      { label: "Detailed", value: "detailed" },
+                      { label: "Tiered", value: "tiers" },
+                    ]}
+                    onChange={(value) => setViewMode(value as ViewMode)}
+                  />
+                  <SegmentedControl
+                    label="Timeline"
+                    value={timelineView}
+                    options={[
+                      { label: "Gantt", value: "gantt" },
+                      { label: "Phases", value: "phases" },
+                    ]}
+                    onChange={(value) => setTimelineView(value as TimelineView)}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-white/20 text-sm"
+                    onClick={handleCopyLink}
+                  >
+                    {copyStatus === "copied" ? (
+                      <>
+                        <ClipboardCheck className="h-4 w-4 text-primary" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="h-4 w-4" />
+                        Copy link
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    className="gap-2 bg-primary text-primary-foreground"
+                    onClick={handleExportPdf}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileDown className="h-4 w-4" />
+                    )}
+                    {exportButtonLabel}
+                  </Button>
+                </div>
+                {exportFeedback && (
+                  <p
+                    className={cn(
+                      "text-xs",
+                      exportStatus === "error" ? "text-red-400" : "text-emerald-400",
+                    )}
+                  >
+                    {exportFeedback}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <SegmentedControl
+                    label="Currency"
+                    value={displayCurrency}
+                    options={currencyOptions}
+                    onChange={(value) => handleCurrencyChange(value as SupportedCurrency)}
+                  />
+                  {currencyMetaLabel ? (
+                    <span className="text-[11px] text-muted-foreground">{currencyMetaLabel}</span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground">Live FX — synced moments ago</span>
+                  )}
+                  {hasManualCurrencySelection && (
+                    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-primary">
+                      Converted from {meta.currency.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Switching currency keeps the underlying quote intact and refreshes every line item instantly.
+                </p>
+              </div>
+              <div className="mt-4">
+                <MarginControl
+                  margin={margin}
+                  baseline={meta.margin}
+                  currencyFormatter={formatMoney}
+                  totalCost={displayResult.totalCost}
+                  onChange={setMargin}
+                  variant="inline"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              {summaryGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="rounded-3xl border border-white/5 bg-white/[0.015] p-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-wide text-primary/70">{group.title}</p>
+                    {group.caption ? (
+                      <p className="text-[11px] text-muted-foreground">{group.caption}</p>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {group.stats.map((stat) => (
+                      <SummaryStat key={stat.label} {...stat} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <SummaryStat
-              label="Timeline"
-              value={timelineCopy}
-              helper="Based on production hours + 2 sprint buffer"
-            />
-            <SummaryStat
-              label="Hourly rate"
-              value={`${formatMoney(meta.hourlyRate)} / hr`}
-            helper={
-              meta.internalHourlyRate
-                ? `${hourlyBenchmarkCopy} · Internal cost ${formatMoney(meta.internalHourlyRate)}`
-                : hourlyBenchmarkCopy
-            }
-            />
-            <SummaryStat
-              label="Maintenance"
-              value={formatMoney(adjustedResult.maintenanceCost)}
-              helper={
-                maintenanceWarning
-                  ? `${hoursFormatter.format(adjustedResult.maintenanceHours)} hrs/mo · scope as mini-project`
-                  : `${hoursFormatter.format(adjustedResult.maintenanceHours)} hours / mo`
-              }
-            />
-            <SummaryStat
-              label="Contingency"
-              value={`${formatMoney(adjustedResult.bufferCost)} · ${bufferPercentLabel}%`}
-              helper={`${hoursFormatter.format(adjustedResult.bufferHours)} hrs reserved for revisions + QA`}
-            />
-            <SummaryStat
-              label="Margin"
-              value={`${Math.round(margin * 100)}%`}
-              helper={
-                Math.abs(margin - meta.margin) < 0.005
-                  ? "Baseline margin"
-                  : margin > meta.margin
-                    ? `+${Math.round((margin - meta.margin) * 100)} pts over baseline`
-                    : `${Math.round((margin - meta.margin) * 100)} pts under baseline`
-              }
-            />
-          </div>
-          <ComplexityCard
-            complexity={adjustedResult.complexity}
-            bufferHours={adjustedResult.bufferHours}
-            bufferCost={adjustedResult.bufferCost}
-            bufferPercent={bufferPercentLabel}
-            formatMoney={formatMoney}
-          />
+        <ComplexityCard
+          complexity={displayResult.complexity}
+          bufferHours={displayResult.bufferHours}
+          bufferCost={displayResult.bufferCost}
+          bufferPercent={bufferPercentLabel}
+          formatMoney={formatMoney}
+        />
         <MaintenanceGuidance
-          maintenanceHours={adjustedResult.maintenanceHours}
-          maintenanceCost={adjustedResult.maintenanceCost}
-          totalHours={adjustedResult.totalHours}
+          maintenanceHours={displayResult.maintenanceHours}
+          maintenanceCost={displayResult.maintenanceCost}
+          totalHours={displayResult.totalHours}
           maintenanceScope={maintenanceScope}
           maintenancePercent={maintenancePercent}
           maintenanceWarning={maintenanceWarning}
           formatMoney={formatMoney}
         />
-          <MarginControl
-            margin={margin}
-            baseline={meta.margin}
-            currencyFormatter={formatMoney}
-            totalCost={adjustedResult.totalCost}
-            onChange={setMargin}
-          />
-          <PaymentMilestonesCard totalCost={adjustedResult.totalCost} formatCurrency={formatMoney} />
+        <PaymentMilestonesCard totalCost={displayResult.totalCost} formatCurrency={formatMoney} />
 
           <div className="flex flex-wrap gap-2 text-xs">
-            {Object.entries(adjustedResult.factors).map(([key, factor]) => (
+            {Object.entries(displayResult.factors).map(([key, factor]) => (
               <span
                 key={key}
                 className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground"
@@ -388,8 +594,13 @@ export function ResultsExperience({
         </CardContent>
       </Card>
 
-      {adjustedResult.retainers.length > 0 && (
-        <RetainerCard packages={adjustedResult.retainers} formatCurrency={formatMoney} />
+      {displayResult.retainers.length > 0 && (
+        <RetainerCard
+          packages={displayResult.retainers}
+          formatCurrency={formatMoney}
+          recommendedHours={displayResult.maintenanceHours}
+          maintenanceScope={maintenanceScope}
+        />
       )}
 
       <Card className="border-white/10 bg-white/[0.03]">
@@ -407,12 +618,29 @@ export function ResultsExperience({
             Switch between detailed line items and tiered summary. Expand each section for rationale
             and included tasks.
           </p>
+          <div className="hidden flex-wrap items-center gap-3 pt-2 md:flex">
+            <SegmentedControl
+              label="View mode"
+              value={viewMode}
+              options={[
+                { label: "Detailed", value: "detailed" },
+                { label: "Tiered", value: "tiers" },
+              ]}
+              onChange={(value) => setViewMode(value as ViewMode)}
+            />
+            {viewModeToast ? (
+              <span className="rounded-full border border-primary/30 px-3 py-0.5 text-[11px] text-primary">
+                {viewModeToast}
+              </span>
+            ) : null}
+          </div>
         </CardHeader>
         <CardContent className="space-y-8 pt-6">
+          <PhaseShareChart lineItems={displayResult.lineItems} totalHours={displayResult.productionHours} />
           <section className="space-y-4">
             {viewMode === "detailed" ? (
               <DetailedBreakdown
-                lineItems={adjustedResult.lineItems}
+                lineItems={displayResult.lineItems}
                 expanded={expanded}
                 onToggle={handleToggle}
                 formatCurrency={formatMoney}
@@ -422,14 +650,14 @@ export function ResultsExperience({
             )}
           </section>
 
-          {adjustedResult.addons.length > 0 && (
+          {displayResult.addons.length > 0 && (
             <section className="space-y-4 border-t border-white/5 pt-6">
               <SectionHeader
                 icon={PlugZap}
                 title="Add-ons & modules"
                 description="Transparent hours for integrations, localization, training, and rush coordination pulled from your answers."
               />
-              <AddonGrid addons={adjustedResult.addons} formatCurrency={formatMoney} />
+              <AddonGrid addons={displayResult.addons} formatCurrency={formatMoney} />
             </section>
           )}
 
@@ -439,15 +667,31 @@ export function ResultsExperience({
               title="Timeline"
               description="Sequenced estimate including QA & launch buffer."
             />
+            <div className="hidden flex-wrap items-center justify-between gap-3 md:flex">
+              <SegmentedControl
+                label="Timeline"
+                value={timelineView}
+                options={[
+                  { label: "Gantt", value: "gantt" },
+                  { label: "Phases", value: "phases" },
+                ]}
+                onChange={(value) => setTimelineView(value as TimelineView)}
+              />
+              {timelineToast ? (
+                <span className="rounded-full border border-primary/30 px-3 py-0.5 text-[11px] text-primary">
+                  {timelineToast}
+                </span>
+              ) : null}
+            </div>
             <TimelineCard
-              lineItems={adjustedResult.lineItems}
-              totalHours={adjustedResult.productionHours}
+              lineItems={displayResult.lineItems}
+              totalHours={displayResult.productionHours}
               view={timelineView}
               formatCurrency={formatMoney}
             />
           </section>
 
-          {meta.agencyRateSummary && (
+          {displayMeta.agencyRateSummary && (
             <section className="space-y-4 border-t border-white/5 pt-6">
               <SectionHeader
                 icon={Users}
@@ -455,9 +699,9 @@ export function ResultsExperience({
                 description="Internal blended rate vs client-facing quote and roster snapshot."
               />
               <AgencyEconomicsCard
-                summary={meta.agencyRateSummary}
+                summary={displayMeta.agencyRateSummary}
                 formatCurrency={formatMoney}
-                currencySymbol={meta.currency === "eur" ? "€" : meta.currency === "gbp" ? "£" : "$"}
+                currencySymbol={displayCurrency === "eur" ? "€" : displayCurrency === "gbp" ? "£" : "$"}
               />
             </section>
           )}
@@ -469,7 +713,7 @@ export function ResultsExperience({
               description="Captured during questionnaire + AI insight."
             />
             <InsightCard
-              result={adjustedResult}
+              result={displayResult}
               source={resultSource}
               className="w-full"
             />
@@ -485,6 +729,71 @@ export function ResultsExperience({
           </section>
         </CardContent>
       </Card>
+      <StickyShareBar
+        visible={isShareBarVisible}
+        copyStatus={copyStatus}
+        onCopy={handleCopyLink}
+        onExport={handleExportPdf}
+        exportLabel={exportButtonLabel}
+        isExporting={isExporting}
+      />
+    </div>
+  );
+}
+
+function StickyShareBar({
+  visible,
+  copyStatus,
+  onCopy,
+  onExport,
+  exportLabel,
+  isExporting,
+}: {
+  visible: boolean;
+  copyStatus: "idle" | "copied" | "error";
+  onCopy: () => void;
+  onExport: () => void;
+  exportLabel: string;
+  isExporting: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center transition-all duration-300",
+        visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
+      )}
+      aria-hidden={!visible}
+    >
+      <div className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs text-white shadow-lg shadow-black/40 backdrop-blur">
+        <span className="text-[11px] uppercase tracking-wide text-white/70">Share this estimate</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1 text-white hover:text-primary"
+          onClick={onCopy}
+        >
+          {copyStatus === "copied" ? (
+            <>
+              <ClipboardCheck className="h-4 w-4 text-primary" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Share2 className="h-4 w-4" />
+              Copy link
+            </>
+          )}
+        </Button>
+        <Button
+          size="sm"
+          className="gap-1 bg-primary px-3 text-primary-foreground"
+          onClick={onExport}
+          disabled={isExporting}
+        >
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          {exportLabel}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -492,11 +801,9 @@ export function ResultsExperience({
 function AgencyEconomicsCard({
   summary,
   formatCurrency,
-  currencySymbol,
 }: {
   summary: AgencyRateSummary;
   formatCurrency: (value: number) => string;
-  currencySymbol: string;
 }) {
   const visibleMembers = summary.teamSnapshot.slice(0, 3);
   const extraCount = summary.teamSnapshot.length - visibleMembers.length;
@@ -529,15 +836,18 @@ function AgencyEconomicsCard({
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <p className="text-xs text-muted-foreground">Team roster</p>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            {visibleMembers.map((member) => (
-              <li key={member.id} className="flex items-center justify-between gap-3">
-                <span className="text-white">{member.name || member.role}</span>
-                <span className="text-xs text-muted-foreground">
-                  {formatCurrency(member.costRate)} → {currencySymbol}
-                  {(member.billableRate ?? member.costRate * 2).toFixed(0)}
-                </span>
-              </li>
-            ))}
+            {visibleMembers.map((member) => {
+              const quotedRate =
+                typeof member.billableRate === "number" ? member.billableRate : member.costRate * 2;
+              return (
+                <li key={member.id} className="flex items-center justify-between gap-3">
+                  <span className="text-white">{member.name || member.role}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCurrency(member.costRate)} → {formatCurrency(quotedRate)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
           {extraCount > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
@@ -612,7 +922,10 @@ function ComplexityCard({
       <div className="flex items-start gap-3">
         <Layers3 className="h-5 w-5 text-primary" />
         <div className="flex-1">
-          <p className="text-xs text-primary/70">Complexity tier</p>
+          <p className="flex items-center gap-1 text-xs text-primary/70">
+            Complexity tier
+            <InfoTooltip text="Point system pulled from questionnaire answers + AI adjustments." />
+          </p>
           <div className="mt-1 flex flex-wrap items-baseline gap-3">
             <p className="text-2xl font-semibold text-white">{tier.label}</p>
             <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-muted-foreground">
@@ -623,7 +936,10 @@ function ComplexityCard({
         </div>
       </div>
       <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-white">
-        <p className="text-xs uppercase tracking-wide text-primary/80">Contingency buffer</p>
+        <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-primary/80">
+          Contingency buffer
+          <InfoTooltip text="Hours reserved for revisions + QA. Adjust tier or override margin to change the buffer." />
+        </p>
         <p className="mt-1 text-lg font-semibold">
           {formatMoney(bufferCost)} · {bufferPercent}%{" "}
           <span className="text-xs font-normal text-white/70">
@@ -696,11 +1012,26 @@ function PaymentMilestonesCard({
 function RetainerCard({
   packages,
   formatCurrency,
+  recommendedHours,
+  maintenanceScope,
 }: {
   packages: CalculationResult["retainers"];
   formatCurrency: (value: number) => string;
+  recommendedHours: number;
+  maintenanceScope: MaintenanceScope;
 }) {
   if (!packages.length) return null;
+  const scopeHints: Record<MaintenanceScope, string> = {
+    core: "baseline uptime + critical fixes",
+    content_ops: "content ops cadence with light SEO",
+    feature_sprints: "roadmap sprints + experiments",
+  };
+  const recommendedPkg = packages.reduce((closest, pkg) => {
+    const currentDelta = Math.abs(pkg.hours - recommendedHours);
+    const closestDelta = Math.abs(closest.hours - recommendedHours);
+    return currentDelta < closestDelta ? pkg : closest;
+  }, packages[0]);
+
   return (
     <Card className="border-white/10 bg-white/[0.03]">
       <CardHeader className="gap-2 border-b border-white/5 pb-5">
@@ -709,17 +1040,28 @@ function RetainerCard({
           <CardTitle className="text-base">Maintenance & retainer outlook</CardTitle>
         </div>
         <p className="text-xs text-muted-foreground">
-          Benchmarked against the $1k-$5k/month care tiers from the 2025 retainer guide.
+          After launch, here’s what ongoing care looks like based on your {maintenanceScope.replace(/_/g, " ")} scope.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Benchmarked against the $1k-$5k/month care tiers from the 2025 retainer guide. Use the badge to anchor your default recommendation.
         </p>
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid gap-4 md:grid-cols-3">
           {packages.map((pkg) => (
             <div key={pkg.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="text-xs text-primary/70">{pkg.label}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-primary/70">{pkg.label}</p>
+                {pkg.id === recommendedPkg.id && (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                    Recommended
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-2xl font-semibold text-white">{formatCurrency(pkg.monthlyFee)}/mo</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
                 {hoursFormatter.format(pkg.hours)} hrs/mo budget
+                <InfoTooltip text={`Sized for ${scopeHints[maintenanceScope]}. Adjust cadence to change.`} />
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{pkg.description}</p>
               <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
@@ -807,17 +1149,34 @@ function SummaryStat({
   label,
   value,
   helper,
+  tooltip,
 }: {
   label: string;
   value: string;
   helper?: string;
+  tooltip?: string;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span>{label}</span>
+        {tooltip ? <InfoTooltip text={tooltip} /> : null}
+      </div>
       <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
       {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
     </div>
+  );
+}
+
+function InfoTooltip({ text, className }: { text: string; className?: string }) {
+  return (
+    <span
+      className={cn("ml-1 inline-flex items-center text-muted-foreground/80", className)}
+      title={text}
+      aria-label={text}
+    >
+      <CircleHelp className="h-3.5 w-3.5" />
+    </span>
   );
 }
 
@@ -857,6 +1216,70 @@ function SegmentedControl({
   );
 }
 
+function PhaseShareChart({
+  lineItems,
+  totalHours,
+}: {
+  lineItems: LineItem[];
+  totalHours: number;
+}) {
+  if (!lineItems.length || totalHours <= 0) return null;
+  const palette = ["bg-primary", "bg-emerald-400", "bg-sky-500", "bg-amber-400", "bg-pink-400", "bg-white/40"];
+  const sorted = [...lineItems].sort((a, b) => b.hours - a.hours);
+  const top = sorted.slice(0, 5);
+  const used = top.reduce((sum, item) => sum + item.hours, 0);
+  const remainder = Math.max(totalHours - used, 0);
+  if (remainder > 1) {
+    top.push({
+      id: "other",
+      label: "Other tasks",
+      hours: remainder,
+      cost: 0,
+      description: "Remainder of minor tasks.",
+    });
+  }
+  const segments = top.map((item, index) => ({
+    id: item.id,
+    label: item.label,
+    percent: Math.max((item.hours / totalHours) * 100, 1),
+    color: palette[index % palette.length],
+  }));
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="flex items-center gap-2">
+        <PieChart className="h-4 w-4 text-primary" />
+        <p className="text-sm font-semibold text-white">Phase share preview</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Snapshot of where production hours concentrate. Expand below for detailed rationale.
+      </p>
+      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-white/5">
+        <div className="flex h-full w-full">
+          {segments.map((segment) => (
+            <span
+              key={segment.id}
+              className={cn("block h-full", segment.color)}
+              style={{ width: `${segment.percent}%` }}
+            />
+          ))}
+        </div>
+      </div>
+      <ul className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+        {segments.map((segment) => (
+          <li key={segment.id} className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span className={cn("h-2 w-2 rounded-full", segment.color)} />
+              <span className="text-white">{segment.label}</span>
+            </span>
+            <span>{segment.percent.toFixed(1)}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function DetailedBreakdown({
   lineItems,
   expanded,
@@ -872,6 +1295,11 @@ function DetailedBreakdown({
     <div className="space-y-3">
       {lineItems.map((item) => {
         const isOpen = expanded[item.id];
+        const bullets = item.description
+          .split(/(?:\n|•|-)/)
+          .map((entry) => entry.replace(/^[\s•-]+/, "").trim())
+          .filter(Boolean);
+        const preview = bullets[0] ?? item.description;
         return (
           <div
             key={item.id}
@@ -890,6 +1318,8 @@ function DetailedBreakdown({
                       {item.kind === "timeline" ? "Timeline" : "Add-on"}
                     </span>
                   )}
+                  {" "}
+                  <InfoTooltip text={item.description} />
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {hoursFormatter.format(item.hours)} hrs · {formatCurrency(item.cost)}
@@ -901,9 +1331,18 @@ function DetailedBreakdown({
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
+            <p className="mt-1 text-[11px] text-muted-foreground/80 line-clamp-2">{preview}</p>
             {isOpen && (
               <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-muted-foreground">
-                {item.description}
+                {bullets.length > 1 ? (
+                  <ul className="list-disc space-y-1 pl-4">
+                    {bullets.slice(0, 3).map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{item.description}</p>
+                )}
               </div>
             )}
           </div>
@@ -1176,12 +1615,14 @@ function MarginControl({
   currencyFormatter,
   totalCost,
   onChange,
+  variant = "inline",
 }: {
   margin: number;
   baseline: number;
   currencyFormatter: (value: number) => string;
   totalCost: number;
   onChange: (value: number) => void;
+  variant?: "inline" | "card";
 }) {
   const percentage = Math.round(margin * 100);
   const diff = margin - baseline;
@@ -1191,37 +1632,59 @@ function MarginControl({
       : diff > 0
         ? `+${Math.round(diff * 100)} pts over baseline`
         : `${Math.round(diff * 100)} pts under baseline`;
+  const fivePointShift = currencyFormatter(totalCost * 0.05);
+
+  const body = (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-primary/80">
+          Margin override
+          <InfoTooltip text="Slides between 5%-60%. Use to pressure-test markup or concessions." />
+        </div>
+        <span className="rounded-full border border-white/15 px-3 py-0.5 text-xs text-white">
+          {percentage}%
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0.05}
+        max={0.6}
+        step={0.01}
+        value={margin}
+        aria-label="Adjust profit margin"
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-primary"
+      />
+      <p className="text-xs text-muted-foreground">
+        New total: {currencyFormatter(totalCost)} (updates summary + line items)
+      </p>
+      <p className="text-[11px] text-muted-foreground">
+        {diffLabel}. Every 5 pts shifts the quote by roughly {fivePointShift}. Use it to negotiate scope vs. profit.
+      </p>
+    </div>
+  );
+
+  if (variant === "card") {
+    return (
+      <Card className="border-white/10 bg-white/[0.02]">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Adjust profit margin</CardTitle>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Fine-tune markup without re-running the calculation engine.
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">{body}</CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Adjust profit margin</CardTitle>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Fine-tune markup without re-running the calculation engine.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3 pt-0">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold text-white">{percentage}%</span>
-          <span className="text-xs text-muted-foreground">{diffLabel}</span>
-        </div>
-        <input
-          type="range"
-          min={0.05}
-          max={0.6}
-          step={0.01}
-          value={margin}
-          onChange={(event) => onChange(Number(event.target.value))}
-          className="w-full accent-primary"
-        />
-        <p className="text-xs text-muted-foreground">
-          New total: {currencyFormatter(totalCost)} (updates summary + line items)
-        </p>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-4">
+      {body}
+    </div>
   );
 }
 

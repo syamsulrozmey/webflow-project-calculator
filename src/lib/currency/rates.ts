@@ -1,13 +1,7 @@
-import type { CalculationInput, CalculationResult, LineItem } from "@/lib/calculator/types";
-import type { RetainerPackage } from "@/lib/calculator/retainer";
+import type { CalculationInput } from "@/lib/calculator/types";
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 import { cacheGet, cacheSet } from "@/lib/cache";
-import {
-  DEFAULT_FX_RATES,
-  convertAmount,
-  ensureRates,
-  type CurrencyRatesSnapshot,
-} from "@/lib/currency/shared";
+import { DEFAULT_FX_RATES, convertAmount, type CurrencyRatesSnapshot } from "@/lib/currency/shared";
 
 const FX_CACHE_KEY = "fx:latest";
 const FX_CACHE_TTL_SECONDS = 60 * 30; // 30 minutes
@@ -58,55 +52,6 @@ export function normalizeCalculationInputToUsd(
     ...input,
     hourlyRate,
   };
-}
-
-export function convertResultCurrency(
-  result: CalculationResult,
-  from: SupportedCurrency,
-  to: SupportedCurrency,
-  snapshot: CurrencyRatesSnapshot,
-): CalculationResult {
-  if (from === to) {
-    return result;
-  }
-  const convertValue = (value: number) => convertAmount(value, from, to, snapshot);
-  return {
-    ...result,
-    totalCost: convertValue(result.totalCost),
-    maintenanceCost: convertValue(result.maintenanceCost),
-    productionHours: result.productionHours,
-    bufferCost: convertValue(result.bufferCost),
-    effectiveHourlyRate: convertValue(result.effectiveHourlyRate),
-    lineItems: convertLineItems(result.lineItems, convertValue),
-    addons: result.addons.map((addon) => ({
-      ...addon,
-      cost: convertValue(addon.cost),
-    })),
-    retainers: convertRetainers(result.retainers, convertValue),
-    deterministicTotals: result.deterministicTotals
-      ? {
-          totalCost: convertValue(result.deterministicTotals.totalCost),
-          totalHours: result.deterministicTotals.totalHours,
-        }
-      : undefined,
-  };
-}
-
-function convertLineItems(items: LineItem[], convertValue: (value: number) => number): LineItem[] {
-  return items.map((item) => ({
-    ...item,
-    cost: convertValue(item.cost),
-  }));
-}
-
-function convertRetainers(
-  retainers: RetainerPackage[],
-  convertValue: (value: number) => number,
-): RetainerPackage[] {
-  return retainers.map((pkg) => ({
-    ...pkg,
-    monthlyFee: convertValue(pkg.monthlyFee),
-  }));
 }
 
 async function fetchCurrencyApiRates(): Promise<CurrencyRatesSnapshot | null> {
