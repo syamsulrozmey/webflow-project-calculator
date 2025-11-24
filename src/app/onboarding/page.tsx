@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { EntryFlow, QuestionnaireUserType } from "@/config/questionnaire";
 
 import { OnboardingExperience } from "@/components/onboarding/onboarding-experience";
 
@@ -9,15 +10,26 @@ export const metadata: Metadata = {
 };
 
 interface OnboardingPageProps {
-  searchParams?: {
-    entry?: string;
-    userType?: string;
-  };
+  searchParams: Promise<{
+    entry?: EntryFlow;
+    userType?: QuestionnaireUserType;
+  }>;
 }
 
-export default function OnboardingPage({ searchParams }: OnboardingPageProps) {
-  const entry = searchParams?.entry;
-  const userType = searchParams?.userType;
+function generateServerSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+export default async function OnboardingPage({
+  searchParams,
+}: OnboardingPageProps) {
+  const params = await searchParams;
+  const entry = params?.entry;
+  const userType = params?.userType;
+  const sessionId = generateServerSessionId();
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#05060a] via-[#05060a] to-[#0b0f1b] pb-16 text-white">
@@ -38,6 +50,7 @@ export default function OnboardingPage({ searchParams }: OnboardingPageProps) {
         <OnboardingExperience
           initialEntryParam={entry}
           initialUserTypeParam={userType}
+          initialSessionId={sessionId}
         />
       </div>
     </main>

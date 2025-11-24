@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -165,16 +171,18 @@ type UserTypeId = (typeof userTypes)[number]["id"];
 interface OnboardingExperienceProps {
   initialEntryParam?: string;
   initialUserTypeParam?: string;
+  initialSessionId?: string;
 }
 
 export function OnboardingExperience({
   initialEntryParam,
   initialUserTypeParam,
+  initialSessionId,
 }: OnboardingExperienceProps) {
   const initialEntry = parseEntry(initialEntryParam);
   const initialUserType = parseUserType(initialUserTypeParam);
 
-  const [sessionId] = useState(() => generateSessionId());
+  const [sessionId] = useState(() => initialSessionId ?? generateSessionId());
   const [selectedEntry, setSelectedEntry] = useState<EntryOptionId | null>(
     initialEntry,
   );
@@ -283,26 +291,34 @@ export function OnboardingExperience({
             })}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full gap-2 text-muted-foreground sm:w-auto"
-            onClick={handleBack}
-            disabled={currentStep === 0}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <Button
-            type="button"
-            className="w-full gap-2 sm:w-auto"
-            onClick={handleNext}
-            disabled={!canAdvance && !isLastStep}
-          >
-            {isLastStep ? "Restart flow" : "Continue"}
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+        <CardFooter className="flex flex-col gap-3 border-t border-white/5 pt-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full gap-2 text-muted-foreground sm:w-auto"
+              onClick={handleBack}
+              disabled={currentStep === 0}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant={isLastStep ? "default" : "secondary"}
+              className="w-full gap-2 sm:w-auto"
+              onClick={handleNext}
+              disabled={!canAdvance && !isLastStep}
+            >
+              {isLastStep ? "Restart flow" : "Continue"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          {isLastStep && (
+            <p className="text-center text-xs text-muted-foreground">
+              Restarting clears the selections above so you can explore another journey.
+            </p>
+          )}
         </CardFooter>
       </Card>
 
@@ -438,6 +454,7 @@ function renderStep({
       selectedEntry === "existing"
         ? questionnaireHref
         : `${questionnaireHref}#advanced`;
+    const isSecondaryDuplicate = secondaryHref === primaryHref;
     return (
       <div className="space-y-6">
         <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-6 shadow-soft-card">
@@ -479,21 +496,28 @@ function renderStep({
           </ul>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Button type="button" className="gap-2" asChild>
-            <Link href={primaryHref}>
-              {summary.primaryCta}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-white/20"
-            asChild
-          >
-            <Link href={secondaryHref}>{summary.secondaryCta}</Link>
-          </Button>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
+            Recommended next steps
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button type="button" className="gap-2" asChild>
+              <Link href={primaryHref}>
+                {summary.primaryCta}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            {!isSecondaryDuplicate && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/20"
+                asChild
+              >
+                <Link href={secondaryHref}>{summary.secondaryCta}</Link>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -572,7 +596,9 @@ function UserTypeCard({
 }) {
   const tooltipId = `${type.id}-tooltip`;
 
-  const handleInfoClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleInfoInteraction = (
+    event: MouseEvent<HTMLSpanElement> | KeyboardEvent<HTMLSpanElement>,
+  ) => {
     event.stopPropagation();
   };
 
@@ -621,18 +647,20 @@ function UserTypeCard({
       </ul>
       <div className="mt-1 flex items-center text-xs">
         <div className="group/tooltip relative inline-flex">
-          <button
-            type="button"
+          <span
+            role="button"
+            tabIndex={0}
             aria-describedby={tooltipId}
             className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-white focus-visible:text-white"
-            onClick={handleInfoClick}
+            onClick={handleInfoInteraction}
+            onKeyDown={handleInfoInteraction}
           >
             <Info className="h-3.5 w-3.5 text-primary" />
             Need context?{" "}
             <span className="underline decoration-dotted decoration-white/30 underline-offset-4">
               Learn more
             </span>
-          </button>
+          </span>
           <div
             id={tooltipId}
             role="tooltip"

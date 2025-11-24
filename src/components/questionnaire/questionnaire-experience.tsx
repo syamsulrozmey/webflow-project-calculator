@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import {
   QUESTIONNAIRE_STORAGE_KEY,
+  buildDefaultAnswers,
   evaluateVisibility,
   isQuestionAnswered,
   type QuestionnaireAnswerMap,
@@ -44,6 +45,7 @@ import { saveCalculationResult } from "@/lib/calculator/storage";
 import { cn } from "@/lib/utils";
 import { useLatestAnalysis } from "@/hooks/use-latest-analysis";
 import { useAgencyTeamConfig } from "@/hooks/use-agency-team";
+import type { AgencyRateSummary } from "@/lib/agency/types";
 import { useProjects } from "@/hooks/use-projects";
 import { formatFxRelativeTime, useCurrencyRates } from "@/hooks/use-currency-rates";
 import {
@@ -60,10 +62,14 @@ import {
   Clock4,
   CloudDownload,
   CloudUpload,
+  DollarSign,
   HelpCircle,
   Loader2,
+  Shield,
   Sparkles,
   TriangleAlert,
+  Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -84,6 +90,24 @@ interface SectionState {
   visibleQuestions: QuestionDefinition[];
   completionRatio: number;
 }
+
+interface InsightCardContent {
+  kicker: string;
+  title: string;
+  body: ReactNode;
+  icon?: ComponentType<SVGProps<SVGSVGElement>>;
+}
+
+const ENTRY_FLOW_CHOICES: { id: EntryFlow; label: string }[] = [
+  { id: "fresh", label: "Fresh build" },
+  { id: "existing", label: "Existing site analysis" },
+];
+
+const USER_TYPE_CHOICES: { id: QuestionnaireUserType; label: string }[] = [
+  { id: "freelancer", label: "Freelancer" },
+  { id: "agency", label: "Agency" },
+  { id: "company", label: "Company" },
+];
 
 const CURRENCY_DISPLAY = {
   usd: { symbol: "$", code: "USD" },
@@ -127,6 +151,10 @@ export function QuestionnaireExperience({
   const [isLocalHydrated, setIsLocalHydrated] = useState(false);
   const [isProjectHydrated, setIsProjectHydrated] = useState(projectId ? false : true);
   const [isRestored, setIsRestored] = useState(false);
+  const [prefilledByPersona, setPrefilledByPersona] = useState<
+    Record<string, QuestionnaireUserType | null>
+  >({});
+  const [isAgencyConfiguratorOpen, setAgencyConfiguratorOpen] = useState(false);
   const selectedCurrencyAnswer = answers["rate_currency"];
   const selectedCurrencyKey: CurrencyDisplayKey =
     typeof selectedCurrencyAnswer === "string" && isCurrencyDisplayKey(selectedCurrencyAnswer)
@@ -189,6 +217,17 @@ export function QuestionnaireExperience({
     }
   }, [isLocalHydrated, isProjectHydrated]);
 
+  const clearPersonaPrefill = useCallback((questionId: string) => {
+    setPrefilledByPersona((prev) => {
+      if (!prev[questionId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[questionId];
+      return next;
+    });
+  }, []);
+
   const markTouched = (questionId: string) => {
     setTouchedQuestions((prev) => {
       if (prev[questionId]) {
@@ -196,6 +235,7 @@ export function QuestionnaireExperience({
       }
       return { ...prev, [questionId]: true };
     });
+    clearPersonaPrefill(questionId);
   };
 
   const answersRef = useRef<QuestionnaireAnswerMap>({});
@@ -466,6 +506,46 @@ export function QuestionnaireExperience({
   }, [userType]);
 
   useEffect(() => {
+    if (!selectedUserType) return;
+    const defaults = buildDefaultAnswers(questionnaireSections, selectedUserType);
+    const personaDefaultIds = new Set<string>();
+    questionnaireSections.forEach((section) => {
+      section.questions.forEach((question) => {
+        if (
+          question.defaultsByUserType &&
+          question.defaultsByUserType[selectedUserType] !== undefined
+        ) {
+          personaDefaultIds.add(question.id);
+        }
+      });
+    });
+    const personaPrefills: Record<string, QuestionnaireUserType> = {};
+    setAnswers((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      Object.entries(defaults).forEach(([questionId, defaultValue]) => {
+        if (!hasMeaningfulAnswer(next[questionId])) {
+          next[questionId] = defaultValue;
+          if (personaDefaultIds.has(questionId)) {
+            personaPrefills[questionId] = selectedUserType;
+          }
+          changed = true;
+        }
+      });
+      if (!changed) {
+        return prev;
+      }
+      if (Object.keys(personaPrefills).length > 0) {
+        setPrefilledByPersona((prevPrefills) => ({
+          ...prevPrefills,
+          ...personaPrefills,
+        }));
+      }
+      return next;
+    });
+  }, [selectedUserType]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const context = readUserContext();
     if (!entry && !selectedEntry && context?.entry) {
@@ -564,6 +644,31 @@ export function QuestionnaireExperience({
       : totalCompletedRequired / totalRequiredQuestions;
   const canCalculate = overallProgress >= 1 && !isCalculating;
   const canSyncProject = isRestored && !isProjectSaving;
+  const personaContextCopy = getPersonaContextCopy(selectedUserType);
+  const personaShortcut = getPersonaShortcut(selectedUserType);
+  const personaShortcutHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedEntry) {
+      params.set("entry", selectedEntry);
+    }
+    if (selectedUserType) {
+      params.set("userType", selectedUserType);
+    }
+    if (activeSessionId) {
+      params.set("session", activeSessionId);
+    }
+    const query = params.toString();
+    return query ? `/onboarding?${query}` : "/onboarding";
+  }, [activeSessionId, selectedEntry, selectedUserType]);
+  const personaInsightCards = useMemo<InsightCardContent[]>(() => {
+    return buildPersonaInsights({
+      userType: selectedUserType,
+      hourlyRate: formattedHourlyRate,
+      currencySymbol: selectedCurrencyDisplay.symbol,
+      agencySummary,
+    });
+  }, [agencySummary, formattedHourlyRate, selectedCurrencyDisplay.symbol, selectedUserType]);
+  const shouldShowAgencySummary = selectedUserType === "agency" && agencySummary;
 
   const handleSingleSelect = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -607,6 +712,7 @@ export function QuestionnaireExperience({
   };
 
   const handleSkipQuestion = (questionId: string, skip = true) => {
+    clearPersonaPrefill(questionId);
     setSkippedQuestions((prev) => {
       const updated = { ...prev };
       if (skip) {
@@ -638,6 +744,14 @@ export function QuestionnaireExperience({
       });
       return updated;
     });
+    setPrefilledByPersona((prev) => {
+      const updated = { ...prev };
+      const section = questionnaireSections.find((s) => s.id === sectionId);
+      section?.questions.forEach((question) => {
+        delete updated[question.id];
+      });
+      return updated;
+    });
   };
 
   const handleReset = () => {
@@ -653,6 +767,7 @@ export function QuestionnaireExperience({
     setIsRateAutoConversionPaused(false);
     setManualConversionContext(null);
     previousCurrencyRef.current = "usd";
+    setPrefilledByPersona({});
   };
 
   const handleCalculate = async () => {
@@ -814,11 +929,10 @@ export function QuestionnaireExperience({
   const questionsToRender = isTimelineSection
     ? displayedQuestions.filter((question) => !timelineQuestionIds.has(question.id))
     : displayedQuestions;
-  const canShowAgencyConfigurator =
-    isTimelineSection && selectedUserType === "agency" && agencySummary;
+  const showAgencyTeamNudge = isTimelineSection && selectedUserType === "agency";
   const shouldShowTimelineEconomicsCard =
     isTimelineSection &&
-    (timelineHourlyQuestion || timelineCurrencyQuestion || canShowAgencyConfigurator);
+    (timelineHourlyQuestion || timelineCurrencyQuestion || showAgencyTeamNudge);
 
   const buildQuestionCardProps = (question: QuestionDefinition) => {
     const decoratedQuestion =
@@ -837,6 +951,8 @@ export function QuestionnaireExperience({
       onAcceptSuggestion: handleApplySuggestion,
       onDismissSuggestion: handleDismissSuggestion,
       touched: Boolean(touchedQuestions[question.id]),
+      persona: selectedUserType,
+      personaPrefill: prefilledByPersona[question.id] ?? null,
     };
   };
 
@@ -851,41 +967,85 @@ export function QuestionnaireExperience({
         className="border-white/10 bg-gradient-to-r from-[#0b0f1f] to-[#090b16]"
       >
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs text-primary/80">
-                Project context
-              </p>
-              <p className="text-base text-muted-foreground">
-                {selectedEntry
-                  ? selectedEntry === "fresh"
-                    ? "Fresh build flow"
-                    : "Existing site analysis"
-                  : "Select flow"}
-                {" · "}
-                {selectedUserType
-                  ? selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)
-                  : "User type TBD"}
-              </p>
-            </div>
-            <div className="flex flex-1 items-center gap-4">
-              <div className="h-2 flex-1 rounded-full bg-white/10">
-                <div
-                  className="h-2 rounded-full bg-primary transition-all"
-                  style={{ width: `${Math.round(overallProgress * 100)}%` }}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex-1 space-y-4">
+              <div>
+                <p className="text-xs text-primary/80">
+                  Project context
+                </p>
+                <p className="text-base text-muted-foreground">
+                  {selectedEntry
+                    ? selectedEntry === "fresh"
+                      ? "Fresh build flow"
+                      : "Existing site analysis"
+                    : "Select flow"}
+                  {" · "}
+                  {selectedUserType
+                    ? selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)
+                    : "User type TBD"}
+                </p>
+                {personaContextCopy && (
+                  <p className="mt-1 text-sm text-primary/70">
+                    {personaContextCopy}
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <ContextChipGroup
+                  label="Entry flow"
+                  options={ENTRY_FLOW_CHOICES}
+                  value={selectedEntry}
+                  onSelect={(value) => setSelectedEntry(value)}
+                />
+                <ContextChipGroup
+                  label="User type"
+                  options={USER_TYPE_CHOICES}
+                  value={selectedUserType}
+                  onSelect={(value) => setSelectedUserType(value)}
                 />
               </div>
-              <span className="text-sm text-muted-foreground">
-                {Math.round(overallProgress * 100)}% complete
-              </span>
+              {shouldShowAgencySummary && agencySummary ? (
+                <AgencySummaryPill
+                  summary={agencySummary}
+                  onManageTeam={() => setAgencyConfiguratorOpen(true)}
+                />
+              ) : null}
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="border-white/20" onClick={handleReset}>
-                Reset answers
-              </Button>
-              <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
-                <Link href="/onboarding">Back to onboarding</Link>
-              </Button>
+            <div className="flex w-full flex-col gap-4 lg:max-w-sm">
+              <div className="flex items-center gap-4">
+                <div className="h-2 flex-1 rounded-full bg-white/10">
+                  <div
+                    className="h-2 rounded-full bg-primary transition-all"
+                    style={{ width: `${Math.round(overallProgress * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(overallProgress * 100)}% complete
+                </span>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 sm:w-auto"
+                  onClick={handleReset}
+                >
+                  Reset answers
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="justify-start text-muted-foreground sm:w-auto"
+                >
+                  <Link href={personaShortcutHref}>{personaShortcut.label}</Link>
+                </Button>
+              </div>
+              {personaShortcut.description && (
+                <p className="text-xs text-muted-foreground sm:text-right">
+                  {personaShortcut.description}
+                </p>
+              )}
             </div>
           </div>
           <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
@@ -1008,7 +1168,8 @@ export function QuestionnaireExperience({
                 {(currencyRates ||
                   currencyError ||
                   isCurrencyLoadingRates ||
-                  manualConversionContext) && (
+                  manualConversionContext ||
+                  showAgencyTeamNudge) && (
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="text-sm font-semibold text-white">Live FX status</span>
@@ -1049,20 +1210,21 @@ export function QuestionnaireExperience({
                         </div>
                       </div>
                     )}
-                  </div>
-                )}
-                {canShowAgencyConfigurator && agencySummary && (
-                  <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-1 sm:p-2">
-                    <AgencyTeamConfigurator
-                      state={agencyTeamState}
-                      summary={agencySummary}
-                      onUpsert={upsertMember}
-                      onRemove={removeMember}
-                      onReset={resetAgencyTeam}
-                      onSettingsChange={updateAgencySettings}
-                      variant="embedded"
-                      currencySymbol={selectedCurrencyDisplay.symbol}
-                    />
+                    {showAgencyTeamNudge && (
+                      <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-primary-foreground">
+                        <p className="text-white">
+                          Team bandwidth drives your billable rate. Keep the roster updated before finalizing hours.
+                        </p>
+                        <Button
+                          size="sm"
+                          className="mt-3 w-full sm:w-auto"
+                          variant="outline"
+                          onClick={() => setAgencyConfiguratorOpen(true)}
+                        >
+                          Open team configurator
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1132,55 +1294,60 @@ export function QuestionnaireExperience({
             )}
 
           </CardContent>
-          <CardFooter className="flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Button
-              variant="ghost"
-              className="w-full gap-2 text-muted-foreground sm:w-auto"
-              onClick={() =>
-                setActiveSectionIndex((index) => Math.max(0, index - 1))
-              }
-              disabled={activeSectionIndex === 0}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              className="w-full gap-2 sm:w-auto"
-              disabled={isLastSection ? !canCalculate : false}
-              onClick={() => {
-                if (isLastSection) {
-                  if (!canCalculate) return;
-                  void handleCalculate();
-                  return;
+          <CardFooter className="flex flex-col gap-3 border-t border-white/5 pt-6">
+            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                variant="ghost"
+                className="w-full gap-2 text-muted-foreground sm:w-auto"
+                onClick={() =>
+                  setActiveSectionIndex((index) => Math.max(0, index - 1))
                 }
-                setActiveSectionIndex((index) =>
-                  Math.min(sectionStates.length - 1, index + 1),
-                );
-              }}
-            >
-              {isLastSection ? (
-                <>
-                  {isCalculating ? (
-                    <>
-                      Calculating…
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </>
-                  ) : (
-                    <>
-                      Calculate project cost
-                  <Sparkles className="h-4 w-4" />
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  Next section
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
+                disabled={activeSectionIndex === 0}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <Button
+                variant={isLastSection ? "default" : "secondary"}
+                className="w-full gap-2 sm:w-auto"
+                disabled={isLastSection ? !canCalculate : false}
+                onClick={() => {
+                  if (isLastSection) {
+                    if (!canCalculate) return;
+                    void handleCalculate();
+                    return;
+                  }
+                  setActiveSectionIndex((index) =>
+                    Math.min(sectionStates.length - 1, index + 1),
+                  );
+                }}
+              >
+                {isLastSection ? (
+                  <>
+                    {isCalculating ? (
+                      <>
+                        Calculating…
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        Calculate project cost
+                        <Sparkles className="h-4 w-4" />
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Next section
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
             {isLastSection && calculationError && (
-              <p className="w-full text-center text-sm text-destructive">{calculationError}</p>
+              <p className="w-full text-center text-sm text-destructive">
+                {calculationError}
+              </p>
             )}
           </CardFooter>
         </Card>
@@ -1189,6 +1356,17 @@ export function QuestionnaireExperience({
           <InsightCard kicker="Auto-save" title="Progress saved every 30 seconds" icon={CloudDownload}>
             <p>Feel free to close the tab—your answers stay synced locally.</p>
           </InsightCard>
+
+          {personaInsightCards.map((card) => (
+            <InsightCard
+              key={card.kicker}
+              kicker={card.kicker}
+              title={card.title}
+              icon={card.icon ?? Sparkles}
+            >
+              {card.body}
+            </InsightCard>
+          ))}
 
           <InsightCard kicker="Checklist" title="What’s left?" icon={ClipboardList}>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -1205,15 +1383,26 @@ export function QuestionnaireExperience({
               ))}
             </ul>
           </InsightCard>
-
-          <InsightCard kicker="Reminder" title="Timeline tips" icon={Clock4}>
-            <ul className="space-y-2 text-xs text-muted-foreground">
-              <li>Rush projects + multiple approvers trigger urgency multipliers.</li>
-              <li>Retainers unlock maintenance revenue lines.</li>
-            </ul>
-          </InsightCard>
         </aside>
       </div>
+
+      {shouldShowAgencySummary && agencySummary && (
+        <AgencyConfiguratorOverlay
+          open={isAgencyConfiguratorOpen}
+          onClose={() => setAgencyConfiguratorOpen(false)}
+        >
+          <AgencyTeamConfigurator
+            state={agencyTeamState}
+            summary={agencySummary}
+            onUpsert={upsertMember}
+            onRemove={removeMember}
+            onReset={resetAgencyTeam}
+            onSettingsChange={updateAgencySettings}
+            variant="embedded"
+            currencySymbol={selectedCurrencyDisplay.symbol}
+          />
+        </AgencyConfiguratorOverlay>
+      )}
     </div>
   );
 }
@@ -1269,6 +1458,8 @@ function QuestionCard({
   suggestion,
   touched,
   className,
+  persona,
+  personaPrefill,
   onSingleSelect,
   onMultiSelect,
   onScaleChange,
@@ -1284,6 +1475,8 @@ function QuestionCard({
   suggestion?: CrawlSuggestion;
   touched: boolean;
   className?: string;
+  persona?: QuestionnaireUserType | null;
+  personaPrefill?: QuestionnaireUserType | null;
   onSingleSelect: (id: string, value: string) => void;
   onMultiSelect: (id: string, value: string) => void;
   onScaleChange: (id: string, value: number) => void;
@@ -1305,7 +1498,8 @@ function QuestionCard({
     suggestion && touched && answersEqual(answer, suggestion.value);
   const showSuggestion = Boolean(suggestion && !skipped && !suggestionApplied);
   const suggestionPending = showSuggestion && !touched;
-  const isCollapseEligible = question.type !== "multi";
+  const isCollapseEligible =
+    question.type !== "multi" && question.type !== "scale";
   const shouldAutoCollapse = isCollapseEligible && isAnswered && !suggestionPending;
   const isCollapsed = shouldAutoCollapse && !isManuallyExpanded;
   const answerSummary = useMemo(
@@ -1369,6 +1563,11 @@ function QuestionCard({
           {question.helper && (
             <p className="text-xs text-muted-foreground/80">
               {question.helper}
+            </p>
+          )}
+          {personaPrefill && (
+            <p className="text-xs text-primary/70">
+              Prefilled from your {formatPersonaLabel(personaPrefill)} profile
             </p>
           )}
         </div>
@@ -1449,7 +1648,7 @@ function QuestionCard({
       )}
       {!skipped && (
         <div className="mt-4">
-          {renderByType(question, answer, touched, {
+          {renderByType(question, answer, touched, persona ?? null, {
             onSingleSelect,
             onMultiSelect,
             onScaleChange,
@@ -1489,10 +1688,24 @@ function deriveTouchedFromAnswers(answers: QuestionnaireAnswerMap) {
   return touched;
 }
 
+function hasMeaningfulAnswer(value: QuestionnaireAnswer): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return true;
+}
+
 function renderByType(
   question: QuestionDefinition,
   answer: QuestionnaireAnswer,
   touched: boolean,
+  persona: QuestionnaireUserType | null,
   handlers: {
     onSingleSelect: (id: string, value: string) => void;
     onMultiSelect: (id: string, value: string) => void;
@@ -1510,7 +1723,7 @@ function renderByType(
             question.id === "rate_currency" ? "sm:grid-cols-3" : "md:grid-cols-2",
           )}
         >
-          {question.options?.map((option) => {
+          {prioritizeOptions(question.options ?? [], persona).map((option) => {
             const currentAnswer = touched ? answer : undefined;
             const isSelected = currentAnswer === option.value;
             const isCurrencyQuestion = question.id === "rate_currency";
@@ -1519,6 +1732,9 @@ function renderByType(
                 ? CURRENCY_DISPLAY[option.value]
                 : undefined;
             const buttonAriaLabel = isCurrencyQuestion ? option.label : undefined;
+            const isRecommended = Boolean(
+              persona && option.recommendedFor?.includes(persona),
+            );
             return (
               <button
                 key={option.value}
@@ -1551,6 +1767,11 @@ function renderByType(
                     {option.badge}
                   </span>
                 )}
+                {isRecommended && (
+                  <span className="mt-2 inline-flex items-center rounded-full border border-primary/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                    Recommended
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1559,10 +1780,13 @@ function renderByType(
     case "multi":
       return (
         <div className="flex flex-wrap gap-2">
-          {question.options?.map((option) => {
+          {prioritizeOptions(question.options ?? [], persona).map((option) => {
             const selections =
               touched && Array.isArray(answer) ? (answer as string[]) : [];
             const isSelected = selections.includes(option.value);
+            const isRecommended = Boolean(
+              persona && option.recommendedFor?.includes(persona),
+            );
             return (
               <button
                 key={option.value}
@@ -1575,7 +1799,12 @@ function renderByType(
                     : "border-white/15 text-white/70 hover:border-white/40 hover:text-white",
                 )}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {isRecommended && (
+                  <span className="ml-2 text-[11px] uppercase tracking-wide text-primary">
+                    Recommended
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1651,6 +1880,228 @@ function renderByType(
     default:
       return null;
   }
+}
+
+function ContextChipGroup<TValue extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+}: {
+  label: string;
+  options: { id: TValue; label: string }[];
+  value: TValue | null;
+  onSelect: (value: TValue) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onSelect(option.id)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs transition",
+              value === option.id
+                ? "border-primary/80 bg-primary/10 text-white"
+                : "border-white/10 text-muted-foreground hover:border-white/40 hover:text-white",
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AgencySummaryPill({
+  summary,
+  onManageTeam,
+}: {
+  summary: AgencyRateSummary;
+  onManageTeam: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-soft-card md:flex-row md:items-center md:justify-between">
+      <div>
+        <p className="text-xs text-primary/70">
+          Team capacity
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {summary.memberCount} members · {summary.totalWeeklyCapacity} hrs/week
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <Users className="h-3.5 w-3.5 text-primary" />
+          {Math.round(summary.margin * 100)}% margin target
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <DollarSign className="h-3.5 w-3.5 text-primary" />
+          Recommended {summary.recommendedBillableRate.toFixed(0)} / hr
+        </span>
+      </div>
+      <Button size="sm" variant="outline" className="border-white/30" onClick={onManageTeam}>
+        Manage team
+      </Button>
+    </div>
+  );
+}
+
+function AgencyConfiguratorOverlay({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-[#05060f] p-6 shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close team configurator"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/70 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function buildPersonaInsights({
+  userType,
+  hourlyRate,
+  currencySymbol,
+  agencySummary,
+}: {
+  userType: QuestionnaireUserType | null;
+  hourlyRate: number | null;
+  currencySymbol: string;
+  agencySummary?: AgencyRateSummary;
+}): InsightCardContent[] {
+  if (!userType) return [];
+  switch (userType) {
+    case "freelancer":
+      return [
+        {
+          kicker: "Hourly guardrail",
+          title: hourlyRate
+            ? `Charging ${currencySymbol}${hourlyRate.toFixed(0)}/hr`
+            : "Protect your hourly floor",
+          icon: DollarSign,
+          body: (
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li>Lock rush/maintenance multipliers before sharing estimates.</li>
+              <li>Use the proposal shell CTA to export a ready-to-send outline.</li>
+            </ul>
+          ),
+        },
+      ];
+    case "agency":
+      return [
+        {
+          kicker: "Team sync",
+          title: "Keep templates + capacity aligned",
+          icon: Users,
+          body: (
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li>
+                {agencySummary
+                  ? `Recommended blended rate ${currencySymbol}${agencySummary.recommendedBillableRate.toFixed(0)} / hr`
+                  : "Set your blended rate so templates stay accurate."}
+              </li>
+              <li>Update the team configurator before calculating final costs.</li>
+            </ul>
+          ),
+        },
+      ];
+    case "company":
+      return [
+        {
+          kicker: "Stakeholder prep",
+          title: "Keep procurement unblocked",
+          icon: Shield,
+          body: (
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li>Tag the approval count + procurement steps in the timeline section.</li>
+              <li>Use the vendor brief CTA to share a read-only scope snapshot.</li>
+            </ul>
+          ),
+        },
+      ];
+    default:
+      return [];
+  }
+}
+
+function getPersonaContextCopy(userType: QuestionnaireUserType | null): string | null {
+  if (!userType) return null;
+  switch (userType) {
+    case "freelancer":
+      return "Solo builder mode · keep cashflow and upsells front and center.";
+    case "agency":
+      return "Agency mode · protect margin with shared templates and capacity.";
+    case "company":
+      return "Company mode · align budgets and stakeholders as you scope.";
+    default:
+      return null;
+  }
+}
+
+function getPersonaShortcut(userType: QuestionnaireUserType | null): {
+  label: string;
+  description?: string;
+} {
+  switch (userType) {
+    case "freelancer":
+      return {
+        label: "Generate proposal shell",
+        description: "Jump back to onboarding whenever you need a proposal-ready outline.",
+      };
+    case "agency":
+      return {
+        label: "Sync team template",
+        description: "Head to onboarding to refresh shared templates or margins.",
+      };
+    case "company":
+      return {
+        label: "Prepare vendor brief",
+        description: "Update onboarding inputs before sharing with stakeholders.",
+      };
+    default:
+      return {
+        label: "Review onboarding",
+        description: "Adjust your kickoff selections any time.",
+      };
+  }
+}
+
+function formatPersonaLabel(userType: QuestionnaireUserType): string {
+  return userType.charAt(0).toUpperCase() + userType.slice(1);
+}
+
+function prioritizeOptions<TOption extends { recommendedFor?: QuestionnaireUserType[] }>(
+  options: TOption[],
+  persona: QuestionnaireUserType | null,
+): TOption[] {
+  if (!persona) {
+    return options;
+  }
+  const recommended = options.filter((option) => option.recommendedFor?.includes(persona));
+  const rest = options.filter((option) => !option.recommendedFor?.includes(persona));
+  return [...recommended, ...rest];
 }
 
 function summarizeAnswer(
