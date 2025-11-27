@@ -1,0 +1,180 @@
+{
+  "summary": {
+    "totalProjects": 12,
+    "totalPipelineValue": 47850,
+    "avgProjectSize": {
+      "hours": 64,
+      "cost": 3988
+    },
+    "crawlsThisMonth": 8,
+    "projectsThisMonth": 3,
+    "projectsTrend": 33.3,
+    "pipelineTrend": 18.5
+  },
+  "agencyProfile": {
+    "teamMembers": 4,
+    "blendedRate": 95,
+    "targetMargin": 25,
+    "monthlyCapacity": 640
+  },
+  "chartData": [
+    { "date": "2025-09-01", "projects": 1, "value": 2400 },
+    { "date": "2025-09-08", "projects": 0, "value": 0 },
+    { "date": "2025-09-15", "projects": 2, "value": 7800 },
+    { "date": "2025-09-22", "projects": 1, "value": 3200 },
+    { "date": "2025-09-29", "projects": 0, "value": 0 },
+    { "date": "2025-10-06", "projects": 1, "value": 4500 },
+    { "date": "2025-10-13", "projects": 2, "value": 8200 },
+    { "date": "2025-10-20", "projects": 1, "value": 5600 },
+    { "date": "2025-10-27", "projects": 0, "value": 0 },
+    { "date": "2025-11-03", "projects": 1, "value": 3800 },
+    { "date": "2025-11-10", "projects": 2, "value": 7350 },
+    { "date": "2025-11-17", "projects": 1, "value": 5000 }
+  ],
+  "projects": [
+    {
+      "id": "proj_001",
+      "title": "Artisan Coffee Rebrand",
+      "type": "small_business",
+      "flow": "fresh",
+      "status": "completed",
+      "estimatedCost": 4800,
+      "hours": 60,
+      "currency": "USD",
+      "persona": "freelancer",
+      "updatedAt": "2025-11-24T14:30:00Z"
+    },
+    {
+      "id": "proj_002",
+      "title": "TechStart SaaS Landing",
+      "type": "landing_page",
+      "flow": "fresh",
+      "status": "in_progress",
+      "estimatedCost": 2400,
+      "hours": 32,
+      "currency": "USD",
+      "persona": "agency",
+      "updatedAt": "2025-11-23T09:15:00Z"
+    },
+    {
+      "id": "proj_003",
+      "title": "Bloom Boutique Ecommerce",
+      "type": "ecommerce",
+      "flow": "existing",
+      "status": "draft",
+      "estimatedCost": 12500,
+      "hours": 156,
+      "currency": "USD",
+      "persona": "agency",
+      "updatedAt": "2025-11-22T16:45:00Z"
+    },
+    {
+      "id": "proj_004",
+      "title": "Metro Fitness Website",
+      "type": "small_business",
+      "flow": "fresh",
+      "status": "completed",
+      "estimatedCost": 3200,
+      "hours": 40,
+      "currency": "USD",
+      "persona": "freelancer",
+      "updatedAt": "2025-11-20T11:00:00Z"
+    },
+    {
+      "id": "proj_005",
+      "title": "Evergreen Legal Migration",
+      "type": "small_business",
+      "flow": "existing",
+      "status": "in_progress",
+      "estimatedCost": 5600,
+      "hours": 70,
+      "currency": "USD",
+      "persona": "agency",
+      "updatedAt": "2025-11-19T08:30:00Z"
+    },
+    {
+      "id": "proj_006",
+      "title": "Wanderlust Travel Blog",
+      "type": "landing_page",
+      "flow": "fresh",
+      "status": "completed",
+      "estimatedCost": 1800,
+      "hours": 24,
+      "currency": "USD",
+      "persona": "freelancer",
+      "updatedAt": "2025-11-18T13:20:00Z"
+    },
+    {
+      "id": "proj_007",
+      "title": "CloudSync Dashboard",
+      "type": "web_app",
+      "flow": "fresh",
+      "status": "draft",
+      "estimatedCost": 8500,
+      "hours": 106,
+      "currency": "USD",
+      "persona": "company",
+      "updatedAt": "2025-11-17T10:45:00Z"
+    },
+    {
+      "id": "proj_008",
+      "title": "Harvest Kitchen Menu Site",
+      "type": "landing_page",
+      "flow": "existing",
+      "status": "completed",
+      "estimatedCost": 2200,
+      "hours": 28,
+      "currency": "USD",
+      "persona": "freelancer",
+      "updatedAt": "2025-11-15T15:10:00Z"
+    },
+    {
+      "id": "proj_009",
+      "title": "Pixel Perfect Portfolio",
+      "type": "landing_page",
+      "flow": "fresh",
+      "status": "in_progress",
+      "estimatedCost": 1600,
+      "hours": 20,
+      "currency": "USD",
+      "persona": "freelancer",
+      "updatedAt": "2025-11-14T09:00:00Z"
+    },
+    {
+      "id": "proj_010",
+      "title": "Nordic Home Goods Store",
+      "type": "ecommerce",
+      "flow": "fresh",
+      "status": "draft",
+      "estimatedCost": 9800,
+      "hours": 122,
+      "currency": "USD",
+      "persona": "agency",
+      "updatedAt": "2025-11-12T14:30:00Z"
+    },
+    {
+      "id": "proj_011",
+      "title": "Bright Minds Academy",
+      "type": "small_business",
+      "flow": "existing",
+      "status": "completed",
+      "estimatedCost": 4200,
+      "hours": 52,
+      "currency": "USD",
+      "persona": "agency",
+      "updatedAt": "2025-11-10T11:20:00Z"
+    },
+    {
+      "id": "proj_012",
+      "title": "Summit Financial Rebrand",
+      "type": "small_business",
+      "flow": "fresh",
+      "status": "in_progress",
+      "estimatedCost": 5500,
+      "hours": 68,
+      "currency": "USD",
+      "persona": "company",
+      "updatedAt": "2025-11-08T16:00:00Z"
+    }
+  ]
+}

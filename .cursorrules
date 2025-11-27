@@ -28,9 +28,21 @@
 - Add backend tests (Vitest/Jest) for calculation API, crawler proxy, and AI endpoints when feasible.
 - Run linters/formatters (ESLint + Prettier) before committing. Enforce strict TypeScript.
 
+## Design System & UI Consistency
+- **Always consult `docs/design-system.md`** before creating or modifying any UI component.
+- Follow the established color system using CSS variables (`--primary`, `--background`, `--muted-foreground`, etc.) and Tailwind classes.
+- Use the defined typography scale: Geist Sans for body text, appropriate font sizes (xs for labels, sm for secondary, base for body, lg+ for headings).
+- Maintain consistent spacing using the 4px base unit scale (gap-2, gap-4, gap-6 for tight/standard/loose).
+- Apply the correct border radius: `rounded-2xl`/`rounded-3xl` for cards, `rounded-full` for pills/badges, `rounded-lg` for inputs.
+- Use layered depth with subtle opacity backgrounds: `bg-white/[0.02]` → `bg-white/[0.03]` → `bg-white/[0.04]` for progressive nesting.
+- All interactive elements must have transitions (`transition`, `hover:`, `focus:ring`) and proper focus states.
+- Use Lucide React icons consistently at standard sizes (h-4 w-4 for UI, h-5 w-5 for headers).
+- Follow component patterns from the design system: Card hierarchy, Section headers, Form layouts, Empty states, Error/Warning banners.
+- Never use solid white backgrounds, heavy shadows, or colors outside the defined palette.
+- When in doubt, reference existing components in `src/components/` for established patterns.
+
 ## Deliverables & Workflow
 - When adding features, update the relevant section in `requirements/PRD.md` or `requirements/tasks.json` if scope changes.
 - Provide migration scripts whenever DB schema changes.
 - Favor modular, reusable components (e.g., question controls, cost breakdown tables, timeline views).
 - Document new endpoints, env vars, or CLI scripts in README or `/docs`.
-
