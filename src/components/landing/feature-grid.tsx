@@ -1,4 +1,4 @@
-import { Bot, Calculator, FileChartColumn, ShieldCheck } from "lucide-react";
+import { Bot, Calculator, FileChartColumn, ShieldCheck, Layers, Zap } from "lucide-react";
 
 import {
   Card,
@@ -33,43 +33,52 @@ const features = [
       "Rate limiting, caching, and validation keep the API resilient even under heavy usage.",
     icon: ShieldCheck,
   },
+  {
+    title: "Component Library",
+    description: "Map identified structures to your agency's component library for precise costing.",
+    icon: Layers
+  },
+  {
+    title: "Instant Export",
+    description: "One-click export to your proposal software or project management tool.",
+    icon: Zap
+  }
 ];
 
 export function FeatureGrid() {
   return (
-    <section id="features" className="border-b border-white/5 bg-background">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:px-10 lg:px-16">
-        <div className="mb-10 space-y-4 text-center">
-          <p className="text-sm text-primary">
-            Why Teams Choose It
-          </p>
-          <h2 className="text-3xl font-semibold md:text-4xl">
+    <section id="features" className="border-b border-conversion-border-light bg-conversion-beige py-24">
+      <div className="mx-auto max-w-[90rem] px-6 md:px-10">
+        <div className="mb-16 space-y-6 text-center max-w-3xl mx-auto">
+          <h2 className="font-serif text-4xl font-medium text-conversion-charcoal md:text-5xl tracking-tight">
             Scoped for Webflow’s unique reality.
           </h2>
-          <p className="text-base text-muted-foreground">
+          <p className="text-xl text-muted-foreground leading-relaxed">
             Built from the PRD’s feature set: multi-flow entry, crawler/AI
             insights, pro exports, and benchmark intelligence.
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-px bg-conversion-border-light overflow-hidden rounded-2xl border border-conversion-border-light sm:grid-cols-2 lg:grid-cols-3 shadow-sm">
           {features.map(({ title, description, icon: Icon }) => (
-            <Card
+            <div
               key={title}
-              className="h-full border-white/5 bg-card/70 backdrop-blur"
+              className="group relative bg-white p-10 hover:bg-gray-50 transition-colors duration-300"
             >
-              <CardHeader className="space-y-4">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
+              <div className="space-y-6 relative z-10">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-conversion-beige border border-conversion-border-light text-conversion-charcoal group-hover:scale-110 transition-transform duration-300">
+                  <Icon className="h-6 w-6" />
                 </div>
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-              </CardHeader>
-              <CardContent />
-            </Card>
+                <h3 className="font-serif text-2xl text-conversion-charcoal">
+                  {title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {description}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
     </section>
   );
 }
-

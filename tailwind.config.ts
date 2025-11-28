@@ -44,6 +44,23 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
   			},
+        // Conversion.ai Design System Palette
+        conversion: {
+          white: '#FFFFFF',
+          beige: '#FDFCFB',
+          black: '#000000',
+          charcoal: '#21201C',
+          'card-hover': '#272724',
+          green: '#24A871',
+          purple: '#9F65AD',
+          red: '#9F2C2C',
+          blue: '#2C789F',
+          'dark-blue': '#225E7D',
+          border: {
+            light: '#E0E0E0',
+            dark: '#3C3B37'
+          }
+        },
   			brand: {
   				DEFAULT: '#6E49FF',
   				dark: '#4D2ED6',
@@ -81,8 +98,8 @@ const config: Config = {
   		},
   		fontFamily: {
   			sans: [
+          'Inter', 
   				'var(--font-geist-sans)',
-  				'Inter',
   				'system-ui',
   				'sans-serif'
   			],
@@ -90,7 +107,11 @@ const config: Config = {
   				'var(--font-geist-mono)',
   				'SFMono-Regular',
   				'monospace'
-  			]
+  			],
+        serif: [
+          'Times New Roman',
+          'serif'
+        ]
   		},
   		boxShadow: {
   			'soft-card': '0 15px 35px rgba(24, 34, 63, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04)'
@@ -111,11 +132,36 @@ const config: Config = {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+        'scroll-logos': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-100%)' }
+        },
+        'fade-up': {
+          '0%': { transform: 'translate3d(0, 1.5rem, 0)', opacity: '0' },
+          '100%': { transform: 'translate3d(0, 0, 0)', opacity: '1' }
+        },
+        'scan': {
+          '0%, 100%': { top: '0%' },
+          '50%': { top: '100%' }
+        },
+        'pulse-scale': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.05)' }
+        },
+        'progress-grow': {
+          '0%': { width: '0%' },
+          '100%': { width: '75%' }
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+        'scroll-logos': 'scroll-logos 30s linear infinite',
+        'fade-up': 'fade-up 0.6s ease forwards',
+        'scan': 'scan 3s ease-in-out infinite',
+        'pulse-scale': 'pulse-scale 2s ease-in-out infinite',
+        'progress-grow': 'progress-grow 2s ease-out forwards delay-500'
   		}
   	}
   },
@@ -123,4 +169,3 @@ const config: Config = {
 };
 
 export default config;
-

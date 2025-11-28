@@ -23,31 +23,43 @@ export function TestimonialsSection() {
   return (
     <section
       id="testimonials"
-      className="border-b border-white/5 bg-gradient-to-b from-[#080b16] to-background"
+      className="border-b border-conversion-border-light bg-conversion-beige py-24"
     >
-      <div className="mx-auto max-w-6xl px-6 py-16 md:px-10 lg:px-16">
-        <div className="mb-10 text-center">
-          <p className="text-sm text-primary">
-            Trusted Results
-          </p>
-          <h2 className="text-3xl font-semibold md:text-4xl">
-            Built with Webflow pros in mind.
+      <div className="mx-auto max-w-[90rem] px-6 md:px-10">
+        <div className="mb-16 text-center max-w-2xl mx-auto">
+          <h2 className="font-serif text-4xl font-medium text-conversion-charcoal md:text-5xl tracking-tight mb-4">
+            Trusted by Webflow pros.
           </h2>
+          <p className="text-xl text-muted-foreground">
+             From freelancers to enterprise teams.
+          </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
           {testimonials.map((item) => (
             <figure
               key={item.author}
-              className="rounded-3xl border border-white/5 bg-card/70 p-6 text-sm text-muted-foreground shadow-soft-card backdrop-blur"
+              className="flex flex-col justify-between rounded-2xl bg-white p-8 shadow-sm hover:shadow-md transition-shadow duration-300 border border-transparent hover:border-conversion-border-light"
             >
-              <blockquote className="mb-4 text-base text-foreground">
+              <div className="mb-6">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span key={star} className="text-yellow-400 text-lg">★</span>
+                ))}
+              </div>
+              <blockquote className="mb-6 text-lg leading-relaxed text-conversion-charcoal font-medium">
                 “{item.quote}”
               </blockquote>
-              <figcaption className="text-xs tracking-widest text-primary">
-                {item.author}
-                <span className="block text-[11px] text-muted-foreground">
-                  {item.role}
-                </span>
+              <figcaption className="flex items-center gap-3 pt-6 border-t border-gray-50">
+                <div className="h-10 w-10 rounded-full bg-conversion-charcoal text-white flex items-center justify-center text-sm font-bold font-serif">
+                    {item.author.charAt(0)}
+                </div>
+                <div>
+                    <div className="text-sm font-semibold text-conversion-charcoal">
+                        {item.author}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {item.role}
+                    </div>
+                </div>
               </figcaption>
             </figure>
           ))}
@@ -56,4 +68,3 @@ export function TestimonialsSection() {
     </section>
   );
 }
-

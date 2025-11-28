@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ProjectsDashboard } from "@/components/projects/projects-dashboard";
 
 export const metadata: Metadata = {
@@ -8,13 +11,26 @@ export const metadata: Metadata = {
     "Manage saved Webflow project scopes, duplicate estimates, and reopen questionnaires.",
 };
 
+// Mock user type - in production this would come from Clerk session
+const userType = "agency" as const
+
 export default function ProjectsPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#05060a] via-[#060714] to-[#090d1b] pb-16 text-white">
-      <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:px-12">
-        <ProjectsDashboard />
-      </div>
-    </main>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "16rem",
+          "--header-height": "3rem",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="sidebar" userType={userType} />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col p-4 md:p-6">
+          <ProjectsDashboard />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
-

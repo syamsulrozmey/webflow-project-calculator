@@ -2,16 +2,18 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
-  Calculator,
+  ChevronDown,
   CreditCard,
   FolderKanban,
   Globe,
   HelpCircle,
-  LayoutDashboard,
+  PlusCircle,
   Settings,
   Sparkles,
   Users,
+  Zap,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -28,44 +30,34 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Mock user data - in production this would come from Clerk
 const userData = {
   name: "Alex Designer",
   email: "alex@webflowpro.com",
   avatar: "",
-  userType: "agency" as const, // "freelancer" | "agency" | "company"
+  userType: "agency" as const,
 }
 
 const navMain = [
   {
-    title: "Dashboard",
+    title: "Projects",
     url: "/dashboard",
-    icon: LayoutDashboard,
-    isActive: true,
-  },
-  {
-    title: "My Projects",
-    url: "/projects",
     icon: FolderKanban,
-  },
-  {
-    title: "New Calculation",
-    url: "/questionnaire",
-    icon: Calculator,
-  },
-  {
-    title: "Website Analysis",
-    url: "/analysis",
-    icon: Globe,
   },
 ]
 
 // Conditional items based on user type
 const agencyItems = [
   {
-    title: "Team Settings",
-    url: "/onboarding",
+    title: "Team",
+    url: "/team",
     icon: Users,
   },
 ]
@@ -77,7 +69,7 @@ const navSecondary = [
     icon: Settings,
   },
   {
-    title: "Get Help",
+    title: "Help",
     url: "/help",
     icon: HelpCircle,
   },
@@ -88,6 +80,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ userType = userData.userType, ...props }: AppSidebarProps) {
+  const router = useRouter()
+  
   // Combine nav items based on user type
   const allNavItems = React.useMemo(() => {
     if (userType === "agency") {
@@ -95,6 +89,14 @@ export function AppSidebar({ userType = userData.userType, ...props }: AppSideba
     }
     return navMain
   }, [userType])
+
+  const handleNewEstimate = (type: "fresh" | "existing") => {
+    if (type === "fresh") {
+      router.push("/questionnaire")
+    } else {
+      router.push("/analysis")
+    }
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -120,6 +122,51 @@ export function AppSidebar({ userType = userData.userType, ...props }: AppSideba
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Primary Action - New Estimate Dropdown */}
+        <div className="px-3 pt-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex w-full items-center justify-between gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <div className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>New Estimate</span>
+                </div>
+                <ChevronDown className="h-4 w-4 opacity-70" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="start" 
+              className="w-[calc(var(--sidebar-width)-1.5rem)] border-white/10 bg-zinc-900"
+              sideOffset={8}
+            >
+              <DropdownMenuItem 
+                onClick={() => handleNewEstimate("fresh")}
+                className="cursor-pointer gap-3 rounded-lg px-3 py-3 focus:bg-white/10"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20">
+                  <Zap className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-white">Fresh Project</span>
+                  <span className="text-xs text-muted-foreground">Start from scratch with questionnaire</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleNewEstimate("existing")}
+                className="cursor-pointer gap-3 rounded-lg px-3 py-3 focus:bg-white/10"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20">
+                  <Globe className="h-4 w-4 text-emerald-400" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-white">Analyze Existing Site</span>
+                  <span className="text-xs text-muted-foreground">Crawl & estimate from live website</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <NavMain items={allNavItems} />
 
         <SidebarSeparator className="my-4" />
