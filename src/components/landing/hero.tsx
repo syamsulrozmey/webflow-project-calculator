@@ -1,15 +1,126 @@
-import Link from "next/link";
-import { Check, ArrowRight, Search, BarChart3, Layers, Zap, LayoutTemplate, MousePointerClick } from "lucide-react";
+"use client";
 
+import Link from "next/link";
+import { Check, ArrowRight, Zap, LayoutTemplate, MousePointerClick } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
-const sellingPoints = [
-  "Two entry flows: fresh builds + site migrations",
-  "Deterministic engine backed by benchmark data",
-  "Crawler + AI insights with graceful fallbacks",
-];
+// Animated Number Component
+function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; isAnimating: boolean }) {
+  const [displayValue, setDisplayValue] = useState(from);
+
+  useEffect(() => {
+    if (!isAnimating) {
+      setDisplayValue(to); // Ensure we settle on the final value
+      return;
+    }
+
+    const duration = 3000; // ms - Slowed down further to 3000ms
+    const startTime = performance.now();
+    const startValue = from;
+    const endValue = to;
+
+    const step = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      
+      const current = startValue + (endValue - startValue) * ease;
+      setDisplayValue(Math.floor(current));
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+
+    requestAnimationFrame(step);
+  }, [isAnimating, from, to]);
+
+  return (
+    // Use tabular-nums to prevent jitter and fixed width container if needed
+    <span className="tabular-nums tracking-tight">${displayValue.toLocaleString()}</span>
+  );
+}
 
 export function HeroSection() {
+  // Animation states
+  const [activeOption, setActiveOption] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [price, setPrice] = useState(18450);
+  const [showCursor, setShowCursor] = useState(true);
+  const [cursorPosition, setCursorPosition] = useState({ top: 80, left: 200 }); // Initial position roughly near option 1
+  const [clickEffect, setClickEffect] = useState(false);
+
+  const options = [
+    { label: "Small Business", price: 18450, hours: { discovery: 12, design: 24 } },
+    { label: "Startup / SaaS", price: 24500, hours: { discovery: 20, design: 35 } },
+    { label: "E-commerce", price: 32000, hours: { discovery: 25, design: 45 } }
+  ];
+
+  useEffect(() => {
+    let step = 0;
+    let timeoutId: NodeJS.Timeout;
+
+    const runStep = () => {
+      const currentOption = step % options.length;
+      const nextOption = (step + 1) % options.length;
+      
+      // Timeline:
+      // 0ms: Idle at current
+      // 2000ms: Move cursor start
+      // 2800ms: Cursor arrives
+      // 3000ms: Click
+      // 3200ms: Selection updates, Calculating starts
+      // 6500ms: Calculation ends (increased due to slower animation), Price updates
+      
+      // Move Cursor
+      timeoutId = setTimeout(() => {
+         const targetTop = 85 + (nextOption * 44); 
+         setCursorPosition({ top: targetTop, left: 120 });
+      }, 2000);
+
+      // Click
+      timeoutId = setTimeout(() => {
+        setClickEffect(true);
+      }, 2800);
+
+      // Update Selection & Start Calculation
+      timeoutId = setTimeout(() => {
+        setClickEffect(false);
+        setActiveOption(nextOption);
+        setIsCalculating(true);
+      }, 3000);
+
+      // Finish Calculation
+      timeoutId = setTimeout(() => {
+        setPrice(options[nextOption].price);
+        setIsCalculating(false);
+        step++;
+        runStep(); // Recursive call for next cycle
+      }, 6500);
+    };
+
+    runStep();
+
+    return () => clearTimeout(timeoutId);
+  }, []); 
+
+  return (
+    <HeroSectionContent 
+      activeOption={activeOption} 
+      isCalculating={isCalculating} 
+      price={price} 
+      cursorPosition={cursorPosition} 
+      clickEffect={clickEffect}
+      options={options}
+    />
+  );
+}
+
+// Split content to keep logic clean
+function HeroSectionContent({ activeOption, isCalculating, price, cursorPosition, clickEffect, options }: any) {
   return (
     <section className="relative overflow-hidden border-b border-conversion-border-light bg-white">
       {/* Background Layout with Side Panels */}
@@ -19,32 +130,30 @@ export function HeroSection() {
         <div className="w-full h-full bg-dot-pattern bg-conversion-beige/30"></div>
       </div>
 
-      <div className="relative z-20 mx-auto flex max-w-[90rem] flex-col items-center pt-20 lg:pt-32 pb-0">
+      <div className="relative z-20 mx-auto flex max-w-[90rem] items-center justify-between px-6 md:px-10 lg:px-16 pt-20 lg:pt-32 pb-20 lg:pb-32 gap-16">
         
-        {/* Content Container */}
-        <div className="max-w-4xl px-6 text-center space-y-8 mb-16">
-          <h1 className="font-serif text-5xl font-medium leading-[1.1] tracking-tight text-conversion-charcoal md:text-7xl">
+        {/* Left Column: Content */}
+        <div className="flex-1 max-w-xl space-y-8 text-left">
+          <h1 className="font-serif text-5xl font-medium leading-[1.1] tracking-tight text-conversion-charcoal md:text-6xl lg:text-7xl">
             The Modern Webflow<br />
             Estimation Platform
           </h1>
           
-          <p className="mx-auto max-w-2xl text-xl text-muted-foreground leading-relaxed">
+          <p className="text-xl text-muted-foreground leading-relaxed">
             Quote Webflow projects with confidence in minutes. Feed in questionnaire answers or crawl an existing site. The calculator blends deterministic hours with crawler intelligence.
           </p>
 
-          <div className="flex flex-col items-center gap-4 pt-4 sm:flex-row sm:justify-center">
-            <div className="relative flex items-center w-full max-w-md">
-              <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-base rounded-full bg-conversion-dark-blue hover:bg-conversion-dark-blue/90 text-white border-none" asChild>
-                <Link href="/onboarding?entry=fresh">
-                  Start fresh project
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <Button size="lg" className="px-8 h-12 text-base rounded-full bg-conversion-dark-blue hover:bg-conversion-dark-blue/90 text-white border-none" asChild>
+              <Link href="/onboarding?entry=fresh">
+                Start fresh project
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
             <Button
                 size="lg"
                 variant="ghost"
-                className="text-muted-foreground hover:text-foreground hover:bg-transparent"
+                className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0 sm:px-4 justify-start sm:justify-center"
                 asChild
               >
                 <Link href="/onboarding?entry=existing">
@@ -54,12 +163,27 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Complex UI Mockup */}
-        <div className="w-full max-w-[80rem] px-4 lg:px-8">
-          <div className="relative rounded-t-2xl border border-b-0 border-conversion-border-light bg-white shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
+        {/* Right Column: UI Mockup */}
+        <div className="flex-1 w-full max-w-3xl hidden lg:block">
+          <div className="relative rounded-2xl border border-conversion-border-light bg-white shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] overflow-hidden group select-none">
             
+            {/* Simulated Cursor */}
+            <div 
+              className="absolute z-50 pointer-events-none transition-all duration-700 ease-in-out"
+              style={{ 
+                top: `${cursorPosition.top}px`, 
+                left: `${cursorPosition.left}px`,
+                transform: clickEffect ? 'scale(0.8)' : 'scale(1)'
+              }}
+            >
+               {/* Cursor SVG */}
+               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+                 <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#21201C" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+               </svg>
+            </div>
+
             {/* Mockup Toolbar */}
-            <div className="flex items-center justify-between border-b border-conversion-border-light px-4 py-3 bg-white">
+            <div className="flex items-center justify-between border-b border-conversion-border-light px-4 py-3 bg-white relative z-20">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1.5">
                   <div className="h-3 w-3 rounded-full bg-red-400/20 border border-red-400/50"></div>
@@ -76,95 +200,97 @@ export function HeroSection() {
             </div>
 
             {/* Mockup Body - 3 Columns */}
-            <div className="flex h-[600px] bg-gray-50/50">
+            <div className="flex h-[500px] bg-gray-50/50">
               
               {/* Left Sidebar - Controls */}
-              <div className="hidden md:flex w-64 flex-col gap-6 border-r border-conversion-border-light bg-white p-6">
-                <div className="space-y-4">
-                  <div className="h-2 w-24 rounded-full bg-gray-100"></div>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 w-full rounded-lg border border-dashed border-gray-200 bg-gray-50/50"></div>
+              <div className="w-56 flex-col gap-5 border-r border-conversion-border-light bg-white p-5 hidden xl:flex relative">
+                <div className="space-y-3 opacity-0 animate-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+                  <div className="h-2 w-20 rounded-full bg-gray-100"></div>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-8 w-full rounded-lg border border-dashed border-gray-200 bg-gray-50/50"></div>
                   ))}
                 </div>
 
-                <div className="rounded-xl border border-conversion-blue/20 bg-white p-4 shadow-sm ring-1 ring-conversion-blue/20">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-conversion-charcoal">Project Type</span>
+                <div className="rounded-xl border border-conversion-blue/20 bg-white p-3 shadow-sm ring-1 ring-conversion-blue/20 opacity-0 animate-fade-up relative z-10" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-conversion-charcoal uppercase tracking-wider">Project Type</span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-xs">
-                      <span className="text-muted-foreground">Small Business</span>
-                      <Check className="h-3 w-3 text-conversion-green" />
-                    </div>
-                    <div className="h-px w-full bg-gray-100"></div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
+                  <div className="space-y-2 relative">
+                    {/* Render Options */}
+                    {options.map((opt: any, index: number) => (
+                      <div 
+                        key={index}
+                        className={`flex items-center justify-between rounded-md px-2 py-1.5 text-xs transition-colors duration-200 ${activeOption === index ? 'bg-gray-100' : 'bg-transparent'}`}
+                      >
+                        <span className={activeOption === index ? 'text-foreground font-medium' : 'text-muted-foreground'}>{opt.label}</span>
+                        {activeOption === index && <Check className="h-3 w-3 text-conversion-green" />}
+                      </div>
+                    ))}
+                    
+                    <div className="h-px w-full bg-gray-100 my-2"></div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px]">
                         <span className="text-muted-foreground">Pages</span>
                         <span className="font-medium">12-15</span>
                       </div>
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-[10px]">
                         <span className="text-muted-foreground">CMS</span>
                         <span className="font-medium">Blog, Team</span>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                 <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-conversion-charcoal">Multipliers</span>
-                  </div>
-                   <div className="flex flex-wrap gap-2">
-                    {["Design: 1.35×", "SEO: 1.2×"].map(tag => (
-                      <span key={tag} className="rounded-md bg-gray-100 px-2 py-1 text-[10px] text-muted-foreground">{tag}</span>
-                    ))}
-                   </div>
-                 </div>
               </div>
 
               {/* Center - Preview Canvas */}
-              <div className="flex-1 overflow-hidden p-8 relative">
+              <div className="flex-1 overflow-hidden p-6 relative">
                  {/* Blue Highlight Border simulating selection */}
-                <div className="absolute inset-8 rounded-xl border-2 border-conversion-blue shadow-[0_0_0_4px_rgba(44,120,159,0.1)] pointer-events-none z-20"></div>
+                <div className="absolute inset-6 rounded-xl border-2 border-conversion-blue shadow-[0_0_0_4px_rgba(44,120,159,0.1)] pointer-events-none z-20 opacity-0 animate-fade-up" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}></div>
                 
-                <div className="h-full w-full rounded-lg bg-white shadow-sm border border-gray-200 flex flex-col overflow-hidden relative z-10">
+                <div className="h-full w-full rounded-lg bg-white shadow-sm border border-gray-200 flex flex-col overflow-hidden relative z-10 opacity-0 animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
                   {/* Preview Header */}
-                  <div className="border-b border-gray-100 p-6 text-center">
-                    <div className="mx-auto mb-4 h-8 w-8 rounded bg-conversion-charcoal flex items-center justify-center">
+                  <div className="border-b border-gray-100 p-4 text-center bg-white">
+                    <div className="mx-auto mb-3 h-8 w-8 rounded bg-conversion-charcoal flex items-center justify-center">
                         <Zap className="h-4 w-4 text-white" />
                     </div>
-                    <h3 className="font-serif text-2xl text-conversion-charcoal">Estimate Preview</h3>
-                    <p className="text-sm text-muted-foreground mt-2">Generated on {new Date().toLocaleDateString()}</p>
+                    <h3 className="font-serif text-xl text-conversion-charcoal">Estimate Preview</h3>
+                    <p className="text-[10px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
                   </div>
 
                   {/* Preview Content */}
-                  <div className="flex-1 bg-gray-50/30 p-8">
-                    <div className="mx-auto max-w-sm space-y-6">
-                      <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 text-center">
-                         <span className="text-xs uppercase tracking-widest text-muted-foreground">Total Estimate</span>
-                         <div className="mt-2 text-4xl font-medium text-conversion-charcoal">$18,450</div>
-                         <div className="mt-1 text-xs text-green-600 font-medium">+15% buffer included</div>
+                  <div className="flex-1 bg-gray-50/30 p-6 overflow-hidden">
+                    <div className="mx-auto max-w-xs space-y-4">
+                      <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 text-center transform transition-all duration-500">
+                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Estimate</span>
+                         <div className="mt-1 text-3xl font-medium text-conversion-charcoal min-h-[40px] flex items-center justify-center">
+                           <AnimatedPrice 
+                             from={price} 
+                             to={options[activeOption].price} 
+                             isAnimating={isCalculating} 
+                           />
+                         </div>
+                         <div className="mt-1 text-[10px] text-green-600 font-medium">+15% buffer included</div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="rounded-lg bg-white p-4 border border-gray-100">
-                           <div className="mb-2 h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                             <LayoutTemplate className="h-4 w-4 text-purple-600" />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg bg-white p-3 border border-gray-100 opacity-0 animate-fade-up" style={{ animationDelay: '700ms', animationFillMode: 'forwards' }}>
+                           <div className="mb-2 h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
+                             <LayoutTemplate className="h-3 w-3 text-purple-600" />
                            </div>
-                           <div className="text-xs text-muted-foreground">Discovery</div>
-                           <div className="font-medium">12 hrs</div>
-                        </div>
-                        <div className="rounded-lg bg-white p-4 border border-gray-100">
-                           <div className="mb-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                             <MousePointerClick className="h-4 w-4 text-blue-600" />
+                           <div className="text-[10px] text-muted-foreground">Discovery</div>
+                           <div className="font-medium text-sm">
+                              {isCalculating ? '...' : `${options[activeOption].hours.discovery} hrs`}
                            </div>
-                           <div className="text-xs text-muted-foreground">Design</div>
-                           <div className="font-medium">24 hrs</div>
                         </div>
-                      </div>
-
-                      <div className="h-32 rounded-lg border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-muted-foreground">
-                        Detailed breakdown chart...
+                        <div className="rounded-lg bg-white p-3 border border-gray-100 opacity-0 animate-fade-up" style={{ animationDelay: '800ms', animationFillMode: 'forwards' }}>
+                           <div className="mb-2 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
+                             <MousePointerClick className="h-3 w-3 text-blue-600" />
+                           </div>
+                           <div className="text-[10px] text-muted-foreground">Design</div>
+                           <div className="font-medium text-sm">
+                             {isCalculating ? '...' : `${options[activeOption].hours.design} hrs`}
+                           </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -172,31 +298,35 @@ export function HeroSection() {
               </div>
 
               {/* Right Sidebar - Analytics/Properties */}
-              <div className="hidden lg:flex w-72 flex-col gap-6 border-l border-conversion-border-light bg-white p-6">
-                <div className="space-y-4">
-                   <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">Analytics</span>
+              <div className="w-64 flex-col gap-5 border-l border-conversion-border-light bg-white p-5 hidden xl:flex">
+                <div className="space-y-3">
+                   <div className="flex items-center justify-between opacity-0 animate-fade-up" style={{ animationDelay: '900ms', animationFillMode: 'forwards' }}>
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Analytics</span>
                    </div>
-                   <div className="space-y-3">
-                     {[1, 2, 3].map(i => (
-                       <div key={i} className="flex gap-3">
-                         <div className="h-16 w-24 rounded border border-gray-100 bg-gray-50"></div>
-                         <div className="space-y-2 flex-1">
-                           <div className="h-2 w-full rounded bg-gray-100"></div>
-                           <div className="h-2 w-2/3 rounded bg-gray-100"></div>
+                   <div className="space-y-2">
+                     {[1, 2, 3].map((i) => (
+                       <div key={i} className="flex gap-2 opacity-0 animate-fade-up" style={{ animationDelay: `${1000 + (i * 100)}ms`, animationFillMode: 'forwards' }}>
+                         <div className="h-12 w-16 rounded border border-gray-100 bg-gray-50"></div>
+                         <div className="space-y-1.5 flex-1">
+                           <div className="h-1.5 w-full rounded bg-gray-100 overflow-hidden">
+                              <div className={`h-full bg-conversion-blue/50 transition-all duration-1000 ease-out`} style={{ width: isCalculating ? '0%' : `${50 + (activeOption * 15) + (i * 5)}%` }}></div>
+                           </div>
+                           <div className="h-1.5 w-2/3 rounded bg-gray-100 overflow-hidden">
+                              <div className={`h-full bg-conversion-blue/30 transition-all duration-1000 ease-out`} style={{ width: isCalculating ? '0%' : `${30 + (activeOption * 10)}%` }}></div>
+                           </div>
                          </div>
                        </div>
                      ))}
                    </div>
                 </div>
                 
-                <div className="mt-auto rounded-xl bg-conversion-beige p-4">
+                <div className="mt-auto rounded-xl bg-conversion-beige p-3 border border-conversion-border-light/50 opacity-0 animate-fade-up" style={{ animationDelay: '1800ms', animationFillMode: 'forwards' }}>
                    <div className="mb-2 flex items-center gap-2">
-                     <div className="h-2 w-2 rounded-full bg-orange-400 animate-pulse"></div>
-                     <span className="text-xs font-medium text-conversion-charcoal">AI Insights</span>
+                     <div className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse"></div>
+                     <span className="text-[10px] font-medium text-conversion-charcoal">AI Insights</span>
                    </div>
-                   <p className="text-[10px] text-muted-foreground leading-relaxed">
-                     Complexity score increased due to custom WebGL interactions detected in the brief. Suggested adding 5h buffer.
+                   <p className="text-[9px] text-muted-foreground leading-relaxed">
+                     Complexity score adjusted for {options[activeOption].label} requirements.
                    </p>
                 </div>
               </div>
