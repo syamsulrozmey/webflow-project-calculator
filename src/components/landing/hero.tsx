@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ArrowRight, Zap, LayoutTemplate, MousePointerClick } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { ArrowRight, Calculator, Layers, Clock, DollarSign, CheckCircle2, Settings, FileText, Layout, Database, Search, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 // Animated Number Component
@@ -11,11 +11,11 @@ function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; is
 
   useEffect(() => {
     if (!isAnimating) {
-      setDisplayValue(to); // Ensure we settle on the final value
+      setDisplayValue(to);
       return;
     }
 
-    const duration = 3000; // ms - Slowed down further to 3000ms
+    const duration = 2000;
     const startTime = performance.now();
     const startValue = from;
     const endValue = to;
@@ -23,10 +23,7 @@ function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; is
     const step = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
-      // Ease out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
-      
       const current = startValue + (endValue - startValue) * ease;
       setDisplayValue(Math.floor(current));
 
@@ -39,298 +36,319 @@ function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; is
   }, [isAnimating, from, to]);
 
   return (
-    // Use tabular-nums to prevent jitter and fixed width container if needed
     <span className="tabular-nums tracking-tight">${displayValue.toLocaleString()}</span>
   );
 }
 
 export function HeroSection() {
-  // Animation states
   const [activeOption, setActiveOption] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [price, setPrice] = useState(18450);
-  const [showCursor, setShowCursor] = useState(true);
-  const [cursorPosition, setCursorPosition] = useState({ top: 80, left: 200 }); // Initial position roughly near option 1
-  const [clickEffect, setClickEffect] = useState(false);
+  const [price, setPrice] = useState(12500);
+  const [hours, setHours] = useState(125);
 
   const options = [
-    { label: "Small Business", price: 18450, hours: { discovery: 12, design: 24 } },
-    { label: "Startup / SaaS", price: 24500, hours: { discovery: 20, design: 35 } },
-    { label: "E-commerce", price: 32000, hours: { discovery: 25, design: 45 } }
+    { label: "Small Business Site", price: 12500, hours: 125, pages: "10-15 pages", cms: "Basic CMS" },
+    { label: "SaaS Marketing Site", price: 24500, hours: 245, pages: "20-30 pages", cms: "Advanced CMS" },
+    { label: "E-commerce Store", price: 38000, hours: 380, pages: "50+ pages", cms: "Full Commerce" }
   ];
 
   useEffect(() => {
-    let step = 0;
-    let timeoutId: NodeJS.Timeout;
-
-    const runStep = () => {
-      const currentOption = step % options.length;
-      const nextOption = (step + 1) % options.length;
+    const interval = setInterval(() => {
+      setIsCalculating(true);
       
-      // Timeline:
-      // 0ms: Idle at current
-      // 2000ms: Move cursor start
-      // 2800ms: Cursor arrives
-      // 3000ms: Click
-      // 3200ms: Selection updates, Calculating starts
-      // 6500ms: Calculation ends (increased due to slower animation), Price updates
-      
-      // Move Cursor
-      timeoutId = setTimeout(() => {
-         const targetTop = 85 + (nextOption * 44); 
-         setCursorPosition({ top: targetTop, left: 120 });
-      }, 2000);
-
-      // Click
-      timeoutId = setTimeout(() => {
-        setClickEffect(true);
-      }, 2800);
-
-      // Update Selection & Start Calculation
-      timeoutId = setTimeout(() => {
-        setClickEffect(false);
-        setActiveOption(nextOption);
-        setIsCalculating(true);
-      }, 3000);
-
-      // Finish Calculation
-      timeoutId = setTimeout(() => {
-        setPrice(options[nextOption].price);
+      setTimeout(() => {
+        setActiveOption((prev) => {
+          const next = (prev + 1) % options.length;
+          setPrice(options[next].price);
+          setHours(options[next].hours);
+          return next;
+        });
         setIsCalculating(false);
-        step++;
-        runStep(); // Recursive call for next cycle
-      }, 6500);
-    };
+      }, 800);
+    }, 4000);
 
-    runStep();
-
-    return () => clearTimeout(timeoutId);
-  }, []); 
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <HeroSectionContent 
-      activeOption={activeOption} 
-      isCalculating={isCalculating} 
-      price={price} 
-      cursorPosition={cursorPosition} 
-      clickEffect={clickEffect}
-      options={options}
-    />
-  );
-}
+    <section className="relative overflow-hidden bg-conv-background">
+      {/* Decorative Side Lines */}
+      <div className="absolute left-[10%] top-0 bottom-0 dashed-border-vertical hidden lg:block" />
+      <div className="absolute right-[10%] top-0 bottom-0 dashed-border-vertical hidden lg:block" />
+      
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-dot-pattern opacity-50" />
 
-// Split content to keep logic clean
-function HeroSectionContent({ activeOption, isCalculating, price, cursorPosition, clickEffect, options }: any) {
-  return (
-    <section className="relative overflow-hidden border-b border-conversion-border-light bg-white">
-      {/* Background Layout with Side Panels */}
-      <div className="absolute inset-0 flex justify-center pointer-events-none">
-        <div className="w-full h-full bg-dot-pattern bg-conversion-beige/30"></div>
-        <div className="w-full max-w-[90rem] h-full bg-white border-x border-dashed border-conversion-border-light relative z-10"></div>
-        <div className="w-full h-full bg-dot-pattern bg-conversion-beige/30"></div>
-      </div>
-
-      <div className="relative z-20 mx-auto flex max-w-[90rem] items-center justify-between px-6 md:px-10 lg:px-16 pt-20 lg:pt-32 pb-20 lg:pb-32 gap-16">
+      <div className="relative z-10 mx-auto max-w-[90rem] px-6 md:px-10 lg:px-16 pt-20 lg:pt-28 pb-20 lg:pb-28">
         
-        {/* Left Column: Content */}
-        <div className="flex-1 max-w-xl space-y-8 text-left">
-          <h1 className="font-serif text-5xl font-medium leading-[1.1] tracking-tight text-conversion-charcoal md:text-6xl lg:text-7xl">
-            The Modern Webflow<br />
-            Estimation Platform
+        {/* Centered Content */}
+        <div className="max-w-4xl mx-auto text-center mb-16 lg:mb-20">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-conv-primary/10 text-conv-primary text-sm font-medium px-4 py-2 rounded-full mb-8 animate-fade-in-up">
+            <Calculator className="h-4 w-4" />
+            Built specifically for Webflow projects
+          </div>
+          
+          {/* Hero Heading */}
+          <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight text-conv-text-primary mb-8 animate-fade-in-up">
+            Stop Guessing.<br />
+            Start Scoping.
           </h1>
           
-          <p className="text-xl text-muted-foreground leading-relaxed">
-            Quote Webflow projects with confidence in minutes. Feed in questionnaire answers or crawl an existing site. The calculator blends deterministic hours with crawler intelligence.
+          {/* Subheading */}
+          <p className="text-lg md:text-xl text-conv-text-secondary leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            The AI-powered project calculator that turns Webflow requirements into accurate estimates. 
+            Analyze sites, scope builds, and generate professional proposals in minutes—not hours.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button size="lg" className="px-8 h-12 text-base rounded-full bg-conversion-dark-blue hover:bg-conversion-dark-blue/90 text-white border-none" asChild>
-              <Link href="/onboarding?entry=fresh">
-                Start fresh project
-                <ArrowRight className="ml-2 h-4 w-4" />
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <Button 
+              size="lg"
+              className="rounded-full bg-conv-primary px-8 h-14 text-base font-medium text-white hover:bg-conv-primary-hover shadow-button hover:shadow-button-hover transition-all duration-200 hover:-translate-y-0.5" 
+              asChild
+            >
+              <Link href="/onboarding" className="flex items-center gap-2">
+                Create Your First Estimate
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-            <Button
-                size="lg"
-                variant="ghost"
-                className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0 sm:px-4 justify-start sm:justify-center"
-                asChild
-              >
-                <Link href="/onboarding?entry=existing">
-                  Analyze existing site →
-                </Link>
-              </Button>
+            <Button 
+              size="lg"
+              variant="outline"
+              className="rounded-full px-8 h-14 text-base font-medium border-conv-border hover:bg-white hover:border-conv-text-muted transition-all duration-200" 
+              asChild
+            >
+              <Link href="#workflow">
+                See How It Works
+              </Link>
+            </Button>
           </div>
+          
+          {/* Trust Indicators */}
+          <p className="text-sm text-conv-text-muted mt-6 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+            Free to use • No credit card required • Unlimited estimates
+          </p>
         </div>
 
-        {/* Right Column: UI Mockup */}
-        <div className="flex-1 w-full max-w-3xl hidden lg:block">
-          <div className="relative rounded-2xl border border-conversion-border-light bg-white shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] overflow-hidden group select-none">
+        {/* Hero Visual - Bento Grid Layout */}
+        <div className="relative max-w-[70rem] mx-auto animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 p-5 bg-conv-background/50 rounded-3xl border border-conv-border">
             
-            {/* Simulated Cursor */}
-            <div 
-              className="absolute z-50 pointer-events-none transition-all duration-700 ease-in-out"
-              style={{ 
-                top: `${cursorPosition.top}px`, 
-                left: `${cursorPosition.left}px`,
-                transform: clickEffect ? 'scale(0.8)' : 'scale(1)'
-              }}
-            >
-               {/* Cursor SVG */}
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-                 <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#21201C" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-               </svg>
-            </div>
-
-            {/* Mockup Toolbar */}
-            <div className="flex items-center justify-between border-b border-conversion-border-light px-4 py-3 bg-white relative z-20">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-400/20 border border-red-400/50"></div>
-                  <div className="h-3 w-3 rounded-full bg-amber-400/20 border border-amber-400/50"></div>
-                  <div className="h-3 w-3 rounded-full bg-green-400/20 border border-green-400/50"></div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100">
-                <span className="text-conversion-blue">Customizing with brand</span>
-                <span className="text-gray-300">|</span>
-                <span>2/5 Steps</span>
-              </div>
-              <div className="w-16"></div>
-            </div>
-
-            {/* Mockup Body - 3 Columns */}
-            <div className="flex h-[500px] bg-gray-50/50">
+            {/* Left Column */}
+            <div className="lg:col-span-3 flex flex-col gap-5">
               
-              {/* Left Sidebar - Controls */}
-              <div className="w-56 flex-col gap-5 border-r border-conversion-border-light bg-white p-5 hidden xl:flex relative">
-                <div className="space-y-3 opacity-0 animate-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-                  <div className="h-2 w-20 rounded-full bg-gray-100"></div>
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-8 w-full rounded-lg border border-dashed border-gray-200 bg-gray-50/50"></div>
+              {/* Card 1: Project Structure */}
+              <div className="bg-white rounded-2xl border border-conv-border shadow-sm p-4 flex-1">
+                 <div className="mb-4 pb-2 border-b border-conv-border-light">
+                   <span className="text-xs font-semibold text-conv-text-primary uppercase tracking-wider">Site Structure</span>
+                 </div>
+                 <div className="space-y-2">
+                  {[
+                    { name: "Homepage", icon: Layout, type: "Static" },
+                    { name: "About Us", icon: FileText, type: "Static" },
+                    { name: "Services", icon: Layers, type: "CMS" },
+                    { name: "Blog", icon: Database, type: "CMS", active: true },
+                    { name: "Contact", icon: FileText, type: "Form" }
+                  ].map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`group flex items-center gap-3 p-2 rounded-lg transition-all duration-300 ${
+                        item.active 
+                          ? 'bg-conv-primary/5 border border-conv-primary/10 shadow-sm translate-x-1' 
+                          : 'hover:bg-conv-background hover:translate-x-0.5'
+                      }`}
+                    >
+                      <div className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${
+                        item.active ? 'bg-conv-primary text-white' : 'bg-conv-background text-conv-text-secondary group-hover:bg-white group-hover:shadow-sm'
+                      }`}>
+                        <item.icon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-conv-text-primary truncate">{item.name}</div>
+                        <div className="text-[9px] text-conv-text-muted uppercase tracking-wider">{item.type}</div>
+                      </div>
+                    </div>
                   ))}
+                 </div>
+              </div>
+
+              {/* Card 2: Configuration/Settings */}
+              <div className="bg-white rounded-2xl border border-conv-border shadow-sm p-4">
+                <div className="mb-4 pb-2 border-b border-conv-border-light">
+                   <span className="text-xs font-semibold text-conv-text-primary uppercase tracking-wider">Config</span>
+                </div>
+                <div className="space-y-4">
+                   <div>
+                      <label className="text-[10px] font-medium text-conv-text-muted uppercase mb-2 block">Complexity</label>
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-[#F6F6F7] border border-conv-border-light flex items-center justify-center cursor-pointer hover:border-conv-primary/50 transition-colors">
+                          <div className="h-4 w-4 bg-conv-text-primary rounded-sm"></div>
+                        </div>
+                         <div className="h-8 w-8 rounded-lg bg-[#F6F6F7] border border-conv-border-light flex items-center justify-center cursor-pointer hover:border-conv-primary/50 transition-colors">
+                          <div className="h-4 w-4 bg-[#FFD02B] rounded-full"></div>
+                        </div>
+                         <div className="h-8 w-8 rounded-lg bg-[#F6F6F7] border border-conv-border-light flex items-center justify-center cursor-pointer hover:border-conv-primary/50 transition-colors">
+                          <Zap className="h-4 w-4 text-conv-text-secondary" />
+                        </div>
+                      </div>
+                   </div>
+                   <div>
+                      <label className="text-[10px] font-medium text-conv-text-muted uppercase mb-2 block">Integrations</label>
+                      <div className="flex gap-2">
+                         <div className="h-8 w-8 rounded-full bg-[#F6F6F7] flex items-center justify-center border border-conv-border-light p-1.5" title="Webflow">
+                           <img src="https://cdn.prod.website-files.com/6347616673534233f57013dc/634761667353420223701469_webflow-icon-black.svg" alt="Webflow" className="w-full h-full opacity-80" />
+                         </div>
+                         <div className="h-8 w-8 rounded-full bg-[#F6F6F7] flex items-center justify-center border border-conv-border-light" title="Zapier">
+                           <Zap className="h-4 w-4 text-[#FF4F00]" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Center Column - Main Estimate */}
+            <div className="lg:col-span-6 flex flex-col">
+               <div className="bg-white rounded-2xl border border-conv-border shadow-card h-full flex flex-col overflow-hidden relative group">
+                
+                {/* Status Bar */}
+                <div className="px-5 py-3 flex items-center justify-between border-b border-conv-border-light bg-white z-10">
+                  <div className="flex items-center gap-2">
+                     <div className={`h-2 w-2 rounded-full ${isCalculating ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></div>
+                     <span className="text-xs font-medium text-conv-text-secondary">
+                       {isCalculating ? 'Analyzing Requirements...' : 'Analysis Complete'}
+                     </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-conv-text-muted uppercase tracking-wider">V 2.0</span>
+                    <div className="h-3 w-px bg-conv-border-light"></div>
+                    <span className="text-[10px] text-conv-text-muted uppercase tracking-wider">Auto-Saved</span>
+                  </div>
                 </div>
 
-                <div className="rounded-xl border border-conversion-blue/20 bg-white p-3 shadow-sm ring-1 ring-conversion-blue/20 opacity-0 animate-fade-up relative z-10" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-conversion-charcoal uppercase tracking-wider">Project Type</span>
-                  </div>
-                  <div className="space-y-2 relative">
-                    {/* Render Options */}
-                    {options.map((opt: any, index: number) => (
-                      <div 
-                        key={index}
-                        className={`flex items-center justify-between rounded-md px-2 py-1.5 text-xs transition-colors duration-200 ${activeOption === index ? 'bg-gray-100' : 'bg-transparent'}`}
-                      >
-                        <span className={activeOption === index ? 'text-foreground font-medium' : 'text-muted-foreground'}>{opt.label}</span>
-                        {activeOption === index && <Check className="h-3 w-3 text-conversion-green" />}
+                <div className="p-8 flex-1 flex flex-col relative">
+                   {/* Background Grid Effect */}
+                   <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                   <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-conv-background/20 pointer-events-none"></div>
+                   
+                   <div className="relative z-10 text-center mt-4">
+                      <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-conv-text-primary text-white mb-5 shadow-lg transform transition-transform group-hover:scale-110 duration-500">
+                        <Calculator className="h-7 w-7" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-conv-text-primary mb-1">Webflow Project Estimate</h3>
+                      <p className="text-sm text-conv-text-secondary mb-8">Generated for {options[activeOption].label}</p>
+                   </div>
+
+                   <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-conv-border shadow-sm text-center mb-6 transform transition-all duration-500 hover:shadow-md">
+                      <div className="text-xs font-semibold text-conv-text-muted uppercase tracking-widest mb-2">Estimated Total</div>
+                      <div className="font-serif text-5xl lg:text-6xl font-medium text-conv-text-primary mb-4 tracking-tight">
+                        <AnimatedPrice from={price} to={options[activeOption].price} isAnimating={isCalculating} />
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-conv-background border border-conv-border-light text-xs font-medium text-conv-text-secondary">
+                         <Clock className="h-3.5 w-3.5" />
+                         <span>{hours} Production Hours</span>
+                      </div>
+                   </div>
+
+                   {/* Mini Chart Visual */}
+                   <div className="flex-1 flex items-end justify-center gap-1 px-8 pb-2 opacity-50">
+                      {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
+                        <div key={i} className="w-full bg-conv-primary/20 rounded-t-sm transition-all duration-1000" style={{ height: `${h}%`, transitionDelay: `${i * 100}ms` }}></div>
+                      ))}
+                   </div>
+                </div>
+               </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="lg:col-span-3 flex flex-col gap-5">
+              
+              {/* Card 3: Variants / Project Types */}
+              <div className="bg-white rounded-2xl border border-conv-border shadow-sm p-4">
+                 <div className="mb-4 pb-2 border-b border-conv-border-light flex justify-between items-center">
+                   <span className="text-xs font-semibold text-conv-text-primary uppercase tracking-wider">Project Type</span>
+                   <span className="text-[10px] bg-conv-background px-1.5 py-0.5 rounded text-conv-text-muted">1/3</span>
+                 </div>
+                 <div className="space-y-2">
+                   {options.map((option, idx) => (
+                     <button
+                       key={idx}
+                       onClick={() => {
+                         setActiveOption(idx);
+                         setPrice(options[idx].price);
+                         setHours(options[idx].hours);
+                       }}
+                       className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-200 flex items-center justify-between group ${
+                         activeOption === idx 
+                           ? 'bg-white border border-conv-primary text-conv-primary shadow-sm' 
+                           : 'bg-conv-background/50 border border-transparent text-conv-text-secondary hover:bg-white hover:border-conv-border-light'
+                       }`}
+                     >
+                       <span className="font-medium">{option.label}</span>
+                       {activeOption === idx && <div className="h-1.5 w-1.5 rounded-full bg-conv-primary"></div>}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+
+              {/* Card 4: Analytics / Phases */}
+              <div className="bg-white rounded-2xl border border-conv-border shadow-sm p-4 flex-1">
+                 <div className="mb-4 pb-2 border-b border-conv-border-light">
+                   <span className="text-xs font-semibold text-conv-text-primary uppercase tracking-wider">Phases</span>
+                 </div>
+                 <div className="space-y-3">
+                    {[
+                      { label: "Strategy", pct: 15 },
+                      { label: "Design", pct: 35 },
+                      { label: "Development", pct: 40 },
+                      { label: "QA", pct: 10 }
+                    ].map((phase, idx) => (
+                      <div key={idx} className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-medium text-conv-text-secondary">
+                          <span>{phase.label}</span>
+                          <span>{phase.pct}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-conv-background rounded-full overflow-hidden">
+                           <div 
+                              className="h-full bg-conv-primary/80 rounded-full transition-all duration-1000 ease-out"
+                              style={{ width: isCalculating ? '0%' : `${phase.pct}%`, transitionDelay: `${idx * 100}ms` }}
+                           ></div>
+                        </div>
                       </div>
                     ))}
-                    
-                    <div className="h-px w-full bg-gray-100 my-2"></div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">Pages</span>
-                        <span className="font-medium">12-15</span>
-                      </div>
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">CMS</span>
-                        <span className="font-medium">Blog, Team</span>
-                      </div>
+                 </div>
+                 
+                 {/* Mini Line Chart */}
+                 <div className="mt-6 pt-4 border-t border-conv-border-light">
+                    <div className="h-12 flex items-end justify-between gap-1">
+                       <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
+                          <path 
+                             d="M0 30 L10 25 L20 28 L30 15 L40 20 L50 10 L60 18 L70 5 L80 12 L90 8 L100 0" 
+                             fill="none" 
+                             stroke="currentColor" 
+                             strokeWidth="2" 
+                             className="text-conv-border-light"
+                          />
+                          <path 
+                             d="M0 30 L10 25 L20 28 L30 15 L40 20 L50 10 L60 18 L70 5 L80 12 L90 8 L100 0" 
+                             fill="none" 
+                             stroke="currentColor" 
+                             strokeWidth="2" 
+                             className="text-conv-primary animate-dash"
+                             strokeDasharray="200"
+                             strokeDashoffset={isCalculating ? "200" : "0"}
+                             style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
+                          />
+                       </svg>
                     </div>
-                  </div>
-                </div>
+                 </div>
               </div>
 
-              {/* Center - Preview Canvas */}
-              <div className="flex-1 overflow-hidden p-6 relative">
-                 {/* Blue Highlight Border simulating selection */}
-                <div className="absolute inset-6 rounded-xl border-2 border-conversion-blue shadow-[0_0_0_4px_rgba(44,120,159,0.1)] pointer-events-none z-20 opacity-0 animate-fade-up" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}></div>
-                
-                <div className="h-full w-full rounded-lg bg-white shadow-sm border border-gray-200 flex flex-col overflow-hidden relative z-10 opacity-0 animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
-                  {/* Preview Header */}
-                  <div className="border-b border-gray-100 p-4 text-center bg-white">
-                    <div className="mx-auto mb-3 h-8 w-8 rounded bg-conversion-charcoal flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="font-serif text-xl text-conversion-charcoal">Estimate Preview</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
-                  </div>
-
-                  {/* Preview Content */}
-                  <div className="flex-1 bg-gray-50/30 p-6 overflow-hidden">
-                    <div className="mx-auto max-w-xs space-y-4">
-                      <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 text-center transform transition-all duration-500">
-                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Estimate</span>
-                         <div className="mt-1 text-3xl font-medium text-conversion-charcoal min-h-[40px] flex items-center justify-center">
-                           <AnimatedPrice 
-                             from={price} 
-                             to={options[activeOption].price} 
-                             isAnimating={isCalculating} 
-                           />
-                         </div>
-                         <div className="mt-1 text-[10px] text-green-600 font-medium">+15% buffer included</div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-lg bg-white p-3 border border-gray-100 opacity-0 animate-fade-up" style={{ animationDelay: '700ms', animationFillMode: 'forwards' }}>
-                           <div className="mb-2 h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
-                             <LayoutTemplate className="h-3 w-3 text-purple-600" />
-                           </div>
-                           <div className="text-[10px] text-muted-foreground">Discovery</div>
-                           <div className="font-medium text-sm">
-                              {isCalculating ? '...' : `${options[activeOption].hours.discovery} hrs`}
-                           </div>
-                        </div>
-                        <div className="rounded-lg bg-white p-3 border border-gray-100 opacity-0 animate-fade-up" style={{ animationDelay: '800ms', animationFillMode: 'forwards' }}>
-                           <div className="mb-2 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                             <MousePointerClick className="h-3 w-3 text-blue-600" />
-                           </div>
-                           <div className="text-[10px] text-muted-foreground">Design</div>
-                           <div className="font-medium text-sm">
-                             {isCalculating ? '...' : `${options[activeOption].hours.design} hrs`}
-                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Sidebar - Analytics/Properties */}
-              <div className="w-64 flex-col gap-5 border-l border-conversion-border-light bg-white p-5 hidden xl:flex">
-                <div className="space-y-3">
-                   <div className="flex items-center justify-between opacity-0 animate-fade-up" style={{ animationDelay: '900ms', animationFillMode: 'forwards' }}>
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Analytics</span>
-                   </div>
-                   <div className="space-y-2">
-                     {[1, 2, 3].map((i) => (
-                       <div key={i} className="flex gap-2 opacity-0 animate-fade-up" style={{ animationDelay: `${1000 + (i * 100)}ms`, animationFillMode: 'forwards' }}>
-                         <div className="h-12 w-16 rounded border border-gray-100 bg-gray-50"></div>
-                         <div className="space-y-1.5 flex-1">
-                           <div className="h-1.5 w-full rounded bg-gray-100 overflow-hidden">
-                              <div className={`h-full bg-conversion-blue/50 transition-all duration-1000 ease-out`} style={{ width: isCalculating ? '0%' : `${50 + (activeOption * 15) + (i * 5)}%` }}></div>
-                           </div>
-                           <div className="h-1.5 w-2/3 rounded bg-gray-100 overflow-hidden">
-                              <div className={`h-full bg-conversion-blue/30 transition-all duration-1000 ease-out`} style={{ width: isCalculating ? '0%' : `${30 + (activeOption * 10)}%` }}></div>
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-                
-                <div className="mt-auto rounded-xl bg-conversion-beige p-3 border border-conversion-border-light/50 opacity-0 animate-fade-up" style={{ animationDelay: '1800ms', animationFillMode: 'forwards' }}>
-                   <div className="mb-2 flex items-center gap-2">
-                     <div className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse"></div>
-                     <span className="text-[10px] font-medium text-conversion-charcoal">AI Insights</span>
-                   </div>
-                   <p className="text-[9px] text-muted-foreground leading-relaxed">
-                     Complexity score adjusted for {options[activeOption].label} requirements.
-                   </p>
-                </div>
-              </div>
             </div>
+
           </div>
         </div>
 

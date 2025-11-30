@@ -64,10 +64,10 @@ export function ContinueWorking({ projects }: ContinueWorkingProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+    <div className="rounded-2xl border border-border/50 bg-card p-5">
       <div className="mb-4 flex items-center gap-2">
         <Clock className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-medium text-white">Continue Working</h3>
+        <h3 className="text-sm font-medium text-foreground">Continue Working</h3>
       </div>
       
       <div className="space-y-3">
@@ -75,21 +75,21 @@ export function ContinueWorking({ projects }: ContinueWorkingProps) {
           <Link
             key={project.id}
             href={`/questionnaire?projectId=${project.id}`}
-            className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/[0.04]"
+            className="group flex items-center justify-between rounded-xl border border-border/30 bg-background p-4 transition-all hover:border-border hover:bg-accent/50"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                 <FileEdit className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-white">{project.title}</span>
+                  <span className="font-medium text-foreground">{project.title}</span>
                   <Badge 
                     variant="outline" 
                     className={`text-[10px] ${
                       project.status === "draft" 
-                        ? "border-amber-400/50 bg-amber-400/10 text-amber-300" 
-                        : "border-blue-400/50 bg-blue-400/10 text-blue-300"
+                        ? "border-amber-500/50 bg-amber-500/10 text-amber-600" 
+                        : "border-blue-500/50 bg-blue-500/10 text-blue-600"
                     }`}
                   >
                     {project.status === "draft" ? "Draft" : "In Progress"}

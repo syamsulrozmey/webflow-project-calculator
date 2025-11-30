@@ -57,9 +57,9 @@ export function ProjectsByStatus({ data }: ProjectsByStatusProps) {
   ]
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium text-white">Projects by Status</CardTitle>
+        <CardTitle className="text-base font-medium text-foreground">Projects by Status</CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
           {total} total projects
         </CardDescription>
@@ -72,15 +72,15 @@ export function ProjectsByStatus({ data }: ProjectsByStatusProps) {
                 <div className={`flex h-6 w-6 items-center justify-center rounded-md ${item.lightColor}`}>
                   <item.icon className={`h-3.5 w-3.5 ${item.textColor}`} />
                 </div>
-                <span className="text-sm text-white">{item.label}</span>
+                <span className="text-sm text-foreground">{item.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium tabular-nums text-white">{item.value}</span>
+                <span className="text-sm font-medium tabular-nums text-foreground">{item.value}</span>
                 <span className="text-xs text-muted-foreground">({item.percentage}%)</span>
               </div>
             </div>
             {/* Progress bar */}
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={`h-full rounded-full ${item.color} transition-all duration-500`}
                 style={{ width: `${item.percentage}%` }}

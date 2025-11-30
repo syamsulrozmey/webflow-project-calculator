@@ -1,59 +1,86 @@
 import Link from "next/link";
+import { Twitter, Linkedin, Github } from "lucide-react";
 
 const footerLinks = {
   Product: [
     { label: "Features", href: "#features" },
-    { label: "Workflow", href: "#workflow" },
+    { label: "How It Works", href: "#workflow" },
     { label: "Pricing", href: "#pricing" },
-    { label: "Enterprise", href: "#" },
+    { label: "Get Started", href: "/onboarding" },
   ],
   Resources: [
-    { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Community", href: "#" },
+    { label: "Webflow Pricing Guide", href: "#" },
+    { label: "Scoping Best Practices", href: "#" },
+    { label: "Agency Rate Calculator", href: "#" },
+    { label: "Migration Checklist", href: "#" },
   ],
   Company: [
-    { label: "About", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Legal", href: "#" },
+    { label: "About Us", href: "#" },
     { label: "Contact", href: "#" },
+    { label: "Privacy Policy", href: "#" },
+    { label: "Terms of Service", href: "#" },
   ]
 };
 
+const socialLinks = [
+  { icon: Twitter, href: "#", label: "Twitter" },
+  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Github, href: "#", label: "GitHub" },
+];
+
 export function LandingFooter() {
   return (
-    <footer className="border-t border-conversion-border-light bg-white pt-24 pb-12">
-      <div className="mx-auto max-w-[90rem] px-6 md:px-10">
+    <footer className="relative bg-white pt-24 pb-12 overflow-hidden">
+      {/* Decorative Side Lines */}
+      <div className="absolute left-[10%] top-0 bottom-0 dashed-border-vertical hidden lg:block" />
+      <div className="absolute right-[10%] top-0 bottom-0 dashed-border-vertical hidden lg:block" />
+      
+      <div className="relative z-10 mx-auto max-w-[90rem] px-6 md:px-10">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5 mb-16">
           
+          {/* Brand Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-conversion-charcoal"></div>
-              <span className="font-serif text-2xl font-medium tracking-tight text-conversion-charcoal">
-                Conversion
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="h-8 w-8 rounded-lg bg-conv-text-primary flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" fillOpacity="0.9"/>
+                  <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="text-xl font-semibold tracking-tight text-conv-text-primary">
+                FlowScope
               </span>
-            </div>
-            <p className="max-w-xs text-muted-foreground text-lg leading-relaxed">
-              The Al-native Marketing Automation Platform built for high-growth B2B businesses.
+            </Link>
+            <p className="max-w-xs text-conv-text-secondary text-base leading-relaxed">
+              The AI-powered project calculator built for Webflow professionals who want to scope accurately and close deals faster.
             </p>
-            <div className="flex gap-4 pt-4">
-               {/* Social Placeholders */}
-               <div className="h-10 w-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"></div>
-               <div className="h-10 w-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"></div>
-               <div className="h-10 w-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"></div>
+            
+            {/* Social Links */}
+            <div className="flex gap-3 pt-2">
+              {socialLinks.map((social) => (
+                <a 
+                  key={social.label}
+                  href={social.href}
+                  className="h-10 w-10 rounded-full bg-conv-background hover:bg-conv-section-mint text-conv-text-muted hover:text-conv-primary transition-all duration-200 flex items-center justify-center"
+                  aria-label={social.label}
+                >
+                  <social.icon className="h-4.5 w-4.5" />
+                </a>
+              ))}
             </div>
           </div>
 
+          {/* Link Columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category} className="space-y-6">
-              <h4 className="font-medium text-conversion-charcoal text-base">{category}</h4>
-              <ul className="space-y-4">
+            <div key={category} className="space-y-5">
+              <h4 className="font-semibold text-conv-text-primary text-sm uppercase tracking-wider">{category}</h4>
+              <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link 
                       href={link.href} 
-                      className="text-muted-foreground hover:text-conversion-blue transition-colors text-sm"
+                      className="text-conv-text-secondary hover:text-conv-primary transition-colors text-sm"
                     >
                       {link.label}
                     </Link>
@@ -64,13 +91,14 @@ export function LandingFooter() {
           ))}
         </div>
 
-        <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        {/* Bottom Bar */}
+        <div className="border-t border-conv-border-light pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-conv-text-muted">
           <div>
-            © {new Date().getFullYear()} Webflow Project Calculator. All rights reserved.
+            © {new Date().getFullYear()} FlowScope. The Webflow Project Calculator.
           </div>
           <div className="flex gap-8">
-            <Link href="#" className="hover:text-conversion-charcoal">Privacy Policy</Link>
-            <Link href="#" className="hover:text-conversion-charcoal">Terms of Service</Link>
+            <Link href="#" className="hover:text-conv-text-primary transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-conv-text-primary transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

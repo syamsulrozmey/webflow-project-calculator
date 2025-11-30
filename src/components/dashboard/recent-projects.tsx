@@ -76,17 +76,17 @@ const typeLabels: Record<Project["type"], string> = {
 const statusConfig: Record<Project["status"], { label: string; className: string; icon: React.ReactNode }> = {
   draft: { 
     label: "Draft", 
-    className: "border-amber-400/50 text-amber-300 bg-amber-400/10",
+    className: "border-amber-500/50 text-amber-600 bg-amber-500/10",
     icon: <FileEdit className="h-3 w-3" />,
   },
   in_progress: { 
     label: "In Progress", 
-    className: "border-blue-400/50 text-blue-300 bg-blue-400/10",
+    className: "border-blue-500/50 text-blue-600 bg-blue-500/10",
     icon: <Clock className="h-3 w-3" />,
   },
   completed: { 
     label: "Completed", 
-    className: "border-emerald-400/50 text-emerald-300 bg-emerald-400/10",
+    className: "border-emerald-500/50 text-emerald-600 bg-emerald-500/10",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
 }
@@ -132,36 +132,36 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
   }), [projects])
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div>
-          <CardTitle className="text-lg font-medium text-white">Recent Projects</CardTitle>
+          <CardTitle className="text-lg font-medium text-foreground">Recent Projects</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             {projects.length} project{projects.length !== 1 ? "s" : ""} total
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <SelectTrigger className="h-8 w-[130px] border-white/10 bg-white/5 text-xs">
+            <SelectTrigger className="h-8 w-[130px] border-border bg-background text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All ({statusCounts.all})</SelectItem>
               <SelectItem value="completed">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                   Completed ({statusCounts.completed})
                 </div>
               </SelectItem>
               <SelectItem value="in_progress">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-3 w-3 text-blue-400" />
+                  <Clock className="h-3 w-3 text-blue-500" />
                   Active ({statusCounts.in_progress})
                 </div>
               </SelectItem>
               <SelectItem value="draft">
                 <div className="flex items-center gap-2">
-                  <FileEdit className="h-3 w-3 text-amber-400" />
+                  <FileEdit className="h-3 w-3 text-amber-500" />
                   Draft ({statusCounts.draft})
                 </div>
               </SelectItem>
@@ -177,7 +177,7 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
       <CardContent>
         {filteredProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 rounded-full border border-white/10 bg-white/5 p-4">
+            <div className="mb-4 rounded-full border border-border bg-muted p-4">
               <FileEdit className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">No projects found</p>
@@ -192,15 +192,15 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
               return (
                 <div
                   key={project.id}
-                  className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] p-4 transition-all hover:border-white/10 hover:bg-white/[0.03]"
+                  className="group flex items-center justify-between rounded-xl border border-border/30 bg-background p-4 transition-all hover:border-border hover:bg-accent/50"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-muted-foreground">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       {typeIcons[project.type]}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-white">{project.title}</span>
+                        <span className="font-medium text-foreground">{project.title}</span>
                         <Badge variant="outline" className={`text-[10px] ${status.className}`}>
                           {status.label}
                         </Badge>
@@ -215,7 +215,7 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium tabular-nums text-white">
+                    <span className="text-sm font-medium tabular-nums text-foreground">
                       {formatCurrency(project.estimatedCost, project.currency)}
                     </span>
                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -230,17 +230,17 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 border-white/10 bg-zinc-900">
-                          <DropdownMenuItem className="gap-2 text-white">
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem className="gap-2">
                             <Copy className="h-4 w-4" />
                             Duplicate
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2 text-white">
+                          <DropdownMenuItem className="gap-2">
                             <Download className="h-4 w-4" />
                             Export PDF
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator className="bg-white/10" />
-                          <DropdownMenuItem className="gap-2 text-rose-400 focus:text-rose-300">
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="gap-2 text-rose-500 focus:text-rose-600">
                             <Trash2 className="h-4 w-4" />
                             Delete
                           </DropdownMenuItem>

@@ -70,8 +70,8 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
       const item = payload[0].payload
       const percentage = totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0
       return (
-        <div className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 shadow-xl">
-          <p className="text-sm font-medium text-white">{item.name}</p>
+        <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-xl">
+          <p className="text-sm font-medium text-foreground">{item.name}</p>
           <p className="text-xs text-muted-foreground">
             {formatCurrency(item.value)} ({percentage}%)
           </p>
@@ -86,9 +86,9 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
 
   if (chartData.length === 0) {
     return (
-      <Card className="border-white/10 bg-white/[0.02]">
+      <Card className="border-border/50 bg-card">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium text-white">Pipeline by Type</CardTitle>
+          <CardTitle className="text-base font-medium text-foreground">Pipeline by Type</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             No projects yet
           </CardDescription>
@@ -103,9 +103,9 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
   }
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium text-white">Pipeline by Type</CardTitle>
+        <CardTitle className="text-base font-medium text-foreground">Pipeline by Type</CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
           {formatCurrency(totalValue)} total value
         </CardDescription>
@@ -135,7 +135,7 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
             </ResponsiveContainer>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold text-white">{chartData.length}</span>
+              <span className="text-lg font-bold text-foreground">{chartData.length}</span>
               <span className="text-[10px] text-muted-foreground">types</span>
             </div>
           </div>
@@ -156,7 +156,7 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
                     >
                       <Icon className="h-3 w-3" style={{ color: item.color }} />
                     </div>
-                    <span className="text-xs text-white">{item.name}</span>
+                    <span className="text-xs text-foreground">{item.name}</span>
                   </div>
                   <span className="text-xs font-medium tabular-nums text-muted-foreground">
                     {percentage}%

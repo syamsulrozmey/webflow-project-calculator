@@ -3,7 +3,6 @@
 import { ChevronDown, ChevronUp, Users, DollarSign, Target, Clock } from "lucide-react"
 import * as React from "react"
 
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -70,7 +69,7 @@ export function TeamCapacity({ data }: TeamCapacityProps) {
   ]
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="pb-0">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -81,19 +80,19 @@ export function TeamCapacity({ data }: TeamCapacityProps) {
               <Users className="h-4 w-4 text-primary" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-medium text-white">Team Capacity</h3>
+              <h3 className="text-sm font-medium text-foreground">Team Capacity</h3>
               <p className="text-xs text-muted-foreground">
                 {utilizationPercent}% utilized this month
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent transition-colors">
             {isExpanded ? (
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
             ) : (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             )}
-          </Button>
+          </div>
         </button>
       </CardHeader>
       
@@ -103,11 +102,11 @@ export function TeamCapacity({ data }: TeamCapacityProps) {
           <div className="mb-4 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Monthly Capacity</span>
-              <span className="text-white">
+              <span className="text-foreground">
                 {data.hoursCommitted} / {data.monthlyCapacity} hrs
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   utilizationPercent > 90
@@ -126,13 +125,13 @@ export function TeamCapacity({ data }: TeamCapacityProps) {
             {metrics.map((metric) => (
               <div
                 key={metric.label}
-                className="rounded-xl border border-white/5 bg-white/[0.02] p-3"
+                className="rounded-xl border border-border/30 bg-background p-3"
               >
                 <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${metric.bgColor}`}>
                   <metric.icon className={`h-3.5 w-3.5 ${metric.color}`} />
                 </div>
                 <div className="mt-2">
-                  <p className="text-lg font-semibold tabular-nums text-white">
+                  <p className="text-lg font-semibold tabular-nums text-foreground">
                     {typeof metric.value === "number" ? metric.value : metric.value}
                     <span className="text-xs font-normal text-muted-foreground">{metric.suffix}</span>
                   </p>
