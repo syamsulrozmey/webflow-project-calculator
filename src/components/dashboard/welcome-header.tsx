@@ -41,7 +41,7 @@ export function WelcomeHeader({ userName, activeProjects, pipelineValue }: Welco
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-2xl font-semibold text-black">
+        <h1 className="text-2xl font-semibold text-foreground">
           Welcome back, {firstName}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">

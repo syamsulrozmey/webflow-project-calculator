@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { ArrowRight, Calculator, Layers, Clock, DollarSign, CheckCircle2, Settings, FileText, Layout, Database, Search, Zap } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 // Animated Number Component
 function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; isAnimating: boolean }) {
   const [displayValue, setDisplayValue] = useState(from);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isAnimating) {
       setDisplayValue(to);
+      // Cancel any ongoing animation when not animating
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
       return;
     }
 
@@ -28,11 +34,21 @@ function AnimatedPrice({ from, to, isAnimating }: { from: number; to: number; is
       setDisplayValue(Math.floor(current));
 
       if (progress < 1) {
-        requestAnimationFrame(step);
+        animationFrameRef.current = requestAnimationFrame(step);
+      } else {
+        animationFrameRef.current = null;
       }
     };
 
-    requestAnimationFrame(step);
+    animationFrameRef.current = requestAnimationFrame(step);
+
+    // Cleanup function to cancel animation frame if component unmounts or dependencies change
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
   }, [isAnimating, from, to]);
 
   return (
@@ -45,6 +61,8 @@ export function HeroSection() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [price, setPrice] = useState(12500);
   const [hours, setHours] = useState(125);
+  const previousPriceRef = useRef(12500);
+  const currentPriceRef = useRef(12500);
 
   const options = [
     { label: "Small Business Site", price: 12500, hours: 125, pages: "10-15 pages", cms: "Basic CMS" },
@@ -52,23 +70,42 @@ export function HeroSection() {
     { label: "E-commerce Store", price: 38000, hours: 380, pages: "50+ pages", cms: "Full Commerce" }
   ];
 
+  // Auto-rotate through project options
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsCalculating(true);
-      
-      setTimeout(() => {
-        setActiveOption((prev) => {
-          const next = (prev + 1) % options.length;
-          setPrice(options[next].price);
-          setHours(options[next].hours);
-          return next;
-        });
-        setIsCalculating(false);
-      }, 800);
+      setActiveOption((prev) => (prev + 1) % options.length);
     }, 4000);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle price/hours updates and animation when activeOption changes
+  useEffect(() => {
+    const newOption = options[activeOption];
+    
+    // Capture current price as the animation start point before updating
+    previousPriceRef.current = currentPriceRef.current;
+    
+    // Update to new values
+    currentPriceRef.current = newOption.price;
+    setPrice(newOption.price);
+    setHours(newOption.hours);
+    
+    // Skip animation on initial mount (when previous equals current)
+    if (previousPriceRef.current === currentPriceRef.current) {
+      return;
+    }
+    
+    // Start animation
+    setIsCalculating(true);
+    const timeout = setTimeout(() => {
+      setIsCalculating(false);
+    }, 2000);
+    
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOption]); // Only react to option changes - options array is stable
 
   return (
     <section className="relative overflow-hidden bg-conv-background">
@@ -245,7 +282,7 @@ export function HeroSection() {
                    <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-conv-border shadow-sm text-center mb-6 transform transition-all duration-500 hover:shadow-md">
                       <div className="text-xs font-semibold text-conv-text-muted uppercase tracking-widest mb-2">Estimated Total</div>
                       <div className="font-serif text-5xl lg:text-6xl font-medium text-conv-text-primary mb-4 tracking-tight">
-                        <AnimatedPrice from={price} to={options[activeOption].price} isAnimating={isCalculating} />
+                        <AnimatedPrice from={previousPriceRef.current} to={price} isAnimating={isCalculating} />
                       </div>
                       <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-conv-background border border-conv-border-light text-xs font-medium text-conv-text-secondary">
                          <Clock className="h-3.5 w-3.5" />
@@ -276,11 +313,7 @@ export function HeroSection() {
                    {options.map((option, idx) => (
                      <button
                        key={idx}
-                       onClick={() => {
-                         setActiveOption(idx);
-                         setPrice(options[idx].price);
-                         setHours(options[idx].hours);
-                       }}
+                       onClick={() => setActiveOption(idx)}
                        className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-200 flex items-center justify-between group ${
                          activeOption === idx 
                            ? 'bg-white border border-conv-primary text-conv-primary shadow-sm' 
