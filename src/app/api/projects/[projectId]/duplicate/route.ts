@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { ApiError, handleApiError } from "@/lib/http";
 import { requireProUser, requireUserId } from "@/lib/projects/auth";
@@ -10,7 +10,7 @@ interface RouteContext {
   }>;
 }
 
-export async function POST(request: Request, context: RouteContext) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const userId = requireUserId(request);
     await requireProUser(userId);
