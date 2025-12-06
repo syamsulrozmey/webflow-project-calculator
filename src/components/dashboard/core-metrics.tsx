@@ -33,68 +33,68 @@ export function CoreMetrics({ data }: CoreMetricsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
       {/* Active Projects */}
-      <Card className="border-border/50 bg-card transition-colors hover:bg-accent/50">
+      <Card className="rounded-2xl border border-conv-border bg-white shadow-card transition-all hover:-translate-y-1 hover:shadow-card-hover">
         <CardHeader className="p-5">
           <div className="flex items-start justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20">
-              <FolderKanban className="h-5 w-5 text-blue-500" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-conv-primary/10">
+              <FolderKanban className="h-5 w-5 text-conv-primary" />
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <CardTitle className="text-3xl font-bold tabular-nums text-foreground">
+            <CardTitle className="text-3xl font-semibold tabular-nums text-conv-text-primary">
               {data.activeProjects}
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-conv-text-secondary">
               Active Projects
             </CardDescription>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-conv-text-muted">
             {data.totalProjects} total saved
           </p>
         </CardHeader>
       </Card>
 
       {/* Pipeline Value */}
-      <Card className="border-border/50 bg-card transition-colors hover:bg-accent/50">
+      <Card className="rounded-2xl border border-conv-border bg-white shadow-card transition-all hover:-translate-y-1 hover:shadow-card-hover">
         <CardHeader className="p-5">
           <div className="flex items-start justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
-              <DollarSign className="h-5 w-5 text-emerald-500" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-conv-primary/10">
+              <DollarSign className="h-5 w-5 text-conv-primary" />
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <CardTitle className="text-3xl font-bold tabular-nums text-foreground">
+            <CardTitle className="text-3xl font-semibold tabular-nums text-conv-text-primary">
               {formatCurrency(data.pipelineValue)}
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-conv-text-secondary">
               Pipeline Value
             </CardDescription>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-conv-text-muted">
             Total estimated project value
           </p>
         </CardHeader>
       </Card>
 
       {/* Average Project */}
-      <Card className="border-border/50 bg-card transition-colors hover:bg-accent/50">
+      <Card className="rounded-2xl border border-conv-border bg-white shadow-card transition-all hover:-translate-y-1 hover:shadow-card-hover">
         <CardHeader className="p-5">
           <div className="flex items-start justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20">
-              <TrendingUp className="h-5 w-5 text-amber-500" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-conv-primary/10">
+              <TrendingUp className="h-5 w-5 text-conv-primary" />
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <CardTitle className="text-3xl font-bold tabular-nums text-foreground">
+            <CardTitle className="text-3xl font-semibold tabular-nums text-conv-text-primary">
               {formatCurrency(data.avgProjectValue)}
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-conv-text-secondary">
               Avg Estimate
             </CardDescription>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-conv-text-muted">
             {data.avgHours} hrs average
           </p>
         </CardHeader>

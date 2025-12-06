@@ -966,16 +966,16 @@ export function QuestionnaireExperience({
     <div className="space-y-8">
       <Card
         id="questionnaire-progress-card"
-        className="border-white/10 bg-gradient-to-r from-[#0b0f1f] to-[#090b16]"
+        className="border-conv-border bg-white shadow-card"
       >
         <CardContent className="pt-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex-1 space-y-4">
               <div>
-                <p className="text-xs text-primary/80">
+                <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
                   Project context
                 </p>
-                <p className="text-base text-muted-foreground">
+                <p className="text-base text-conv-text-secondary">
                   {selectedEntry
                     ? selectedEntry === "fresh"
                       ? "Fresh build flow"
@@ -987,7 +987,7 @@ export function QuestionnaireExperience({
                     : "User type TBD"}
                 </p>
                 {personaContextCopy && (
-                  <p className="mt-1 text-sm text-primary/70">
+                  <p className="mt-1 text-sm text-conv-primary">
                     {personaContextCopy}
                   </p>
                 )}
@@ -1015,13 +1015,13 @@ export function QuestionnaireExperience({
             </div>
             <div className="flex w-full flex-col gap-4 lg:max-w-sm">
               <div className="flex items-center gap-4">
-                <div className="h-2 flex-1 rounded-full bg-white/10">
+                <div className="h-2 flex-1 rounded-full bg-conv-border">
                   <div
-                    className="h-2 rounded-full bg-primary transition-all"
+                    className="h-2 rounded-full bg-conv-primary transition-all"
                     style={{ width: `${Math.round(overallProgress * 100)}%` }}
                   />
                 </div>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-conv-text-secondary">
                   {Math.round(overallProgress * 100)}% complete
                 </span>
               </div>
@@ -1029,7 +1029,7 @@ export function QuestionnaireExperience({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-white/20 sm:w-auto"
+                  className="border-conv-border sm:w-auto"
                   onClick={handleReset}
                 >
                   Reset answers
@@ -1050,10 +1050,10 @@ export function QuestionnaireExperience({
               )}
             </div>
           </div>
-          <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+          <div className="mt-6 space-y-3 rounded-2xl border border-conv-border bg-conv-background-alt p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1">
-                <p className="text-xs text-primary/70">
+                <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
                   Workspace sync · Pro
                 </p>
                 <input
@@ -1062,7 +1062,7 @@ export function QuestionnaireExperience({
                   onChange={(event) => setProjectTitle(event.target.value)}
                   maxLength={140}
                   placeholder="Client name · scope nickname"
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-4 py-3 text-sm text-white outline-none ring-primary/40 transition focus:ring"
+                  className="mt-2 w-full rounded-lg border border-conv-border bg-white px-4 py-3 text-sm text-conv-text-primary outline-none ring-conv-primary/40 transition focus:ring"
                   disabled={!isRestored}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -1091,7 +1091,7 @@ export function QuestionnaireExperience({
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full text-muted-foreground hover:text-white sm:w-auto"
+                  className="w-full text-conv-text-secondary hover:text-conv-text-primary sm:w-auto"
                   asChild
                 >
                   <Link href="/projects">View projects</Link>
@@ -1099,13 +1099,13 @@ export function QuestionnaireExperience({
               </div>
             </div>
             {projectSyncMessage && (
-              <p className="text-xs text-emerald-300">{projectSyncMessage}</p>
+              <p className="text-xs text-conv-success">{projectSyncMessage}</p>
             )}
             {projectSyncError && (
-              <p className="text-xs text-destructive">{projectSyncError}</p>
+              <p className="text-xs text-conv-error">{projectSyncError}</p>
             )}
             {projectLoadError && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              <div className="flex items-center gap-2 rounded-lg border border-conv-warning/40 bg-conv-warning/10 px-3 py-2 text-xs text-conv-warning">
                 <TriangleAlert className="h-4 w-4" />
                 {projectLoadError}
               </div>
@@ -1120,28 +1120,30 @@ export function QuestionnaireExperience({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Card className="border-white/5 bg-white/[0.02]">
-          <CardHeader className="flex flex-col gap-4 border-b border-white/5 pb-6">
+        <Card className="border-conv-border bg-white shadow-card">
+          <CardHeader className="flex flex-col gap-4 border-b border-conv-border pb-6">
             <div className="flex items-center gap-3">
-              <SectionIcon className="h-5 w-5 text-primary" />
+              <SectionIcon className="h-5 w-5 text-conv-primary" />
               <div>
-                <p className="text-xs text-primary/70">
+                <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
                   {activeSectionState.section.badge}
                 </p>
-                <CardTitle>{activeSectionState.section.title}</CardTitle>
+                <h2 className="font-serif text-2xl font-normal leading-tight tracking-tight text-conv-text-primary md:text-3xl">
+                  {activeSectionState.section.title}
+                </h2>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-conv-text-secondary">
               {activeSectionState.section.description}
             </p>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-conv-text-muted">
               <span>
                 {Math.round(activeSectionState.completionRatio * 100)}% of base questions answered
               </span>
-              <span className="h-1 rounded-full bg-white/10 px-1" />
+              <span className="h-1 rounded-full bg-conv-border px-1" />
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-conv-primary hover:underline"
                 onClick={() => handleClearSection(activeSectionState.section.id)}
               >
                 Clear section
@@ -1150,7 +1152,7 @@ export function QuestionnaireExperience({
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             {shouldShowTimelineEconomicsCard ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-5">
                 <div className="grid gap-6 lg:grid-cols-2">
                   {timelineHourlyQuestion && (
                     <QuestionCard
@@ -1172,9 +1174,9 @@ export function QuestionnaireExperience({
                   isCurrencyLoadingRates ||
                   manualConversionContext ||
                   showAgencyTeamNudge) && (
-                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">
+                  <div className="mt-4 rounded-xl border border-conv-border bg-white p-4 text-xs text-conv-text-muted">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-sm font-semibold text-white">Live FX status</span>
+                      <span className="text-sm font-semibold text-conv-text-primary">Live FX status</span>
                       {isCurrencyLoadingRates && <span>Refreshing…</span>}
                       {!isCurrencyLoadingRates && currencyRates && (
                         <span>
@@ -1183,20 +1185,20 @@ export function QuestionnaireExperience({
                         </span>
                       )}
                       {currencyError && (
-                        <span className="text-amber-300">{currencyError}</span>
+                        <span className="text-conv-warning">{currencyError}</span>
                       )}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-xs text-white/80 hover:text-white"
+                        className="text-xs text-conv-text-secondary hover:text-conv-text-primary"
                         onClick={refreshCurrencyRates}
                       >
                         Refresh rates
                       </Button>
                     </div>
                     {manualConversionContext && (
-                      <div className="mt-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 text-xs text-muted-foreground">
-                        <p className="text-sm text-white">
+                      <div className="mt-3 rounded-lg border border-conv-border-light bg-conv-background-alt p-3 text-xs text-conv-text-muted">
+                        <p className="text-sm text-conv-text-primary">
                           {formattedHourlyRate !== null
                             ? `Hourly rate left at ${formattedHourlyRate.toFixed(0)} ${manualConversionContext.from.toUpperCase()} after your last override.`
                             : `Hourly rate left in ${manualConversionContext.from.toUpperCase()} after your last override.`}{" "}
@@ -1213,8 +1215,8 @@ export function QuestionnaireExperience({
                       </div>
                     )}
                     {showAgencyTeamNudge && (
-                      <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-primary-foreground">
-                        <p className="text-white">
+                      <div className="mt-3 rounded-lg border border-conv-primary/30 bg-conv-primary/5 p-4 text-sm">
+                        <p className="text-conv-text-primary">
                           Team bandwidth drives your billable rate. Keep the roster updated before finalizing hours.
                         </p>
                         <Button
@@ -1233,7 +1235,7 @@ export function QuestionnaireExperience({
             ) : null}
 
             {questionsToRender.length === 0 && !shouldShowTimelineEconomicsCard ? (
-              <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-conv-border p-6 text-sm text-conv-text-secondary">
                 No questions to show yet. Adjust previous answers or reveal advanced prompts.
               </div>
             ) : (
@@ -1241,21 +1243,21 @@ export function QuestionnaireExperience({
             )}
 
             {hasAdvancedQuestions && !showAdvancedSections[activeSectionState.section.id] && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+              <div className="rounded-xl border border-conv-border bg-conv-background-alt p-5">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-sm font-medium text-conv-text-primary">
                       Advanced questions available
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Tackle complex requirements now or skip—they’re optional.
+                    <p className="text-xs text-conv-text-muted">
+                      Tackle complex requirements now or skip—they're optional.
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-white/20"
+                      className="border-conv-border"
                       onClick={() =>
                         setShowAdvancedSections((prev) => ({
                           ...prev,
@@ -1296,11 +1298,11 @@ export function QuestionnaireExperience({
             )}
 
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 border-t border-white/5 pt-6">
-            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <CardFooter className="flex flex-col gap-3 border-t border-conv-border pt-6">
+            <div className="flex flex-col gap-2 text-sm text-conv-text-secondary sm:flex-row sm:items-center sm:justify-between">
               <Button
                 variant="ghost"
-                className="w-full gap-2 text-muted-foreground sm:w-auto"
+                className="w-full gap-2 text-conv-text-secondary sm:w-auto"
                 onClick={() =>
                   setActiveSectionIndex((index) => Math.max(0, index - 1))
                 }
@@ -1370,14 +1372,14 @@ export function QuestionnaireExperience({
             </InsightCard>
           ))}
 
-          <InsightCard kicker="Checklist" title="What’s left?" icon={ClipboardList}>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+          <InsightCard kicker="Checklist" title="What's left?" icon={ClipboardList}>
+            <ul className="space-y-2 text-sm text-conv-text-secondary">
               {sectionStates.map((state) => (
                 <li key={state.section.id} className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-conv-primary" />
                   <div>
-                    <p className="text-foreground">{state.section.title}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-conv-text-primary">{state.section.title}</p>
+                    <p className="text-xs text-conv-text-muted">
                       {Math.round(state.completionRatio * 100)}% base coverage
                     </p>
                   </div>
@@ -1428,22 +1430,22 @@ function Stepper({
             type="button"
             onClick={() => onSelect(index)}
             className={cn(
-              "rounded-xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              "rounded-xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-conv-primary",
               isActive
-                ? "border-primary/60 bg-white/[0.05]"
-                : "border-white/10 bg-transparent hover:border-primary/30",
+                ? "border-conv-primary bg-conv-primary/10"
+                : "border-conv-border bg-white hover:border-conv-primary/30",
             )}
           >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-conv-text-muted">
               <span>{index + 1}</span>
               {state.completionRatio === 1 && (
-                <Check className="h-4 w-4 text-primary" />
+                <Check className="h-4 w-4 text-conv-primary" />
               )}
             </div>
-            <p className="mt-2 text-sm font-semibold text-white">
+            <p className="mt-2 text-sm font-semibold text-conv-text-primary">
               {state.section.title}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-conv-text-muted">
               {Math.round(state.completionRatio * 100)}% base done
             </p>
           </button>
@@ -1509,10 +1511,10 @@ function QuestionCard({
     [question, answer],
   );
   const containerClasses = cn(
-    "rounded-2xl border bg-white/[0.01] p-5 transition-shadow duration-300",
+    "rounded-2xl border bg-white p-5 transition-shadow duration-300 shadow-card",
     suggestionPending
-      ? "border-primary/60 bg-primary/5 shadow-[0_0_25px_rgba(129,140,248,0.25)] animate-pulse-glow"
-      : "border-white/10",
+      ? "border-conv-primary bg-conv-primary/5 shadow-[0_0_25px_rgba(58,139,140,0.15)]"
+      : "border-conv-border",
     className,
   );
 
@@ -1521,16 +1523,16 @@ function QuestionCard({
       <div className={containerClasses}>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs text-primary/70">Answered</p>
-            <p className="text-base font-semibold text-white">{question.title}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">Answered</p>
+            <p className="font-serif text-lg font-normal leading-tight tracking-tight text-conv-text-primary">{question.title}</p>
             {answerSummary && (
-              <p className="text-sm text-muted-foreground">{answerSummary}</p>
+              <p className="text-sm text-conv-text-secondary">{answerSummary}</p>
             )}
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="border-white/20"
+            className="border-conv-border"
             onClick={() => setIsManuallyExpanded(true)}
           >
             Edit
@@ -1545,30 +1547,30 @@ function QuestionCard({
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-base font-semibold text-white">
+            <p className="font-serif text-lg font-normal leading-tight tracking-tight text-conv-text-primary">
               {question.title}
             </p>
             {question.tooltip && (
               <Tooltip label={question.tooltip} />
             )}
             {question.advanced && (
-              <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-muted-foreground">
+              <span className="rounded-full border border-conv-border px-2 py-0.5 text-xs text-conv-text-muted">
                 Advanced
               </span>
             )}
           </div>
           {question.description && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-conv-text-secondary">
               {question.description}
             </p>
           )}
           {question.helper && (
-            <p className="text-xs text-muted-foreground/80">
+            <p className="text-xs text-conv-text-muted">
               {question.helper}
             </p>
           )}
           {personaPrefill && (
-            <p className="text-xs text-primary/70">
+            <p className="text-xs text-conv-primary">
               Prefilled from your {formatPersonaLabel(personaPrefill)} profile
             </p>
           )}
@@ -1577,7 +1579,7 @@ function QuestionCard({
           {shouldAutoCollapse && (
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-white"
+              className="text-xs text-conv-text-muted hover:text-conv-text-primary"
               onClick={() => setIsManuallyExpanded(false)}
             >
               Collapse
@@ -1586,7 +1588,7 @@ function QuestionCard({
           {question.advanced && (
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-white"
+              className="text-xs text-conv-text-muted hover:text-conv-text-primary"
               onClick={() => onSkip(question.id, true)}
             >
               Skip question
@@ -1598,23 +1600,23 @@ function QuestionCard({
         <div className="mb-3">
           <div
             tabIndex={0}
-            className="group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-conv-primary/40 bg-conv-primary/10 px-3 py-1 text-[11px] text-conv-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-conv-primary/60"
           >
             <Sparkles className="h-3 w-3" />
             AI suggestion
-            <div className="pointer-events-none absolute left-0 top-full z-20 hidden w-72 rounded-2xl border border-white/10 bg-[#070810] p-4 text-left text-xs text-muted-foreground shadow-2xl group-hover:pointer-events-auto group-hover:block group-focus-visible:pointer-events-auto group-focus-visible:block">
-              <p className="text-sm font-semibold text-white">
+            <div className="pointer-events-none absolute left-0 top-full z-20 hidden w-72 rounded-2xl border border-conv-border bg-white p-4 text-left text-xs text-conv-text-muted shadow-card-elevated group-hover:pointer-events-auto group-hover:block group-focus-visible:pointer-events-auto group-focus-visible:block">
+              <p className="text-sm font-semibold text-conv-text-primary">
                 {formattedSuggestionLabel ?? suggestion.valueLabel}
               </p>
               {formattedSuggestionRationale && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-[11px] text-conv-text-muted">
                   {formattedSuggestionRationale}
                 </p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  className="h-8 gap-1 border-primary/40 bg-primary/90 text-xs"
+                  className="h-8 gap-1 bg-conv-primary text-xs text-white"
                   onClick={() => onAcceptSuggestion?.(suggestion)}
                 >
                   Accept
@@ -1623,7 +1625,7 @@ function QuestionCard({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-muted-foreground"
+                  className="h-8 text-conv-text-secondary"
                   onClick={() => onDismissSuggestion?.(question.id)}
                 >
                   Dismiss
@@ -1634,14 +1636,14 @@ function QuestionCard({
         </div>
       )}
       {skipped && (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-dashed border-white/15 px-3 py-2 text-xs text-muted-foreground">
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-dashed border-conv-border px-3 py-2 text-xs text-conv-text-muted">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-3.5 w-3.5 text-primary" />
+            <AlertCircle className="h-3.5 w-3.5 text-conv-primary" />
             Skipped for now — revisit any time.
           </div>
           <button
             type="button"
-            className="text-xs text-primary hover:underline"
+            className="text-xs text-conv-primary hover:underline"
             onClick={() => onSkip(question.id, false)}
           >
             Resume
@@ -1746,31 +1748,31 @@ function renderByType(
                 className={cn(
                   "rounded-xl border px-4 py-3 text-left transition",
                   isSelected
-                    ? "border-primary bg-primary/10"
-                    : "border-white/10 hover:border-white/30",
+                    ? "border-conv-primary bg-conv-primary/10"
+                    : "border-conv-border hover:border-conv-primary/30",
                 )}
               >
                 {currencyDisplay ? (
                   <div className="flex items-center justify-center">
-                    <span className="text-xl font-semibold text-white">
+                    <span className="text-xl font-semibold text-conv-text-primary">
                       {currencyDisplay.symbol}
                     </span>
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm font-medium text-white">{option.label}</p>
+                    <p className="text-sm font-medium text-conv-text-primary">{option.label}</p>
                     {option.description && (
-                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                      <p className="text-xs text-conv-text-secondary">{option.description}</p>
                     )}
                   </>
                 )}
                 {option.badge && (
-                  <span className="mt-2 inline-block rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-muted-foreground">
+                  <span className="mt-2 inline-block rounded-full border border-conv-border px-2 py-0.5 text-[10px] text-conv-text-muted">
                     {option.badge}
                   </span>
                 )}
                 {isRecommended && (
-                  <span className="mt-2 inline-flex items-center rounded-full border border-primary/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                  <span className="mt-2 inline-flex items-center rounded-full border border-conv-primary/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-conv-primary">
                     Recommended
                   </span>
                 )}
@@ -1795,15 +1797,15 @@ function renderByType(
                 type="button"
                 onClick={() => handlers.onMultiSelect(question.id, option.value)}
                 className={cn(
-                  "rounded-full border px-4 py-1.5 text-sm transition text-white",
+                  "rounded-full border px-4 py-1.5 text-sm transition",
                   isSelected
-                    ? "border-primary bg-primary/10"
-                    : "border-white/15 text-white/70 hover:border-white/40 hover:text-white",
+                    ? "border-conv-primary bg-conv-primary/10 text-conv-text-primary"
+                    : "border-conv-border text-conv-text-secondary hover:border-conv-primary/40 hover:text-conv-text-primary",
                 )}
               >
                 <span>{option.label}</span>
                 {isRecommended && (
-                  <span className="ml-2 text-[11px] uppercase tracking-wide text-primary">
+                  <span className="ml-2 text-[11px] uppercase tracking-wide text-conv-primary">
                     Recommended
                   </span>
                 )}
@@ -1820,7 +1822,7 @@ function renderByType(
             : question.min ?? 0;
       return (
         <div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-conv-text-muted">
             <span>{question.min}</span>
             <span>{question.max}</span>
           </div>
@@ -1833,9 +1835,9 @@ function renderByType(
             onChange={(event) =>
               handlers.onScaleChange(question.id, Number(event.target.value))
             }
-            className="mt-2 w-full accent-primary"
+            className="mt-2 w-full accent-conv-primary"
           />
-          <div className="mt-1 text-sm text-white">
+          <div className="mt-1 text-sm text-conv-text-primary">
               {displayValue}
           </div>
         </div>
@@ -1850,20 +1852,20 @@ function renderByType(
             type="button"
               onClick={() => handlers.onToggle(question.id, !currentValue)}
             className={cn(
-              "relative inline-flex h-6 w-11 items-center rounded-full border border-white/15 transition",
-                currentValue ? "bg-primary/80" : "bg-white/10",
+              "relative inline-flex h-6 w-11 items-center rounded-full border border-conv-border transition",
+                currentValue ? "bg-conv-primary" : "bg-conv-background-alt",
             )}
             role="switch"
               aria-checked={currentValue}
           >
             <span
               className={cn(
-                "inline-block h-4 w-4 rounded-full bg-white transition",
+                "inline-block h-4 w-4 rounded-full bg-white shadow transition",
                   currentValue ? "translate-x-5" : "translate-x-1",
               )}
             />
           </button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-conv-text-secondary">
               {currentValue ? "Enabled" : "Disabled"}
           </span>
         </div>
@@ -1875,7 +1877,7 @@ function renderByType(
           value={touched && typeof answer === "string" ? answer : ""}
           onChange={(event) => handlers.onTextChange(question.id, event.target.value)}
           placeholder={question.placeholder}
-          className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm text-white outline-none ring-primary/40 focus:ring"
+          className="w-full rounded-xl border border-conv-border bg-white px-4 py-3 text-sm text-conv-text-primary outline-none ring-conv-primary/40 focus:ring"
           rows={4}
         />
       );
@@ -1897,7 +1899,7 @@ function ContextChipGroup<TValue extends string>({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <p className="text-[11px] uppercase tracking-wide text-conv-text-muted">
         {label}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -1909,8 +1911,8 @@ function ContextChipGroup<TValue extends string>({
             className={cn(
               "rounded-full border px-3 py-1 text-xs transition",
               value === option.id
-                ? "border-primary/80 bg-primary/10 text-white"
-                : "border-white/10 text-muted-foreground hover:border-white/40 hover:text-white",
+                ? "border-conv-primary bg-conv-primary/10 text-conv-text-primary"
+                : "border-conv-border text-conv-text-secondary hover:border-conv-primary/40 hover:text-conv-text-primary",
             )}
           >
             {option.label}
@@ -1929,26 +1931,26 @@ function AgencySummaryPill({
   onManageTeam: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-soft-card md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-conv-border bg-conv-background-alt p-4 shadow-card md:flex-row md:items-center md:justify-between">
       <div>
-        <p className="text-xs text-primary/70">
+        <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
           Team capacity
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-conv-text-secondary">
           {summary.memberCount} members · {summary.totalWeeklyCapacity} hrs/week
         </p>
       </div>
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-4 text-xs text-conv-text-muted">
         <span className="inline-flex items-center gap-1">
-          <Users className="h-3.5 w-3.5 text-primary" />
+          <Users className="h-3.5 w-3.5 text-conv-primary" />
           {Math.round(summary.margin * 100)}% margin target
         </span>
         <span className="inline-flex items-center gap-1">
-          <DollarSign className="h-3.5 w-3.5 text-primary" />
+          <DollarSign className="h-3.5 w-3.5 text-conv-primary" />
           Recommended {summary.recommendedBillableRate.toFixed(0)} / hr
         </span>
       </div>
-      <Button size="sm" variant="outline" className="border-white/30" onClick={onManageTeam}>
+      <Button size="sm" variant="outline" className="border-conv-border" onClick={onManageTeam}>
         Manage team
       </Button>
     </div>
@@ -1966,13 +1968,13 @@ function AgencyConfiguratorOverlay({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-[#05060f] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="relative w-full max-w-5xl rounded-3xl border border-conv-border bg-white p-6 shadow-card-elevated">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close team configurator"
-          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/70 hover:text-white"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-conv-border text-conv-text-secondary hover:text-conv-text-primary"
         >
           <X className="h-4 w-4" />
         </button>
@@ -2169,8 +2171,8 @@ function formatAiSuggestionText(text?: string | null): string | null {
 function Tooltip({ label }: { label: string }) {
   return (
     <div className="relative group">
-      <HelpCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-      <div className="pointer-events-none absolute left-1/2 top-full mt-2 hidden w-64 -translate-x-1/2 rounded-xl border border-white/10 bg-background p-3 text-xs text-muted-foreground shadow-2xl group-hover:block">
+      <HelpCircle className="h-4 w-4 text-conv-text-muted group-hover:text-conv-primary" />
+      <div className="pointer-events-none absolute left-1/2 top-full mt-2 hidden w-64 -translate-x-1/2 rounded-xl border border-conv-border bg-white p-3 text-xs text-conv-text-secondary shadow-card-elevated group-hover:block">
         {label}
       </div>
     </div>
@@ -2189,15 +2191,15 @@ function InsightCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="border-white/10 bg-white/[0.03]">
+    <Card className="border-conv-border bg-white shadow-card">
       <CardHeader className="pb-2">
-        <p className="text-xs text-primary/70">{kicker}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">{kicker}</p>
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">{title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground">
+      <CardContent className="pt-0 text-sm text-conv-text-secondary">
         {children}
       </CardContent>
     </Card>

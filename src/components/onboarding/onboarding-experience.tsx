@@ -258,16 +258,16 @@ export function OnboardingExperience({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <Card className="border-white/5 bg-gradient-to-b from-[#0f1324] to-[#080a15]">
+      <Card className="border-conv-border bg-white shadow-card">
         <CardHeader>
-          <p className="text-xs text-primary">
+          <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
             Guided onboarding
           </p>
-          <CardTitle className="text-2xl">
-            Tell us how you’d like to kick things off.
+          <CardTitle className="text-2xl text-conv-text-primary">
+            Tell us how you'd like to kick things off.
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            We’ll remember your selections for the questionnaire, crawler,
+          <p className="text-sm text-conv-text-secondary">
+            We'll remember your selections for the questionnaire, crawler,
             exports, and AI assists.
           </p>
         </CardHeader>
@@ -291,12 +291,12 @@ export function OnboardingExperience({
             })}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 border-t border-white/5 pt-6">
+        <CardFooter className="flex flex-col gap-3 border-t border-conv-border pt-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"
               variant="ghost"
-              className="w-full gap-2 text-muted-foreground sm:w-auto"
+              className="w-full gap-2 text-conv-text-secondary sm:w-auto"
               onClick={handleBack}
               disabled={currentStep === 0}
             >
@@ -315,7 +315,7 @@ export function OnboardingExperience({
             </Button>
           </div>
           {isLastStep && (
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-center text-xs text-conv-text-muted">
               Restarting clears the selections above so you can explore another journey.
             </p>
           )}
@@ -335,7 +335,7 @@ export function OnboardingExperience({
             />
           ) : (
             <PlaceholderText>
-              Pick whether you’re estimating a fresh build or migrating an
+              Pick whether you're estimating a fresh build or migrating an
               existing site.
             </PlaceholderText>
           )}
@@ -353,7 +353,7 @@ export function OnboardingExperience({
             />
           ) : (
             <PlaceholderText>
-              Tell us if you’re a freelancer, agency, or company so we can
+              Tell us if you're a freelancer, agency, or company so we can
               tailor benchmarks.
             </PlaceholderText>
           )}
@@ -361,17 +361,17 @@ export function OnboardingExperience({
 
         <InsightCard kicker="Readiness" title="Kickoff checklist">
           {combinedSummary ? (
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <ul className="space-y-2 text-sm text-conv-text-secondary">
               {combinedSummary.checklist.map((item) => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-conv-primary" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           ) : (
             <PlaceholderText>
-              Once both selections are made we’ll prep a checklist for you.
+              Once both selections are made we'll prep a checklist for you.
             </PlaceholderText>
           )}
         </InsightCard>
@@ -457,14 +457,14 @@ function renderStep({
     const isSecondaryDuplicate = secondaryHref === primaryHref;
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-6 shadow-soft-card">
-          <p className="text-xs text-primary">
-            You’re locked in
+        <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-6 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
+            You're locked in
           </p>
-          <h3 className="mt-2 text-xl font-semibold text-white">
+          <h3 className="mt-2 font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary md:text-2xl">
             {summary.headline}
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-conv-text-secondary">
             {summary.description}
           </p>
         </div>
@@ -482,14 +482,14 @@ function renderStep({
           />
         </div>
 
-        <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
-          <h4 className="text-sm font-semibold text-primary">
+        <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-6">
+          <h4 className="font-serif text-base font-normal leading-tight tracking-tight text-conv-primary">
             Kickoff checklist
           </h4>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+          <ul className="mt-4 space-y-2 text-sm text-conv-text-secondary">
             {summary.checklist.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-conv-primary" />
                 <span>{item}</span>
               </li>
             ))}
@@ -497,11 +497,11 @@ function renderStep({
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
+          <p className="text-xs font-semibold uppercase tracking-wide text-conv-primary">
             Recommended next steps
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" className="gap-2" asChild>
+            <Button type="button" className="gap-2 shadow-button" asChild>
               <Link href={primaryHref}>
                 {summary.primaryCta}
                 <ArrowRight className="h-4 w-4" />
@@ -511,7 +511,7 @@ function renderStep({
               <Button
                 type="button"
                 variant="outline"
-                className="border-white/20"
+                className="border-conv-border"
                 asChild
               >
                 <Link href={secondaryHref}>{summary.secondaryCta}</Link>
@@ -524,7 +524,7 @@ function renderStep({
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-muted-foreground">
+    <div className="rounded-2xl border border-dashed border-conv-border p-6 text-sm text-conv-text-secondary">
       Make a selection to see the next step.
     </div>
   );
@@ -544,40 +544,40 @@ function EntryOptionCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "group relative flex h-full flex-col gap-4 rounded-2xl border bg-white/[0.02] p-5 text-left transition-all duration-300",
+        "group relative flex h-full flex-col gap-4 rounded-2xl border bg-white p-5 text-left transition-all duration-300 shadow-card",
         selected
-          ? "border-primary/70 shadow-[0_20px_40px_rgba(110,73,255,0.25)]"
-          : "border-white/5 hover:border-white/20",
+          ? "border-conv-primary shadow-[0_10px_30px_rgba(58,139,140,0.15)]"
+          : "border-conv-border hover:border-conv-primary/40",
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-full border border-white/10 bg-white/5 p-2">
-            <option.icon className="h-4 w-4 text-primary" />
+          <div className="rounded-full border border-conv-border bg-conv-section-mint p-2">
+            <option.icon className="h-4 w-4 text-conv-primary" />
           </div>
           <div>
-            <p className="text-xs text-primary/70">
+            <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
               {option.tagline}
             </p>
-            <p className="text-lg font-semibold text-white">{option.title}</p>
+            <p className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">{option.title}</p>
           </div>
         </div>
         {selected ? (
-          <CheckCircle2 className="h-5 w-5 text-primary" />
+          <CheckCircle2 className="h-5 w-5 text-conv-primary" />
         ) : (
-          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+          <ArrowRight className="h-5 w-5 text-conv-text-muted" />
         )}
       </div>
-      <p className="text-sm text-muted-foreground">{option.description}</p>
-      <ul className="space-y-2 text-sm text-muted-foreground/90">
+      <p className="text-sm text-conv-text-secondary">{option.description}</p>
+      <ul className="space-y-2 text-sm text-conv-text-secondary">
         {option.bullets.map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <span className="mt-1 h-1 w-1 rounded-full bg-primary" />
+            <span className="mt-1 h-1 w-1 rounded-full bg-conv-primary" />
             <span>{item}</span>
           </li>
         ))}
       </ul>
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground/80">
+      <div className="flex flex-wrap gap-2 text-xs text-conv-text-muted">
         <BadgePill label={`Timeline · ${option.timeline}`} />
         <BadgePill label={`Effort · ${option.effort}`} />
       </div>
@@ -607,40 +607,40 @@ function UserTypeCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "group relative flex h-full flex-col gap-4 rounded-2xl border bg-white/[0.02] p-5 text-left transition-all duration-300",
+        "group relative flex h-full flex-col gap-4 rounded-2xl border bg-white p-5 text-left transition-all duration-300 shadow-card",
         selected
-          ? "border-primary/70 shadow-[0_20px_40px_rgba(110,73,255,0.25)]"
-          : "border-white/5 hover:border-white/20",
+          ? "border-conv-primary shadow-[0_10px_30px_rgba(58,139,140,0.15)]"
+          : "border-conv-border hover:border-conv-primary/40",
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-full border border-white/10 bg-white/5 p-2">
-            <type.icon className="h-4 w-4 text-primary" />
+          <div className="rounded-full border border-conv-border bg-conv-section-mint p-2">
+            <type.icon className="h-4 w-4 text-conv-primary" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-white">{type.title}</p>
-            <p className="text-xs text-primary/70">
+            <p className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">{type.title}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
               User profile
             </p>
           </div>
         </div>
         {selected ? (
-          <CheckCircle2 className="h-5 w-5 text-primary" />
+          <CheckCircle2 className="h-5 w-5 text-conv-primary" />
         ) : (
-          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+          <ArrowRight className="h-5 w-5 text-conv-text-muted" />
         )}
       </div>
-      <p className="text-sm text-muted-foreground">{type.description}</p>
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground/80">
+      <p className="text-sm text-conv-text-secondary">{type.description}</p>
+      <div className="flex flex-wrap gap-2 text-xs text-conv-text-muted">
         {type.badges.map((badge) => (
           <BadgePill key={badge} label={badge} />
         ))}
       </div>
-      <ul className="space-y-2 text-sm text-muted-foreground/90">
+      <ul className="space-y-2 text-sm text-conv-text-secondary">
         {type.focus.map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <span className="mt-1 h-1 w-1 rounded-full bg-primary" />
+            <span className="mt-1 h-1 w-1 rounded-full bg-conv-primary" />
             <span>{item}</span>
           </li>
         ))}
@@ -651,20 +651,20 @@ function UserTypeCard({
             role="button"
             tabIndex={0}
             aria-describedby={tooltipId}
-            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-white focus-visible:text-white"
+            className="inline-flex items-center gap-1 text-conv-text-muted transition-colors hover:text-conv-text-primary focus-visible:text-conv-text-primary"
             onClick={handleInfoInteraction}
             onKeyDown={handleInfoInteraction}
           >
-            <Info className="h-3.5 w-3.5 text-primary" />
+            <Info className="h-3.5 w-3.5 text-conv-primary" />
             Need context?{" "}
-            <span className="underline decoration-dotted decoration-white/30 underline-offset-4">
+            <span className="underline decoration-dotted decoration-conv-border underline-offset-4">
               Learn more
             </span>
           </span>
           <div
             id={tooltipId}
             role="tooltip"
-            className="pointer-events-none absolute left-0 top-full z-20 hidden w-64 rounded-2xl border border-white/10 bg-background/95 p-3 text-left text-xs text-muted-foreground shadow-2xl group-hover/tooltip:flex group-focus-within/tooltip:flex"
+            className="pointer-events-none absolute left-0 top-full z-20 hidden w-64 rounded-2xl border border-conv-border bg-white p-3 text-left text-xs text-conv-text-secondary shadow-card-elevated group-hover/tooltip:flex group-focus-within/tooltip:flex"
           >
             {type.tooltip}
           </div>
@@ -676,7 +676,7 @@ function UserTypeCard({
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
-    <ol className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center">
+    <ol className="flex flex-col gap-4 text-sm text-conv-text-secondary sm:flex-row sm:items-center">
       {steps.map((step, index) => (
         <li
           key={step.id}
@@ -686,19 +686,19 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold",
               currentStep === index
-                ? "border-primary text-primary"
+                ? "border-conv-primary bg-conv-primary/10 text-conv-primary"
                 : currentStep > index
-                  ? "border-primary/50 text-primary/70"
-                  : "border-white/10 text-muted-foreground",
+                  ? "border-conv-primary/50 text-conv-primary"
+                  : "border-conv-border text-conv-text-muted",
             )}
           >
             {index + 1}
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-conv-text-muted">
             {step.label}
           </span>
           {index < steps.length - 1 && (
-            <div className="mx-4 hidden h-px flex-1 bg-gradient-to-r from-white/10 to-transparent sm:block" />
+            <div className="mx-4 hidden h-px flex-1 bg-gradient-to-r from-conv-border to-transparent sm:block" />
           )}
         </li>
       ))}
@@ -716,12 +716,12 @@ function InsightCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
+    <Card className="border-conv-border bg-white shadow-card">
       <CardHeader className="pb-3">
-        <p className="text-xs text-primary/80">
+        <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
           {kicker}
         </p>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg text-conv-text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0 text-sm">{children}</CardContent>
     </Card>
@@ -739,15 +739,15 @@ function InsightList({
 }) {
   const Icon = icon;
   return (
-    <div className="space-y-3 text-muted-foreground">
-      <p className="flex items-center gap-2 text-xs text-muted-foreground/70">
-        <Icon className="h-3.5 w-3.5 text-primary" />
+    <div className="space-y-3 text-conv-text-secondary">
+      <p className="flex items-center gap-2 text-xs text-conv-text-muted">
+        <Icon className="h-3.5 w-3.5 text-conv-primary" />
         {muted}
       </p>
       <ul className="space-y-2 text-sm leading-relaxed">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <span className="mt-1 h-1 w-1 rounded-full bg-primary" />
+            <span className="mt-1 h-1 w-1 rounded-full bg-conv-primary" />
             <span>{item}</span>
           </li>
         ))}
@@ -766,15 +766,15 @@ function SummaryTile({
   points: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
-      <p className="text-xs text-primary">
+    <div className="rounded-2xl border border-conv-border bg-white p-5 shadow-card">
+      <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
         {title}
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">{meta}</p>
-      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-conv-text-secondary">{meta}</p>
+      <ul className="mt-3 space-y-2 text-sm text-conv-text-secondary">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-conv-primary" />
             <span>{point}</span>
           </li>
         ))}
@@ -785,14 +785,14 @@ function SummaryTile({
 
 function BadgePill({ label }: { label: string }) {
   return (
-    <span className="rounded-full border border-white/10 px-3 py-1">
+    <span className="rounded-full border border-conv-border bg-conv-background-alt px-3 py-1">
       {label}
     </span>
   );
 }
 
 function PlaceholderText({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <p className="text-sm text-conv-text-muted">{children}</p>;
 }
 
 function generateSessionId() {

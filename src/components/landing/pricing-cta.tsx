@@ -93,7 +93,7 @@ export function PricingCTA() {
                 )}
                 
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-conv-text-primary mb-2">{tier.title}</h3>
+                  <h3 className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary mb-2">{tier.title}</h3>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-serif font-medium text-conv-text-primary">{tier.price}</span>
                     {tier.period && <span className="text-conv-text-muted">{tier.period}</span>}

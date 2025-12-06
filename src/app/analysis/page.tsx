@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 
+import { AppSidebar } from "@/components/app-sidebar";
 import { UrlIntakeExperience } from "@/components/analysis/url-intake-experience";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import type { EntryFlow, QuestionnaireUserType } from "@/config/questionnaire";
+import { SiteHeader } from "@/components/site-header";
+import { AnalysisHeader } from "@/components/analysis/analysis-header";
 
 export const metadata: Metadata = {
   title: "Existing Site Analysis · Webflow Project Calculator",
@@ -23,11 +27,24 @@ export default function AnalysisPage({ searchParams }: AnalysisPageProps) {
   const session = searchParams?.session ?? null;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#05060a] via-[#05060a] to-[#0b0f1b] pb-16 text-white">
-      <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:px-12">
-        <UrlIntakeExperience entry={entry} userType={userType} sessionId={session} />
-      </div>
-    </main>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "16rem",
+          "--header-height": "3rem",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="sidebar" userType="agency" />
+      <SidebarInset>
+        <SiteHeader />
+        <main className="min-h-screen bg-conv-background pb-16 text-conv-text-primary">
+          <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 lg:px-12">
+            <AnalysisHeader />
+            <UrlIntakeExperience entry={entry} userType={userType} sessionId={session} />
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
-

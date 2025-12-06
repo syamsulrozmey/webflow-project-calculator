@@ -64,10 +64,10 @@ export function ContinueWorking({ projects }: ContinueWorkingProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card p-5">
+    <div className="rounded-2xl border border-conv-border bg-white p-6 shadow-card">
       <div className="mb-4 flex items-center gap-2">
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-medium text-foreground">Continue Working</h3>
+        <Clock className="h-4 w-4 text-conv-text-secondary" />
+        <h3 className="font-serif text-base font-normal leading-tight tracking-tight text-conv-text-primary">Continue Working</h3>
       </div>
       
       <div className="space-y-3">
@@ -75,27 +75,27 @@ export function ContinueWorking({ projects }: ContinueWorkingProps) {
           <Link
             key={project.id}
             href={`/questionnaire?projectId=${project.id}`}
-            className="group flex items-center justify-between rounded-xl border border-border/30 bg-background p-4 transition-all hover:border-border hover:bg-accent/50"
+            className="group flex items-center justify-between rounded-xl border border-conv-border/60 bg-conv-background p-4 transition-all hover:-translate-y-0.5 hover:border-conv-border hover:bg-white hover:shadow-card"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                <FileEdit className="h-4 w-4 text-muted-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-conv-primary/10">
+                <FileEdit className="h-4 w-4 text-conv-primary" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{project.title}</span>
+                  <span className="font-medium text-conv-text-primary">{project.title}</span>
                   <Badge 
                     variant="outline" 
                     className={`text-[10px] ${
                       project.status === "draft" 
                         ? "border-amber-500/50 bg-amber-500/10 text-amber-600" 
-                        : "border-blue-500/50 bg-blue-500/10 text-blue-600"
+                        : "border-conv-primary/50 bg-conv-primary/10 text-conv-primary"
                     }`}
                   >
                     {project.status === "draft" ? "Draft" : "In Progress"}
                   </Badge>
                 </div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="mt-0.5 flex items-center gap-2 text-xs text-conv-text-muted">
                   <span>{typeLabels[project.type]}</span>
                   <span>•</span>
                   <span>{formatCurrency(project.estimatedCost)}</span>

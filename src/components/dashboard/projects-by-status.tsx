@@ -31,36 +31,30 @@ export function ProjectsByStatus({ data }: ProjectsByStatusProps) {
       label: "Completed",
       value: data.completed,
       percentage: getPercentage(data.completed),
-      color: "bg-emerald-500",
-      lightColor: "bg-emerald-500/20",
-      textColor: "text-emerald-400",
+      colorVar: "--success",
       icon: CheckCircle2,
     },
     {
       label: "In Progress",
       value: data.inProgress,
       percentage: getPercentage(data.inProgress),
-      color: "bg-blue-500",
-      lightColor: "bg-blue-500/20",
-      textColor: "text-blue-400",
+      colorVar: "--primary",
       icon: Clock,
     },
     {
       label: "Draft",
       value: data.draft,
       percentage: getPercentage(data.draft),
-      color: "bg-amber-500",
-      lightColor: "bg-amber-500/20",
-      textColor: "text-amber-400",
+      colorVar: "--warning",
       icon: FileEdit,
     },
   ]
 
   return (
-    <Card className="border-border/50 bg-card">
+    <Card className="rounded-2xl border border-conv-border bg-white shadow-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium text-foreground">Projects by Status</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
+        <CardTitle className="text-base font-semibold text-conv-text-primary">Projects by Status</CardTitle>
+        <CardDescription className="text-sm text-conv-text-secondary">
           {total} total projects
         </CardDescription>
       </CardHeader>
@@ -69,21 +63,24 @@ export function ProjectsByStatus({ data }: ProjectsByStatusProps) {
           <div key={item.label} className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-md ${item.lightColor}`}>
-                  <item.icon className={`h-3.5 w-3.5 ${item.textColor}`} />
+                <div
+                  className="flex h-6 w-6 items-center justify-center rounded-md"
+                  style={{ backgroundColor: `hsla(var(${item.colorVar}), 0.14)` }}
+                >
+                  <item.icon className="h-3.5 w-3.5" style={{ color: `hsl(var(${item.colorVar}))` }} />
                 </div>
-                <span className="text-sm text-foreground">{item.label}</span>
+                <span className="text-sm text-conv-text-primary">{item.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium tabular-nums text-foreground">{item.value}</span>
-                <span className="text-xs text-muted-foreground">({item.percentage}%)</span>
+                <span className="text-sm font-medium tabular-nums text-conv-text-primary">{item.value}</span>
+                <span className="text-xs text-conv-text-muted">({item.percentage}%)</span>
               </div>
             </div>
             {/* Progress bar */}
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-conv-background-alt">
               <div
-                className={`h-full rounded-full ${item.color} transition-all duration-500`}
-                style={{ width: `${item.percentage}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${item.percentage}%`, backgroundColor: `hsl(var(${item.colorVar}))` }}
               />
             </div>
           </div>

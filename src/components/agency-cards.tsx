@@ -35,7 +35,7 @@ export function AgencyCards({ data }: AgencyCardsProps) {
   return (
     <div className="px-4 lg:px-6">
       <div className="mb-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Agency Overview</h3>
+        <h3 className="font-serif text-base font-normal leading-tight tracking-tight text-muted-foreground">Agency Overview</h3>
       </div>
       <div className="grid grid-cols-2 gap-3 @xl/main:grid-cols-4">
         {/* Team Members */}

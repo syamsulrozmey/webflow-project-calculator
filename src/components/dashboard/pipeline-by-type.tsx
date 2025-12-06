@@ -24,22 +24,22 @@ interface PipelineByTypeProps {
 const typeConfig = {
   landingPage: {
     label: "Landing Page",
-    color: "#8b5cf6",
+    color: "hsl(var(--primary))",
     icon: Layout,
   },
   smallBusiness: {
     label: "Small Business",
-    color: "#06b6d4",
+    color: "hsl(var(--primary-hover))",
     icon: Globe,
   },
   ecommerce: {
     label: "Ecommerce",
-    color: "#22c55e",
+    color: "hsl(var(--success))",
     icon: ShoppingCart,
   },
   webApp: {
     label: "Web App",
-    color: "#f59e0b",
+    color: "hsl(var(--warning))",
     icon: Code,
   },
 }
@@ -70,12 +70,12 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
       const item = payload[0].payload
       const percentage = totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0
       return (
-        <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-xl">
-          <p className="text-sm font-medium text-foreground">{item.name}</p>
-          <p className="text-xs text-muted-foreground">
+        <div className="rounded-lg border border-conv-border bg-white px-3 py-2 shadow-card">
+          <p className="text-sm font-medium text-conv-text-primary">{item.name}</p>
+          <p className="text-xs text-conv-text-secondary">
             {formatCurrency(item.value)} ({percentage}%)
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-conv-text-secondary">
             {item.count} project{item.count !== 1 ? "s" : ""}
           </p>
         </div>
@@ -86,15 +86,15 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
 
   if (chartData.length === 0) {
     return (
-      <Card className="border-border/50 bg-card">
+      <Card className="rounded-2xl border border-conv-border bg-white shadow-card">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium text-foreground">Pipeline by Type</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <CardTitle className="text-base font-semibold text-conv-text-primary">Pipeline by Type</CardTitle>
+          <CardDescription className="text-sm text-conv-text-secondary">
             No projects yet
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-[180px] items-center justify-center text-sm text-conv-text-secondary">
             Create your first estimate to see insights
           </div>
         </CardContent>
@@ -103,10 +103,10 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
   }
 
   return (
-    <Card className="border-border/50 bg-card">
+    <Card className="rounded-2xl border border-conv-border bg-white shadow-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium text-foreground">Pipeline by Type</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
+        <CardTitle className="text-base font-semibold text-conv-text-primary">Pipeline by Type</CardTitle>
+        <CardDescription className="text-sm text-conv-text-secondary">
           {formatCurrency(totalValue)} total value
         </CardDescription>
       </CardHeader>
@@ -135,8 +135,8 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
             </ResponsiveContainer>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold text-foreground">{chartData.length}</span>
-              <span className="text-[10px] text-muted-foreground">types</span>
+              <span className="text-lg font-bold text-conv-text-primary">{chartData.length}</span>
+              <span className="text-[10px] text-conv-text-muted">types</span>
             </div>
           </div>
 
@@ -150,15 +150,12 @@ export function PipelineByType({ data }: PipelineByTypeProps) {
               return (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="flex h-6 w-6 items-center justify-center rounded-md"
-                      style={{ backgroundColor: `${item.color}20` }}
-                    >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md border border-conv-border">
                       <Icon className="h-3 w-3" style={{ color: item.color }} />
                     </div>
-                    <span className="text-xs text-foreground">{item.name}</span>
+                    <span className="text-xs text-conv-text-primary">{item.name}</span>
                   </div>
-                  <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                  <span className="text-xs font-medium tabular-nums text-conv-text-muted">
                     {percentage}%
                   </span>
                 </div>

@@ -27,6 +27,7 @@ import { generateBasicPdfReport } from "@/lib/export/basic-pdf";
 import { cn } from "@/lib/utils";
 import { formatFxRelativeTime, useCurrencyRates } from "@/hooks/use-currency-rates";
 import { convertCalculationResult } from "@/lib/currency/convert";
+import { getFeatureTier, isFreeTier, type FeatureTier } from "@/lib/export/feature-tier";
 import {
   BarChart3,
   CheckCircle2,
@@ -62,10 +63,12 @@ export function ResultsExperience({
   result,
   fallbackSource = "demo",
   fallbackCurrency = "usd",
+  planTier,
 }: {
   result: CalculationResult;
   fallbackSource?: "demo" | "questionnaire" | "analysis";
   fallbackCurrency?: SupportedCurrency;
+  planTier?: FeatureTier;
 }) {
   const [baseResult, setBaseResult] = useState<CalculationResult>(result);
   const [resultSource, setResultSource] = useState(fallbackSource);
@@ -89,6 +92,7 @@ export function ResultsExperience({
   const [isShareBarVisible, setIsShareBarVisible] = useState(false);
   const [viewModeToast, setViewModeToast] = useState<string | null>(null);
   const [timelineToast, setTimelineToast] = useState<string | null>(null);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
   const exportStatusTimeout = useRef<number | null>(null);
   const {
     rates: currencyRates,
@@ -360,7 +364,16 @@ export function ResultsExperience({
     };
   }, []);
 
+  const effectiveTier = planTier ?? getFeatureTier();
+  const exportLocked = isFreeTier(effectiveTier);
+
   const handleExportPdf = useCallback(async () => {
+    if (exportLocked) {
+      setExportNotice("Upgrade to Pro to export without watermarks.");
+      scheduleExportStatusReset();
+      return;
+    }
+    setExportNotice(null);
     if (isExporting || typeof window === "undefined") return;
     setIsExporting(true);
     try {
@@ -386,14 +399,23 @@ export function ResultsExperience({
       setIsExporting(false);
       scheduleExportStatusReset();
     }
-  }, [displayResult, displayMeta, margin, resultSource, isExporting, scheduleExportStatusReset]);
+  }, [
+    displayResult,
+    displayMeta,
+    margin,
+    resultSource,
+    isExporting,
+    scheduleExportStatusReset,
+    exportLocked,
+  ]);
 
   const exportButtonLabel = useMemo(() => {
+    if (exportLocked) return "Upgrade to export";
     if (isExporting) return "Generating…";
     if (exportStatus === "success") return "PDF saved";
     if (exportStatus === "error") return "Retry export";
     return "Download PDF";
-  }, [exportStatus, isExporting]);
+  }, [exportStatus, exportLocked, isExporting]);
 
   const exportFeedback =
     exportStatus === "error"
@@ -418,22 +440,22 @@ export function ResultsExperience({
 
   return (
     <div className="space-y-8">
-      <Card ref={heroCardRef} className="border-white/10 bg-white/[0.04]">
+      <Card ref={heroCardRef} className="border-conv-border bg-white shadow-card">
         <CardContent className="space-y-6 pt-6">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-xs text-primary/80">
+                <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
                   Estimate summary
                 </p>
-                <h2 className="text-3xl font-semibold md:text-4xl">
+                <h2 className="font-serif text-3xl font-medium text-conv-text-primary md:text-4xl">
                   {formatMoney(displayResult.totalCost)}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-conv-text-secondary">
                   {hoursFormatter.format(displayResult.totalHours)} hours · Tier{" "}
                   {displayResult.tier.toString().replace(/_/g, " ")}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-conv-text-muted">
                   Pricing currency: {displayCurrency.toUpperCase()}
                   {displayCurrency !== meta.currency ? (
                     <> · Base quote {meta.currency.toUpperCase()}</>
@@ -465,7 +487,7 @@ export function ResultsExperience({
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
-                    className="gap-2 border-white/20 text-sm"
+                    className="gap-2 border-conv-border text-sm"
                     onClick={handleCopyLink}
                   >
                     {copyStatus === "copied" ? (
@@ -481,11 +503,13 @@ export function ResultsExperience({
                     )}
                   </Button>
                   <Button
-                    className="gap-2 bg-primary text-primary-foreground"
-                    onClick={handleExportPdf}
-                    disabled={isExporting}
+                    className="gap-2 bg-conv-primary text-white shadow-button"
+                  onClick={handleExportPdf}
+                  disabled={isExporting || exportLocked}
                   >
-                    {isExporting ? (
+                  {exportLocked ? (
+                    <FileDown className="h-4 w-4" />
+                  ) : isExporting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <FileDown className="h-4 w-4" />
@@ -497,16 +521,19 @@ export function ResultsExperience({
                   <p
                     className={cn(
                       "text-xs",
-                      exportStatus === "error" ? "text-red-400" : "text-emerald-400",
+                      exportStatus === "error" ? "text-conv-error" : "text-conv-success",
                     )}
                   >
                     {exportFeedback}
                   </p>
                 )}
+              {exportNotice && (
+                <p className="text-xs text-conv-warning">{exportNotice}</p>
+              )}
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+            <div className="rounded-3xl border border-conv-border bg-conv-background-alt p-4">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <SegmentedControl
@@ -516,17 +543,17 @@ export function ResultsExperience({
                     onChange={(value) => handleCurrencyChange(value as SupportedCurrency)}
                   />
                   {currencyMetaLabel ? (
-                    <span className="text-[11px] text-muted-foreground">{currencyMetaLabel}</span>
+                    <span className="text-[11px] text-conv-text-muted">{currencyMetaLabel}</span>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground">Live FX — synced moments ago</span>
+                    <span className="text-[11px] text-conv-text-muted">Live FX — synced moments ago</span>
                   )}
                   {hasManualCurrencySelection && (
-                    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-primary">
+                    <span className="rounded-full border border-conv-border px-2 py-0.5 text-[11px] text-conv-primary">
                       Converted from {meta.currency.toUpperCase()}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-conv-text-muted">
                   Switching currency keeps the underlying quote intact and refreshes every line item instantly.
                 </p>
               </div>
@@ -546,12 +573,12 @@ export function ResultsExperience({
               {summaryGroups.map((group) => (
                 <div
                   key={group.id}
-                  className="rounded-3xl border border-white/5 bg-white/[0.015] p-4"
+                  className="rounded-3xl border border-conv-border bg-white p-4 shadow-card"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] uppercase tracking-wide text-primary/70">{group.title}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-conv-primary">{group.title}</p>
                     {group.caption ? (
-                      <p className="text-[11px] text-muted-foreground">{group.caption}</p>
+                      <p className="text-[11px] text-conv-text-muted">{group.caption}</p>
                     ) : null}
                   </div>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -585,7 +612,7 @@ export function ResultsExperience({
             {Object.entries(displayResult.factors).map(([key, factor]) => (
               <span
                 key={key}
-                className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground"
+                className="rounded-full border border-conv-border px-3 py-1 text-conv-text-muted"
               >
                 {key}: {factor.toFixed(2)}x
               </span>
@@ -603,18 +630,18 @@ export function ResultsExperience({
         />
       )}
 
-      <Card className="border-white/10 bg-white/[0.03]">
-        <CardHeader className="flex flex-col gap-3 border-b border-white/5 pb-6">
+      <Card className="border-conv-border bg-white shadow-card">
+        <CardHeader className="flex flex-col gap-3 border-b border-conv-border pb-6">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
+            <BarChart3 className="h-5 w-5 text-conv-primary" />
             <div>
-              <p className="text-xs text-primary/70">
+              <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">
                 Cost breakdown
               </p>
-              <CardTitle>Where the hours go</CardTitle>
+              <CardTitle className="text-conv-text-primary">Where the hours go</CardTitle>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-conv-text-secondary">
             Switch between detailed line items and tiered summary. Expand each section for rationale
             and included tasks.
           </p>
@@ -629,7 +656,7 @@ export function ResultsExperience({
               onChange={(value) => setViewMode(value as ViewMode)}
             />
             {viewModeToast ? (
-              <span className="rounded-full border border-primary/30 px-3 py-0.5 text-[11px] text-primary">
+              <span className="rounded-full border border-conv-primary/30 px-3 py-0.5 text-[11px] text-conv-primary">
                 {viewModeToast}
               </span>
             ) : null}
@@ -651,7 +678,7 @@ export function ResultsExperience({
           </section>
 
           {displayResult.addons.length > 0 && (
-            <section className="space-y-4 border-t border-white/5 pt-6">
+            <section className="space-y-4 border-t border-conv-border pt-6">
               <SectionHeader
                 icon={PlugZap}
                 title="Add-ons & modules"
@@ -661,7 +688,7 @@ export function ResultsExperience({
             </section>
           )}
 
-          <section className="space-y-4 border-t border-white/5 pt-6">
+          <section className="space-y-4 border-t border-conv-border pt-6">
             <SectionHeader
               icon={Clock3}
               title="Timeline"
@@ -678,7 +705,7 @@ export function ResultsExperience({
                 onChange={(value) => setTimelineView(value as TimelineView)}
               />
               {timelineToast ? (
-                <span className="rounded-full border border-primary/30 px-3 py-0.5 text-[11px] text-primary">
+                <span className="rounded-full border border-conv-primary/30 px-3 py-0.5 text-[11px] text-conv-primary">
                   {timelineToast}
                 </span>
               ) : null}
@@ -692,7 +719,7 @@ export function ResultsExperience({
           </section>
 
           {displayMeta.agencyRateSummary && (
-            <section className="space-y-4 border-t border-white/5 pt-6">
+            <section className="space-y-4 border-t border-conv-border pt-6">
               <SectionHeader
                 icon={Users}
                 title="Agency economics"
@@ -706,7 +733,7 @@ export function ResultsExperience({
             </section>
           )}
 
-          <section className="space-y-4 border-t border-white/5 pt-6">
+          <section className="space-y-4 border-t border-conv-border pt-6">
             <SectionHeader
               icon={Sparkles}
               title="Scope notes"
@@ -719,7 +746,7 @@ export function ResultsExperience({
             />
           </section>
 
-          <section className="space-y-4 border-t border-white/5 pt-6">
+          <section className="space-y-4 border-t border-conv-border pt-6">
             <SectionHeader
               icon={Share2}
               title="Share-ready"
@@ -735,7 +762,7 @@ export function ResultsExperience({
         onCopy={handleCopyLink}
         onExport={handleExportPdf}
         exportLabel={exportButtonLabel}
-        isExporting={isExporting}
+        isExporting={isExporting || exportLocked}
       />
     </div>
   );
@@ -764,17 +791,17 @@ function StickyShareBar({
       )}
       aria-hidden={!visible}
     >
-      <div className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs text-white shadow-lg shadow-black/40 backdrop-blur">
-        <span className="text-[11px] uppercase tracking-wide text-white/70">Share this estimate</span>
+      <div className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-full border border-conv-border bg-white px-4 py-2 text-xs shadow-card-elevated backdrop-blur">
+        <span className="text-[11px] uppercase tracking-wide text-conv-text-muted">Share this estimate</span>
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1 text-white hover:text-primary"
+          className="gap-1 text-conv-text-secondary hover:text-conv-primary"
           onClick={onCopy}
         >
           {copyStatus === "copied" ? (
             <>
-              <ClipboardCheck className="h-4 w-4 text-primary" />
+              <ClipboardCheck className="h-4 w-4 text-conv-primary" />
               Copied
             </>
           ) : (
@@ -786,7 +813,7 @@ function StickyShareBar({
         </Button>
         <Button
           size="sm"
-          className="gap-1 bg-primary px-3 text-primary-foreground"
+          className="gap-1 bg-conv-primary px-3 text-white shadow-button"
           onClick={onExport}
           disabled={isExporting}
         >
@@ -809,13 +836,13 @@ function AgencyEconomicsCard({
   const extraCount = summary.teamSnapshot.length - visibleMembers.length;
 
   return (
-    <Card className="border-white/10 bg-white/[0.03]">
+    <Card className="border-conv-border bg-white shadow-card">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Agency economics</CardTitle>
+          <Users className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">Agency economics</CardTitle>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-conv-text-muted">
           Internal blended rate vs client-facing quote and roster snapshot.
         </p>
       </CardHeader>
@@ -833,16 +860,16 @@ function AgencyEconomicsCard({
             helper={`${summary.memberCount} roles`}
           />
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-muted-foreground">Team roster</p>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-4">
+          <p className="text-xs text-conv-text-muted">Team roster</p>
+          <ul className="mt-2 space-y-1 text-sm text-conv-text-secondary">
             {visibleMembers.map((member) => {
               const quotedRate =
                 typeof member.billableRate === "number" ? member.billableRate : member.costRate * 2;
               return (
                 <li key={member.id} className="flex items-center justify-between gap-3">
-                  <span className="text-white">{member.name || member.role}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-conv-text-primary">{member.name || member.role}</span>
+                  <span className="text-xs text-conv-text-muted">
                     {formatCurrency(member.costRate)} → {formatCurrency(quotedRate)}
                   </span>
                 </li>
@@ -850,7 +877,7 @@ function AgencyEconomicsCard({
             })}
           </ul>
           {extraCount > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-conv-text-muted">
               +{extraCount} more role{extraCount > 1 ? "s" : ""} tracked
             </p>
           )}
@@ -870,10 +897,10 @@ function MiniStat({
   helper?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold text-white">{value}</p>
-      {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
+    <div className="rounded-xl border border-conv-border bg-conv-background-alt p-3">
+      <p className="text-[10px] text-conv-text-muted">{label}</p>
+      <p className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">{value}</p>
+      {helper && <p className="text-xs text-conv-text-muted">{helper}</p>}
     </div>
   );
 }
@@ -918,31 +945,31 @@ function ComplexityCard({
   const tier = tierMeta[complexity.tier];
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+    <div className="rounded-2xl border border-conv-border bg-white p-5 shadow-card">
       <div className="flex items-start gap-3">
-        <Layers3 className="h-5 w-5 text-primary" />
+        <Layers3 className="h-5 w-5 text-conv-primary" />
         <div className="flex-1">
-          <p className="flex items-center gap-1 text-xs text-primary/70">
+          <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-conv-primary">
             Complexity tier
             <InfoTooltip text="Point system pulled from questionnaire answers + AI adjustments." />
           </p>
           <div className="mt-1 flex flex-wrap items-baseline gap-3">
-            <p className="text-2xl font-semibold text-white">{tier.label}</p>
-            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-muted-foreground">
+            <p className="text-2xl font-semibold text-conv-text-primary">{tier.label}</p>
+            <span className="rounded-full border border-conv-border px-3 py-1 text-xs text-conv-text-muted">
               {complexity.total} pts
             </span>
-            <span className="text-xs text-muted-foreground">{tier.description}</span>
+            <span className="text-xs text-conv-text-secondary">{tier.description}</span>
           </div>
         </div>
       </div>
-      <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-white">
-        <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-primary/80">
+      <div className="mt-4 rounded-2xl border border-conv-primary/30 bg-conv-primary/5 p-4 text-sm">
+        <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-conv-primary">
           Contingency buffer
           <InfoTooltip text="Hours reserved for revisions + QA. Adjust tier or override margin to change the buffer." />
         </p>
-        <p className="mt-1 text-lg font-semibold">
+        <p className="mt-1 font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">
           {formatMoney(bufferCost)} · {bufferPercent}%{" "}
-          <span className="text-xs font-normal text-white/70">
+          <span className="text-xs font-normal text-conv-text-secondary">
             ({hoursFormatter.format(bufferHours)} hrs earmarked for revisions + QA)
           </span>
         </p>
@@ -951,11 +978,11 @@ function ComplexityCard({
         {complexity.categories.map((category) => (
           <div
             key={category.id}
-            className="rounded-xl border border-white/10 bg-white/[0.01] p-3 text-xs text-muted-foreground"
+            className="rounded-xl border border-conv-border bg-conv-background-alt p-3 text-xs text-conv-text-muted"
           >
-            <div className="flex items-center justify-between text-white">
-              <p className="text-sm font-semibold">{category.label}</p>
-              <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-conv-text-primary">{category.label}</p>
+              <span className="rounded-full border border-conv-border px-2 py-0.5 text-xs text-conv-text-muted">
                 {category.score}/{category.max}
               </span>
             </div>
@@ -976,13 +1003,13 @@ function PaymentMilestonesCard({
 }) {
   const plan = selectPaymentPlan(totalCost);
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="border-conv-border bg-white shadow-card">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <ClipboardCheck className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Payment milestones</CardTitle>
+          <ClipboardCheck className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">Payment milestones</CardTitle>
         </div>
-        <p className="text-xs text-muted-foreground">{plan.narrative}</p>
+        <p className="text-xs text-conv-text-muted">{plan.narrative}</p>
       </CardHeader>
       <CardContent className="pt-0">
         <ul className="space-y-3">
@@ -991,15 +1018,15 @@ function PaymentMilestonesCard({
             return (
               <li
                 key={milestone.id}
-                className="rounded-xl border border-white/10 bg-white/[0.01] px-3 py-2 text-sm text-white"
+                className="rounded-xl border border-conv-border bg-conv-background-alt px-3 py-2 text-sm"
               >
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold">{milestone.label}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-conv-text-primary">{milestone.label}</span>
+                  <span className="text-xs text-conv-text-muted">
                     {formatCurrency(amount)} · {Math.round(milestone.percent * 100)}%
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">{milestone.note}</p>
+                <p className="text-xs text-conv-text-muted">{milestone.note}</p>
               </li>
             );
           })}
@@ -1033,38 +1060,38 @@ function RetainerCard({
   }, packages[0]);
 
   return (
-    <Card className="border-white/10 bg-white/[0.03]">
-      <CardHeader className="gap-2 border-b border-white/5 pb-5">
+    <Card className="border-conv-border bg-white shadow-card">
+      <CardHeader className="gap-2 border-b border-conv-border pb-5">
         <div className="flex items-center gap-2">
-          <Gauge className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Maintenance & retainer outlook</CardTitle>
+          <Gauge className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">Maintenance & retainer outlook</CardTitle>
         </div>
-        <p className="text-xs text-muted-foreground">
-          After launch, here’s what ongoing care looks like based on your {maintenanceScope.replace(/_/g, " ")} scope.
+        <p className="text-xs text-conv-text-secondary">
+          After launch, here's what ongoing care looks like based on your {maintenanceScope.replace(/_/g, " ")} scope.
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-conv-text-muted">
           Benchmarked against the $1k-$5k/month care tiers from the 2025 retainer guide. Use the badge to anchor your default recommendation.
         </p>
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid gap-4 md:grid-cols-3">
           {packages.map((pkg) => (
-            <div key={pkg.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <div key={pkg.id} className="rounded-2xl border border-conv-border bg-conv-background-alt p-4">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-primary/70">{pkg.label}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">{pkg.label}</p>
                 {pkg.id === recommendedPkg.id && (
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                  <span className="rounded-full bg-conv-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-conv-primary">
                     Recommended
                   </span>
                 )}
               </div>
-              <p className="mt-1 text-2xl font-semibold text-white">{formatCurrency(pkg.monthlyFee)}/mo</p>
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-2xl font-semibold text-conv-text-primary">{formatCurrency(pkg.monthlyFee)}/mo</p>
+              <p className="flex items-center gap-1 text-xs text-conv-text-muted">
                 {hoursFormatter.format(pkg.hours)} hrs/mo budget
                 <InfoTooltip text={`Sized for ${scopeHints[maintenanceScope]}. Adjust cadence to change.`} />
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">{pkg.description}</p>
-              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+              <p className="mt-2 text-sm text-conv-text-secondary">{pkg.description}</p>
+              <ul className="mt-3 space-y-1 text-xs text-conv-text-muted">
                 {pkg.notes.map((note) => (
                   <li key={note}>• {note}</li>
                 ))}
@@ -1111,33 +1138,33 @@ function MaintenanceGuidance({
     <div
       className={cn(
         "rounded-2xl border px-5 py-4 transition-colors",
-        maintenanceWarning ? "border-amber-300/70 bg-amber-400/5" : "border-white/10 bg-white/[0.02]",
+        maintenanceWarning ? "border-conv-warning/70 bg-conv-warning/5" : "border-conv-border bg-white shadow-card",
       )}
     >
-      <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <Gauge className="h-4 w-4 text-primary" />
+      <div className="mb-4 flex items-center gap-2 text-xs text-conv-text-muted">
+        <Gauge className="h-4 w-4 text-conv-primary" />
         Maintenance guidance
       </div>
       <div className="flex flex-col gap-4 md:flex-row md:gap-6">
         <div className="flex-1">
-          <p className="text-[11px] text-primary/70">Core maintenance</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-conv-primary">Core maintenance</p>
+          <p className="mt-1 text-sm text-conv-text-secondary">
             {hoursFormatter.format(maintenanceHours)} hrs/mo (~{formatMoney(maintenanceCost)}) · roughly{" "}
             {maintenanceShare}% of total effort. {scopeNarrative[maintenanceScope]}
           </p>
         </div>
         <div className="flex-1">
-          <p className="text-[11px] text-primary/70">Feature iteration</p>
-          <p className="mt-1 text-sm text-muted-foreground">{featureNarrative[maintenanceScope]}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-conv-primary">Feature iteration</p>
+          <p className="mt-1 text-sm text-conv-text-secondary">{featureNarrative[maintenanceScope]}</p>
           {maintenanceWarning && (
-            <p className="mt-2 text-xs text-amber-200">
+            <p className="mt-2 text-xs text-conv-warning">
               Exceeding 25 hrs/mo or 20% of build hours usually signals roadmap work—spin that portion into a
               sprint or mini-project for clarity.
             </p>
           )}
         </div>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-3 text-xs text-conv-text-muted">
         Total hours: {hoursFormatter.format(totalHours)} · Maintenance focus:{" "}
         {maintenanceScope.replace(/_/g, " ")}
       </p>
@@ -1157,13 +1184,13 @@ function SummaryStat({
   tooltip?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4">
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+    <div className="rounded-2xl border border-conv-border bg-conv-background-alt px-4 py-4">
+      <div className="flex items-center gap-1 text-xs text-conv-text-muted">
         <span>{label}</span>
         {tooltip ? <InfoTooltip text={tooltip} /> : null}
       </div>
-      <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
-      {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
+      <p className="mt-1 text-2xl font-semibold text-conv-text-primary">{value}</p>
+      {helper && <p className="text-xs text-conv-text-muted">{helper}</p>}
     </div>
   );
 }
@@ -1171,7 +1198,7 @@ function SummaryStat({
 function InfoTooltip({ text, className }: { text: string; className?: string }) {
   return (
     <span
-      className={cn("ml-1 inline-flex items-center text-muted-foreground/80", className)}
+      className={cn("ml-1 inline-flex items-center text-conv-text-muted", className)}
       title={text}
       aria-label={text}
     >
@@ -1192,7 +1219,7 @@ function SegmentedControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-full border border-white/15 bg-white/[0.03] p-1 text-xs text-muted-foreground">
+    <div className="rounded-full border border-conv-border bg-white p-1 text-xs text-conv-text-secondary">
       <span className="sr-only">{label}</span>
       <div className="flex gap-1">
         {options.map((option) => {
@@ -1203,7 +1230,7 @@ function SegmentedControl({
               type="button"
               className={cn(
                 "rounded-full px-3 py-1 transition",
-                active ? "bg-primary text-primary-foreground" : "hover:text-white",
+                active ? "bg-conv-primary text-white" : "hover:text-conv-text-primary",
               )}
               onClick={() => onChange(option.value)}
             >
@@ -1224,7 +1251,7 @@ function PhaseShareChart({
   totalHours: number;
 }) {
   if (!lineItems.length || totalHours <= 0) return null;
-  const palette = ["bg-primary", "bg-emerald-400", "bg-sky-500", "bg-amber-400", "bg-pink-400", "bg-white/40"];
+  const palette = ["bg-conv-primary", "bg-conv-success", "bg-conv-info", "bg-conv-warning", "bg-conv-pink", "bg-conv-border"];
   const sorted = [...lineItems].sort((a, b) => b.hours - a.hours);
   const top = sorted.slice(0, 5);
   const used = top.reduce((sum, item) => sum + item.hours, 0);
@@ -1246,15 +1273,15 @@ function PhaseShareChart({
   }));
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+    <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-4">
       <div className="flex items-center gap-2">
-        <PieChart className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold text-white">Phase share preview</p>
+        <PieChart className="h-4 w-4 text-conv-primary" />
+        <p className="text-sm font-semibold text-conv-text-primary">Phase share preview</p>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-conv-text-muted">
         Snapshot of where production hours concentrate. Expand below for detailed rationale.
       </p>
-      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-white/5">
+      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-conv-border">
         <div className="flex h-full w-full">
           {segments.map((segment) => (
             <span
@@ -1265,12 +1292,12 @@ function PhaseShareChart({
           ))}
         </div>
       </div>
-      <ul className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+      <ul className="mt-3 grid gap-2 text-xs text-conv-text-muted sm:grid-cols-2">
         {segments.map((segment) => (
           <li key={segment.id} className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">
               <span className={cn("h-2 w-2 rounded-full", segment.color)} />
-              <span className="text-white">{segment.label}</span>
+              <span className="text-conv-text-primary">{segment.label}</span>
             </span>
             <span>{segment.percent.toFixed(1)}%</span>
           </li>
@@ -1303,7 +1330,7 @@ function DetailedBreakdown({
         return (
           <div
             key={item.id}
-            className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3"
+            className="rounded-2xl border border-conv-border bg-white px-4 py-3 shadow-card"
           >
             <button
               type="button"
@@ -1311,29 +1338,29 @@ function DetailedBreakdown({
               onClick={() => onToggle(item.id)}
             >
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-conv-text-primary">
                   {item.label}
                   {item.kind && item.kind !== "phase" && (
-                    <span className="ml-2 rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="ml-2 rounded-full border border-conv-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-conv-text-muted">
                       {item.kind === "timeline" ? "Timeline" : "Add-on"}
                     </span>
                   )}
                   {" "}
                   <InfoTooltip text={item.description} />
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-conv-text-muted">
                   {hoursFormatter.format(item.hours)} hrs · {formatCurrency(item.cost)}
                 </p>
               </div>
               {isOpen ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                <ChevronUp className="h-4 w-4 text-conv-text-muted" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 text-conv-text-muted" />
               )}
             </button>
-            <p className="mt-1 text-[11px] text-muted-foreground/80 line-clamp-2">{preview}</p>
+            <p className="mt-1 text-[11px] text-conv-text-muted line-clamp-2">{preview}</p>
             {isOpen && (
-              <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-muted-foreground">
+              <div className="mt-3 rounded-xl border border-conv-border bg-conv-background-alt px-3 py-2 text-sm text-conv-text-secondary">
                 {bullets.length > 1 ? (
                   <ul className="list-disc space-y-1 pl-4">
                     {bullets.slice(0, 3).map((point) => (
@@ -1380,21 +1407,21 @@ function AddonGrid({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {Object.entries(grouped).map(([category, items]) => (
-        <div key={category} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-primary/70">{categoryLabels[category] ?? "Additional scope"}</p>
+        <div key={category} className="rounded-2xl border border-conv-border bg-white p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">{categoryLabels[category] ?? "Additional scope"}</p>
           <div className="mt-3 space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-white/10 bg-white/[0.01] p-3 text-sm text-white"
+                className="rounded-xl border border-conv-border bg-conv-background-alt p-3 text-sm"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">{item.label}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-conv-text-primary">{item.label}</span>
+                  <span className="text-xs text-conv-text-muted">
                     {formatCurrency(item.cost)} · {hoursFormatter.format(item.hours)} hrs
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                <p className="mt-1 text-xs text-conv-text-muted">{item.description}</p>
               </div>
             ))}
           </div>
@@ -1422,15 +1449,15 @@ function TierView({
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {tiers.map((tier) => (
-        <div key={tier.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-primary/70">{tier.priceHint}</p>
-          <p className="text-lg font-semibold text-white">{tier.label}</p>
-          <p className="text-2xl font-semibold text-white">{formatCurrency(tier.cost)}</p>
-          <p className="text-xs text-muted-foreground">
+        <div key={tier.id} className="rounded-2xl border border-conv-border bg-white p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-wider text-conv-primary">{tier.priceHint}</p>
+          <p className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">{tier.label}</p>
+          <p className="text-2xl font-semibold text-conv-text-primary">{formatCurrency(tier.cost)}</p>
+          <p className="text-xs text-conv-text-muted">
             {hoursFormatter.format(tier.hours)} hrs (incl. maintenance)
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">{tier.description}</p>
-          <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+          <p className="mt-2 text-sm text-conv-text-secondary">{tier.description}</p>
+          <ul className="mt-3 space-y-1 text-xs text-conv-text-muted">
             {tier.features.map((feature) => (
               <li key={feature}>• {feature}</li>
             ))}
@@ -1452,10 +1479,10 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <Icon className="mt-1 h-4 w-4 text-primary" />
+      <Icon className="mt-1 h-4 w-4 text-conv-primary" />
       <div>
-        <p className="text-base font-semibold text-white">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-base font-semibold text-conv-text-primary">{title}</p>
+        <p className="text-xs text-conv-text-muted">{description}</p>
       </div>
     </div>
   );
@@ -1473,13 +1500,13 @@ function TimelineCard({
   formatCurrency: (value: number) => string;
 }) {
   return (
-    <Card className="border-white/10 bg-white/[0.03]">
+    <Card className="border-conv-border bg-white shadow-card">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Clock3 className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Timeline</CardTitle>
+          <Clock3 className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">Timeline</CardTitle>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-conv-text-muted">
           Sequenced estimate including QA & launch buffer.
         </p>
       </CardHeader>
@@ -1493,13 +1520,13 @@ function TimelineCard({
               const width = item.hours / totalHours;
               return (
                 <div key={item.id} className="text-sm">
-                  <p className="flex items-center justify-between text-xs text-muted-foreground">
+                  <p className="flex items-center justify-between text-xs text-conv-text-muted">
                     <span>{item.label}</span>
                     <span>{hoursFormatter.format(item.hours)} hrs</span>
                   </p>
-                  <div className="relative h-3 rounded-full bg-white/10">
+                  <div className="relative h-3 rounded-full bg-conv-border">
                     <div
-                      className="absolute h-3 rounded-full bg-primary"
+                      className="absolute h-3 rounded-full bg-conv-primary"
                       style={{
                         left: `${start * 100}%`,
                         width: `${Math.max(width * 100, 8)}%`,
@@ -1511,12 +1538,12 @@ function TimelineCard({
             })}
           </div>
         ) : (
-          <ul className="space-y-3 text-sm text-muted-foreground">
+          <ul className="space-y-3 text-sm text-conv-text-secondary">
             {lineItems.map((item) => (
               <li key={item.id} className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-conv-primary" />
                 <div>
-                  <p className="text-white">{item.label}</p>
+                  <p className="text-conv-text-primary">{item.label}</p>
                 <p className="text-xs">
                   {hoursFormatter.format(item.hours)} hrs · {formatCurrency(item.cost)}
                 </p>
@@ -1548,23 +1575,23 @@ function InsightCard({
     ];
 
   return (
-    <Card className={cn("border-primary/20 bg-primary/5", className)}>
+    <Card className={cn("border-conv-primary/20 bg-conv-primary/5", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Scope notes</CardTitle>
+          <Sparkles className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">Scope notes</CardTitle>
         </div>
-        <p className="text-xs text-primary/80">
+        <p className="text-xs text-conv-primary">
           {source === "demo"
             ? "Sample data (run a calculation to personalize)"
             : "Captured during questionnaire + AI insight"}
         </p>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-2 text-sm text-white">
+        <div className="space-y-2 text-sm text-conv-text-primary">
           {highlights.map((item) => (
-            <div key={item} className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/10 p-3">
-              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
+            <div key={item} className="flex items-start gap-2 rounded-xl border border-conv-primary/20 bg-conv-primary/10 p-3">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-conv-primary" />
               <span>{item}</span>
             </div>
           ))}
@@ -1572,8 +1599,8 @@ function InsightCard({
       </CardContent>
       {result.ai?.risks && result.ai.risks.length > 0 && (
         <CardFooter className="pt-2">
-          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/90">
-            <p className="font-semibold">Risks to monitor:</p>
+          <div className="rounded-xl border border-conv-border bg-conv-background-alt px-3 py-2 text-xs text-conv-text-secondary">
+            <p className="font-semibold text-conv-text-primary">Risks to monitor:</p>
             <ul className="mt-1 list-disc space-y-1 pl-4">
               {result.ai.risks.map((risk) => (
                 <li key={risk}>{risk}</li>
@@ -1588,16 +1615,16 @@ function InsightCard({
 
 function ShareNote({ className }: { className?: string }) {
   return (
-    <Card className={cn("border-white/10 bg-white/[0.02]", className)}>
+    <Card className={cn("border-conv-border bg-white shadow-card", className)}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Share-ready</CardTitle>
-        <p className="text-xs text-muted-foreground">
+        <CardTitle className="text-base text-conv-text-primary">Share-ready</CardTitle>
+        <p className="text-xs text-conv-text-muted">
           Copy the public link or export a PDF whenever you are ready to share with stakeholders.
         </p>
       </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground">
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.01] p-4">
-          <p className="text-xs text-muted-foreground">Next steps</p>
+      <CardContent className="pt-0 text-sm text-conv-text-secondary">
+        <div className="rounded-2xl border border-dashed border-conv-border bg-conv-background-alt p-4">
+          <p className="text-xs text-conv-text-muted">Next steps</p>
           <ul className="mt-2 space-y-1">
             <li>• Copy link for async reviews</li>
             <li>• Export PDF (watermark removed on Pro)</li>
@@ -1637,11 +1664,11 @@ function MarginControl({
   const body = (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-primary/80">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-conv-primary">
           Margin override
           <InfoTooltip text="Slides between 5%-60%. Use to pressure-test markup or concessions." />
         </div>
-        <span className="rounded-full border border-white/15 px-3 py-0.5 text-xs text-white">
+        <span className="rounded-full border border-conv-border px-3 py-0.5 text-xs text-conv-text-primary">
           {percentage}%
         </span>
       </div>
@@ -1653,12 +1680,12 @@ function MarginControl({
         value={margin}
         aria-label="Adjust profit margin"
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-primary"
+        className="w-full accent-conv-primary"
       />
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-conv-text-muted">
         New total: {currencyFormatter(totalCost)} (updates summary + line items)
       </p>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[11px] text-conv-text-muted">
         {diffLabel}. Every 5 pts shifts the quote by roughly {fivePointShift}. Use it to negotiate scope vs. profit.
       </p>
     </div>
@@ -1666,13 +1693,13 @@ function MarginControl({
 
   if (variant === "card") {
     return (
-      <Card className="border-white/10 bg-white/[0.02]">
+      <Card className="border-conv-border bg-white shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base">Adjust profit margin</CardTitle>
+            <BarChart3 className="h-4 w-4 text-conv-primary" />
+            <CardTitle className="text-base text-conv-text-primary">Adjust profit margin</CardTitle>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-conv-text-muted">
             Fine-tune markup without re-running the calculation engine.
           </p>
         </CardHeader>
@@ -1682,7 +1709,7 @@ function MarginControl({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-4">
+    <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-4">
       {body}
     </div>
   );

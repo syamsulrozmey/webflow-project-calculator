@@ -275,7 +275,7 @@ export function HeroSection() {
                       <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-conv-text-primary text-white mb-5 shadow-lg transform transition-transform group-hover:scale-110 duration-500">
                         <Calculator className="h-7 w-7" />
                       </div>
-                      <h3 className="text-xl font-semibold text-conv-text-primary mb-1">Webflow Project Estimate</h3>
+                      <h3 className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary mb-1">Webflow Project Estimate</h3>
                       <p className="text-sm text-conv-text-secondary mb-8">Generated for {options[activeOption].label}</p>
                    </div>
 

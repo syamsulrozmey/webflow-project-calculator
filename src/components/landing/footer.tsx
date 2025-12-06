@@ -74,7 +74,7 @@ export function LandingFooter() {
           {/* Link Columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category} className="space-y-5">
-              <h4 className="font-semibold text-conv-text-primary text-sm uppercase tracking-wider">{category}</h4>
+              <h4 className="font-serif text-base font-normal leading-tight tracking-tight text-conv-text-primary">{category}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>

@@ -1,6 +1,6 @@
 # Webflow Project Calculator — Design System
 
-A comprehensive style guide to ensure visual consistency across the application.
+Updated to mirror the live landing page styling (FlowScope) built on Next.js 16 + Tailwind + shadcn/ui.
 
 ---
 
@@ -21,771 +21,306 @@ A comprehensive style guide to ensure visual consistency across the application.
 
 ## Design Philosophy
 
-The Webflow Project Calculator follows a **theme-adaptive, professional SaaS aesthetic** with:
+Light-first, editorial SaaS aesthetic that blends a calm teal palette with crisp whites and generous breathing room.
 
-- **Semantic color tokens** that adapt to light and dark themes automatically
-- **Clean, readable surfaces** that work in any lighting condition
-- **Vibrant accent colors** that command attention without overwhelming
-- **Generous whitespace** for readability and sophisticated feel
-- **Layered depth** through subtle backgrounds and borders
+- **Editorial headlines + neutral body**: Serif for hero/section titles, Inter for everything else.
+- **Pill CTAs + soft cards**: Rounded-full buttons with teal fills; white cards with thin borders and soft shadows.
+- **Layered light surfaces**: Off-white backgrounds, mint/sage section bands, subtle noise and dotted patterns.
+- **Clarity first**: High-contrast text, restrained accent usage, predictable spacing.
+- **Motion with purpose**: Fade-in-up entrances, gentle parallax/flow lines, micro-lifts on hover.
 
 ### Core Principles
 
-1. **Clarity over decoration** — Every element serves a purpose
-2. **Hierarchy through contrast** — Use color intensity and size to guide the eye
-3. **Consistent rhythm** — Predictable spacing creates trust
-4. **Progressive disclosure** — Show complexity only when needed
-5. **Theme adaptability** — Use semantic tokens, not hardcoded colors
+1. **Explainer-first** — copy must be readable before any flourish.  
+2. **Hierarchy via typography** — serif display for hero/section titles, sans for body and UI.  
+3. **Tactile feedback** — hover lifts, flow animations, and dashed connectors guide attention.  
+4. **Semantic tokens** — never hardcode colors; rely on tokens and Tailwind extensions.  
+5. **Accessible contrast** — keep text on white/off-white at AA or better; avoid low-contrast grays.
 
 ---
 
 ## Color System
 
-### CSS Variables (HSL Format)
-
-All colors use HSL format with CSS custom properties for automatic theming.
+### CSS Variables (HSL) — defined in `globals.css`
 
 ```css
 :root {
   /* Base surfaces */
-  --background: 0 0% 100%;            /* White background */
-  --foreground: 222.2 84% 4.9%;       /* Near black text */
-  
-  /* Muted/Secondary */
-  --muted: 210 40% 96.1%;             /* Light gray surface */
-  --muted-foreground: 215.4 16.3% 46.9%; /* Secondary text */
-  
-  /* Primary (Violet) */
-  --primary: 253 95% 68%;             /* Vibrant violet */
-  --primary-foreground: 210 40% 98%;  /* White text on primary */
-  
-  /* Accent */
-  --accent: 210 40% 96.1%;            /* Subtle accent surface */
-  --accent-foreground: 222.2 47.4% 11.2%;
-  
-  /* Secondary surfaces */
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  
-  /* Feedback states */
-  --destructive: 0 84.2% 60.2%;       /* Error red */
-  --destructive-foreground: 210 40% 98%;
-  
-  /* UI elements */
-  --border: 214.3 31.8% 91.4%;        /* Light border */
-  --input: 214.3 31.8% 91.4%;
-  --ring: 249 95% 63%;                /* Focus ring */
-  
-  /* Cards & Popovers */
+  --background: 0 0% 97%;         /* #F8F8F8 */
+  --background-alt: 0 0% 94%;     /* #F0F0F0 */
+  --foreground: 0 0% 10%;         /* #1A1A1A */
+
+  /* Muted */
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;   /* #666666 */
+
+  /* Surfaces */
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 0 0% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  
-  /* Border radius base */
+  --popover-foreground: 0 0% 10%;
+
+  /* Borders & inputs */
+  --border: 0 0% 90%;             /* #E5E5E5 */
+  --input: 0 0% 90%;
+
+  /* Primary (teal) */
+  --primary: 181 41% 39%;         /* #3A8B8C */
+  --primary-hover: 181 43% 31%;   /* #2D7374 */
+  --primary-foreground: 0 0% 100%;
+
+  /* Accent */
+  --accent: 181 41% 39%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Section backgrounds */
+  --section-feature: 168 33% 93%;     /* #E8F5F5 */
+  --section-alt: 150 20% 93%;         /* #E5F0E8 */
+  --section-announcement: 0 0% 18%;   /* #2D2D2D */
+
+  /* Feedback */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --warning: 38 92% 50%;
+
+  --ring: 181 41% 39%;
   --radius: 0.75rem;
 }
 
-/* Dark mode variant (optional) */
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 22.1% 65.1%;
-  --border: 217.2 32.6% 17.5%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
+  --background: 0 0% 10%;
+  --foreground: 0 0% 97%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 60%;
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 97%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 97%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --primary: 181 41% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 97%;
+  --accent: 181 41% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 181 41% 45%;
 }
 ```
 
-### Brand Colors (Tailwind)
+### Tailwind palette extensions (`tailwind.config.ts`)
 
-```typescript
-// tailwind.config.ts
+```ts
 colors: {
-  brand: {
-    DEFAULT: '#6E49FF',  // Primary violet
-    dark: '#4D2ED6',     // Darker shade for hover/active
-    light: '#A794FF'     // Lighter shade for accents
+  conv: {
+    primary: "#3A8B8C",
+    "primary-hover": "#2D7374",
+    "primary-active": "#246263",
+    "primary-light": "rgba(58, 139, 140, 0.1)",
+    white: "#FFFFFF",
+    background: "#F8F8F8",
+    "background-alt": "#F0F0F0",
+    surface: "#FFFFFF",
+    "text-primary": "#1A1A1A",
+    "text-secondary": "#666666",
+    "text-muted": "#999999",
+    border: "#E5E5E5",
+    "border-light": "#EEEEEE",
+    "section-mint": "#E8F5F5",
+    "section-sage": "#E5F0E8",
+    "section-announcement": "#2D2D2D",
+    success: "#22C55E",
+    warning: "#F59E0B",
+    error: "#EF4444",
+    info: "#3B82F6",
+    purple: "#8B5CF6",
+    teal: "#14B8A6",
+    orange: "#F97316",
+    pink: "#EC4899",
   }
 }
 ```
 
-### Semantic Color Usage Guidelines
+### Semantic usage (landing)
 
-**IMPORTANT:** Always use semantic color tokens instead of hardcoded colors like `text-white` or `text-black`.
-
-| Use Case | Semantic Class | ❌ Avoid |
-|----------|---------------|----------|
-| Primary text | `text-foreground` | `text-white`, `text-black` |
-| Secondary text | `text-muted-foreground` | `text-gray-500` |
-| Page background | `bg-background` | `bg-white`, `bg-black` |
-| Card background | `bg-card` | `bg-white/[0.02]` |
-| Card borders | `border-border` or `border-border/50` | `border-white/10` |
-| Input background | `bg-background` | `bg-transparent` |
-| Hover surfaces | `bg-accent` or `bg-accent/50` | `bg-white/[0.04]` |
-| Muted backgrounds | `bg-muted` | `bg-white/5` |
-| Primary actions | `bg-primary text-primary-foreground` | - |
-| Accent highlights | `text-primary` | - |
-| Error states | `text-destructive` | `text-red-500` |
-| Success states | `text-emerald-500` or `text-emerald-600` | `text-emerald-400` |
-| Warning states | `text-amber-500` or `text-amber-600` | `text-amber-300` |
-
-### Status Badge Colors (Light-Theme Friendly)
-
-```tsx
-// Status badges that work on light backgrounds
-const statusColors = {
-  draft: "border-amber-500/50 bg-amber-500/10 text-amber-600",
-  in_progress: "border-blue-500/50 bg-blue-500/10 text-blue-600",
-  completed: "border-emerald-500/50 bg-emerald-500/10 text-emerald-600",
-}
-```
-
-### Accent Icon Colors
-
-Use the `-500` variants for icons on light backgrounds:
-
-```tsx
-// ✅ Good - works on light backgrounds
-<FolderKanban className="h-5 w-5 text-blue-500" />
-<DollarSign className="h-5 w-5 text-emerald-500" />
-<TrendingUp className="h-5 w-5 text-amber-500" />
-
-// ❌ Avoid - hard to see on light backgrounds
-<FolderKanban className="h-5 w-5 text-blue-400" />
-```
+| Use case | Classes | Notes |
+| --- | --- | --- |
+| Base page | `bg-conv-background text-conv-text-primary` | Light neutral canvas |
+| Section bands | `bg-conv-section-mint`, `bg-conv-section-sage` | Alternating rows |
+| Announcement bar | `bg-conv-section-announcement text-white/90` | Full-width pill links |
+| Cards | `bg-white border border-conv-border shadow-card` | Keep text `text-conv-text-primary` |
+| Muted text | `text-conv-text-secondary`, `text-conv-text-muted` | Secondary/labels |
+| Primary CTA | `bg-conv-primary text-white hover:bg-conv-primary-hover shadow-button` | Rounded-full |
+| Outline CTA | `border-conv-border text-conv-text-primary hover:bg-white` | Rounded-full |
+| Chips/pills | `rounded-full bg-conv-primary/10 text-conv-primary` | Use for badges/filters |
+| Dividers | `border-conv-border` and `border-conv-border-light` | Keep subtle |
 
 ---
 
 ## Typography
 
-### Font Stack
+### Font stack
 
-```typescript
-// layout.tsx
-import { Geist, Geist_Mono } from "next/font/google";
+- **Serif display**: `Playfair Display` for hero/section titles (`font-serif`).  
+- **Sans body/UI**: `Inter` + Geist Sans (`font-sans`).  
+- **Mono**: Geist Mono for code/tabular (`font-mono`).
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+### Type scale (landing)
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-```
+| Element | Class | Notes |
+| --- | --- | --- |
+| Hero headline | `font-serif text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight leading-[1.1]` | Two-line, center |
+| Section title | `font-serif text-4xl md:text-5xl font-normal tracking-tight leading-tight` | Left-aligned |
+| Card title | `text-xl font-semibold text-conv-text-primary` | Inside cards |
+| Body copy | `text-base md:text-lg text-conv-text-secondary leading-relaxed` | Max width ~64ch |
+| Helper/kicker | `text-xs font-semibold uppercase tracking-wider text-conv-text-muted` | Labels above cards |
+| Micro labels | `text-[9px] uppercase tracking-wider text-conv-text-muted` | Small pill labels |
+| Stat/price | `font-serif text-5xl lg:text-6xl font-medium text-conv-text-primary` | Centered |
 
-```typescript
-// tailwind.config.ts
-fontFamily: {
-  sans: ['var(--font-geist-sans)', 'Inter', 'system-ui', 'sans-serif'],
-  mono: ['var(--font-geist-mono)', 'SFMono-Regular', 'monospace']
-}
-```
-
-### Type Scale
-
-| Element | Size | Weight | Class |
-|---------|------|--------|-------|
-| Hero headline | 4xl-5xl | Semibold (600) | `text-4xl md:text-5xl font-semibold` |
-| Section title | 2xl | Semibold (600) | `text-2xl font-semibold` |
-| Card title | lg-xl | Semibold (600) | `text-lg font-semibold` |
-| Body text | base (16px) | Normal (400) | `text-base` |
-| Secondary text | sm (14px) | Normal (400) | `text-sm text-muted-foreground` |
-| Labels/Kickers | xs (12px) | Normal (400) | `text-xs text-primary/70` |
-| Micro labels | 10-11px | Normal (400) | `text-[10px]` or `text-[11px]` |
-| Monospace | sm | Normal (400) | `font-mono text-sm` |
-
-### Text Styles
-
-```tsx
-// Kicker (small label above headlines)
-<p className="text-xs text-primary/70">
-  Kicker text
-</p>
-
-// Primary headline
-<h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground md:text-5xl">
-  Main Headline
-</h1>
-
-// Section title
-<h2 className="text-2xl font-semibold leading-none tracking-tight text-foreground">
-  Section Title
-</h2>
-
-// Card title
-<h3 className="text-lg font-semibold text-foreground">
-  Card Title
-</h3>
-
-// Body paragraph
-<p className="text-base text-muted-foreground">
-  Body text goes here...
-</p>
-
-// Helper/Caption text
-<p className="text-xs text-muted-foreground">
-  Helper or caption text
-</p>
-
-// Highlighted inline text
-<span className="text-foreground font-medium">highlighted text</span>
-```
+**Spacing with type**: Use `mb-8` under hero titles, `mb-6` for section copy, `gap-2` inside CTAs.
 
 ---
 
 ## Spacing & Layout
 
-### Spacing Scale
+- **Base unit**: Tailwind 4px scale.  
+- **Section padding**: `py-20 lg:py-28` hero, `py-24` for feature/workflow, `py-16` for testimonials/pricing.  
+- **Container width**: `max-w-[90rem]` with `px-6 md:px-10 lg:px-16`.  
+- **Bento hero grid**: `grid grid-cols-1 lg:grid-cols-12 gap-5` with 3/6/3 split.  
+- **Card padding**: `p-4` small cards, `p-6`–`p-8` standard, `p-12` feature showcase.  
+- **Gaps**: `gap-4` for controls, `gap-5` for card columns, `gap-8-12` for section headers.
 
-Use Tailwind's default spacing scale (4px base unit):
-
-| Token | Value | Use Case |
-|-------|-------|----------|
-| `1` | 4px | Tight gaps (icons in buttons) |
-| `1.5` | 6px | Dense list items |
-| `2` | 8px | Small gaps, pill padding |
-| `3` | 12px | Standard gap between related items |
-| `4` | 16px | Card padding (tight), section gaps |
-| `5` | 20px | Card padding (standard) |
-| `6` | 24px | Card content padding, section spacing |
-| `8` | 32px | Large section gaps |
-| `10` | 40px | Major section spacing |
-| `16` | 64px | Page section margins |
-| `20` | 80px | Hero padding |
-
-### Container Widths
-
-```tsx
-// Max-width container
-<div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
-  {/* Content */}
-</div>
-
-// Full-width with padding
-<div className="w-full px-4 md:px-6">
-  {/* Content */}
-</div>
-```
-
-### Grid Patterns
-
-```tsx
-// Two-column with sidebar (common layout)
-<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-  <main>{/* Main content */}</main>
-  <aside>{/* Sidebar */}</aside>
-</div>
-
-// Responsive card grid
-<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-  {/* Cards */}
-</div>
-
-// Dashboard stat grid
-<div className="grid gap-4 lg:grid-cols-3">
-  {/* Stat cards */}
-</div>
-```
+Use alternating section backgrounds (`bg-conv-section-mint` / `bg-conv-section-sage`) to break long pages.
 
 ---
 
 ## Border Radius
 
-### Scale
+- **Base**: `--radius: 12px` (0.75rem).  
+- **Hero/outer cards**: `rounded-3xl` (24px).  
+- **Standard cards**: `rounded-2xl` (20px) or `rounded-xl` (16px).  
+- **CTAs & badges**: `rounded-full`.  
+- **Icon holders**: `rounded-lg` or `rounded-xl`.  
+- **Inputs**: `rounded-lg` (8–12px).
 
-```typescript
-// tailwind.config.ts
-borderRadius: {
-  xl: 'calc(var(--radius) + 4px)',  // 16px - Large containers, hero cards
-  lg: 'var(--radius)',               // 12px - Standard cards
-  md: 'calc(var(--radius) - 2px)',   // 10px - Inner sections
-  sm: 'calc(var(--radius) - 4px)',   // 8px - Small elements
-  // Plus Tailwind defaults: full, 2xl, 3xl
-}
-```
-
-### Usage Guidelines
-
-| Element | Radius | Class |
-|---------|--------|-------|
-| Hero containers | 24px | `rounded-3xl` |
-| Cards | 16px | `rounded-xl` or `rounded-2xl` |
-| Buttons | varies | `rounded-md` (standard), `rounded-full` (pills) |
-| Input fields | 12px | `rounded-lg` or `rounded-xl` |
-| Badges/Pills | full | `rounded-full` |
-| Internal panels | 12-16px | `rounded-xl` to `rounded-2xl` |
-| Progress bars | full | `rounded-full` |
-| Tooltips | 12px | `rounded-xl` |
+Stay consistent: hero CTAs and announcement pills are always `rounded-full`; card corners never square.
 
 ---
 
 ## Shadows & Depth
 
-### Shadow Usage
+- **Buttons**: `shadow-button` (0 2px 8px rgba(58,139,140,0.25)), `hover:shadow-button-hover`.  
+- **Cards**: `shadow-card` default, `hover:shadow-card-hover` for lift; keep borders visible (`border-conv-border`).  
+- **Elevated overlays**: `shadow-card-elevated` for modals/popovers.  
+- **Charts/spotlights**: Layer noise + gradient overlays instead of heavy shadows.
 
-```tsx
-// Standard card (light theme - minimal shadow)
-<Card className="border-border/50 bg-card">
-  {/* Content */}
-</Card>
-
-// Elevated card with shadow
-<Card className="border-border/50 bg-card shadow-sm">
-  {/* Content */}
-</Card>
-
-// Floating elements (dialogs, popovers)
-<div className="shadow-lg">
-  {/* Content */}
-</div>
-```
-
-### Depth Hierarchy (Light Theme)
-
-| Level | Use Case | Classes |
-|-------|----------|---------|
-| 0 | Base page | `bg-background` |
-| 1 | Card surface | `bg-card border border-border/50` |
-| 2 | Nested section | `bg-background border border-border/30` |
-| 3 | Highlighted area | `bg-primary/5 border border-primary/20` |
-| 4 | Floating UI | `bg-popover shadow-lg border border-border` |
+Depth hierarchy: base background → section band → card with border → elevated card with shadow → floating tooltip/popover.
 
 ---
 
 ## Components
 
-### Button Variants
+### Buttons (landing defaults)
 
-```tsx
-// Primary (default) - Main CTAs
-<Button>Primary Action</Button>
-// Classes: bg-primary text-primary-foreground hover:bg-primary/90
+- **Primary CTA**: `rounded-full bg-conv-primary text-white px-8 h-14 text-base font-medium hover:bg-conv-primary-hover shadow-button hover:shadow-button-hover hover:-translate-y-0.5 transition-all`.  
+- **Outline CTA**: `rounded-full border-conv-border px-8 h-14 text-base font-medium text-conv-text-primary hover:bg-white hover:border-conv-text-muted`.  
+- **Ghost link**: `text-sm font-medium text-conv-text-secondary hover:text-conv-text-primary hover:bg-transparent`.
 
-// Secondary - Secondary actions
-<Button variant="secondary">Secondary</Button>
-// Classes: bg-secondary text-secondary-foreground hover:bg-secondary/80
+### Cards
 
-// Outline - Bordered buttons
-<Button variant="outline">Outline</Button>
-// Classes: border border-input bg-background hover:bg-accent
+- **Base**: `bg-white border border-conv-border rounded-2xl shadow-card`.  
+- **Hover**: add `hover:shadow-card-hover hover:-translate-y-1`.  
+- **Status bars**: use `border-b border-conv-border-light bg-white` for card headers.
 
-// Ghost - Minimal presence
-<Button variant="ghost">Ghost</Button>
-// Classes: hover:bg-accent hover:text-accent-foreground
+### Pills & badges
 
-// Destructive - Dangerous actions
-<Button variant="destructive">Delete</Button>
-// Classes: bg-destructive text-destructive-foreground
-```
+- **Feature badge**: `inline-flex items-center gap-2 rounded-full bg-conv-primary/10 px-4 py-2 text-sm font-medium text-conv-primary`.  
+- **Micro pill**: `text-[10px] bg-conv-background px-1.5 py-0.5 rounded text-conv-text-muted`.
 
-### Card Component
+### Inputs (combined style)
 
-```tsx
-// Standard card (theme-adaptive)
-<Card className="border-border/50 bg-card">
-  <CardHeader className="pb-3">
-    <CardTitle className="text-base font-medium text-foreground">
-      Card Title
-    </CardTitle>
-    <CardDescription className="text-sm text-muted-foreground">
-      Optional description
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {/* Content */}
-  </CardContent>
-</Card>
+- `flex items-center rounded-full border border-[#E5E5E5] bg-white pr-1 pl-6 transition focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(58,139,140,0.15)]`.
 
-// Card with hover state
-<Card className="border-border/50 bg-card transition-colors hover:bg-accent/50">
-  {/* Content */}
-</Card>
-```
+### Feature/workflow tiles
 
-### Metric/Stat Card
+- Icon holders: `h-12 w-12 rounded-xl bg-conv-section-mint text-conv-primary group-hover:bg-conv-primary group-hover:text-white`.  
+- Step nodes: `border-2 border-conv-primary rounded-2xl bg-white shadow-lg` with flow lines using `animate-flow-horiz/vert`.
 
-```tsx
-<Card className="border-border/50 bg-card transition-colors hover:bg-accent/50">
-  <CardHeader className="p-5">
-    <div className="flex items-start justify-between">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20">
-        <FolderKanban className="h-5 w-5 text-blue-500" />
-      </div>
-    </div>
-    <div className="mt-4 space-y-1">
-      <CardTitle className="text-3xl font-bold tabular-nums text-foreground">
-        {value}
-      </CardTitle>
-      <CardDescription className="text-sm text-muted-foreground">
-        {label}
-      </CardDescription>
-    </div>
-    <p className="mt-2 text-xs text-muted-foreground">
-      {subtext}
-    </p>
-  </CardHeader>
-</Card>
-```
+### Pricing cards
 
-### List Item Card
+- Use white cards with `rounded-2xl border-conv-border shadow-card`, list items with check icons in `text-conv-primary`, CTA buttons rounded-full.
 
-```tsx
-<div className="group flex items-center justify-between rounded-xl border border-border/30 bg-background p-4 transition-all hover:border-border hover:bg-accent/50">
-  <div className="flex items-center gap-4">
-    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-      <Icon className="h-4 w-4" />
-    </div>
-    <div>
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-foreground">{title}</span>
-        <Badge variant="outline" className="text-[10px] border-blue-500/50 bg-blue-500/10 text-blue-600">
-          Status
-        </Badge>
-      </div>
-      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{detail1}</span>
-        <span>•</span>
-        <span>{detail2}</span>
-      </div>
-    </div>
-  </div>
-  <span className="text-sm font-medium tabular-nums text-foreground">
-    {value}
-  </span>
-</div>
-```
+### Announcement bar
 
-### Input Fields
-
-```tsx
-// Standard input
-<input
-  type="text"
-  className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none ring-primary/40 transition focus:ring"
-  placeholder="Placeholder text"
-/>
-
-// Select trigger
-<SelectTrigger className="h-8 w-[130px] border-border bg-background text-xs">
-  <SelectValue />
-</SelectTrigger>
-```
-
-### Progress Bar
-
-```tsx
-<div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-  <div
-    className="h-2 rounded-full bg-primary transition-all"
-    style={{ width: `${progress}%` }}
-  />
-</div>
-
-// With dynamic colors based on value
-<div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-  <div
-    className={cn(
-      "h-full rounded-full transition-all duration-500",
-      percentage > 90 ? "bg-rose-500" :
-      percentage > 70 ? "bg-amber-500" :
-      "bg-primary"
-    )}
-    style={{ width: `${percentage}%` }}
-  />
-</div>
-```
-
-### Badge/Status Pills
-
-```tsx
-// Draft status
-<Badge variant="outline" className="text-[10px] border-amber-500/50 bg-amber-500/10 text-amber-600">
-  Draft
-</Badge>
-
-// In Progress status
-<Badge variant="outline" className="text-[10px] border-blue-500/50 bg-blue-500/10 text-blue-600">
-  In Progress
-</Badge>
-
-// Completed status
-<Badge variant="outline" className="text-[10px] border-emerald-500/50 bg-emerald-500/10 text-emerald-600">
-  Completed
-</Badge>
-```
-
-### Dropdown Menu
-
-```tsx
-<DropdownMenuContent align="end" className="w-64 p-2">
-  <DropdownMenuItem className="cursor-pointer gap-3 rounded-lg px-3 py-3">
-    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20">
-      <Zap className="h-4 w-4 text-primary" />
-    </div>
-    <div className="flex flex-col">
-      <span className="font-medium text-foreground">Menu Item</span>
-      <span className="text-xs text-muted-foreground">Description</span>
-    </div>
-  </DropdownMenuItem>
-</DropdownMenuContent>
-```
-
-### Tooltip (Custom)
-
-```tsx
-// Chart tooltip
-<div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-xl">
-  <p className="text-sm font-medium text-foreground">{title}</p>
-  <p className="text-xs text-muted-foreground">{value}</p>
-</div>
-```
+- Full-width strip: `bg-conv-section-announcement py-2.5 text-center text-white/90`, links use inline ArrowRight and keep `hover:text-white`.
 
 ---
 
 ## Motion & Animation
 
-### Keyframes
+- **Entrances**: `animate-fade-in-up` on hero headline, copy, CTAs; stagger via inline `style={{ animationDelay: '0.2s' }}`.  
+- **Hover lift**: `hover:-translate-y-0.5` on CTAs, `hover:-translate-y-1` on cards.  
+- **Progress/analysis**: `animate-pulse` for status dots; `animate-dash` on SVG lines; bar fills transition with delay per index.  
+- **Flow lines**: `animate-flow-horiz` and `animate-flow-vert` for connectors in workflow diagram.  
+- **Noise/overlay**: Layer grain (`noise.svg`) with `opacity-20` plus white-to-background gradient for depth.
 
-```css
-@keyframes accordion-down {
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
-}
-```
-
-### Transition Defaults
-
-```tsx
-// Standard transition
-<div className="transition" />        // colors, opacity, etc.
-<div className="transition-all" />     // all properties
-<div className="transition-colors" />  // color changes only
-
-// Duration modifiers (when needed)
-<div className="duration-300" />  // 300ms
-<div className="duration-500" />  // 500ms for progress bars
-```
-
-### Usage Patterns
-
-```tsx
-// Hover state transitions
-<Card className="transition-colors hover:bg-accent/50">
-
-// Focus ring transition
-<input className="ring-primary/40 transition focus:ring">
-
-// Group hover visibility
-<div className="opacity-0 transition-opacity group-hover:opacity-100">
-
-// Loading state
-<Loader2 className="h-4 w-4 animate-spin" />
-```
+Keep durations around 200–400ms; avoid excessive springiness (`transition-all duration-200` standard).
 
 ---
 
 ## Icons
 
-### Library: Lucide React
-
-All icons use [Lucide React](https://lucide.dev/icons/) for consistency.
-
-```tsx
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  ChevronDown,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
-```
-
-### Icon Sizes
-
-| Size | Class | Use Case |
-|------|-------|----------|
-| 3-3.5 | `h-3 w-3` or `h-3.5 w-3.5` | Inline with small text, badges |
-| 4 | `h-4 w-4` | Standard UI icons, buttons |
-| 5 | `h-5 w-5` | Section headers, stat cards |
-| 6 | `h-6 w-6` | Large standalone icons |
-
-### Icon Styling
-
-```tsx
-// Primary accent icon
-<Sparkles className="h-4 w-4 text-primary" />
-
-// Muted icon
-<ChevronDown className="h-4 w-4 text-muted-foreground" />
-
-// Colored icon (use -500 for light themes)
-<FolderKanban className="h-5 w-5 text-blue-500" />
-<DollarSign className="h-5 w-5 text-emerald-500" />
-<TrendingUp className="h-5 w-5 text-amber-500" />
-
-// Icon with text
-<div className="flex items-center gap-2">
-  <Icon className="h-4 w-4 text-muted-foreground" />
-  <span className="text-foreground">Label text</span>
-</div>
-```
+- Library: **Lucide React**.  
+- Sizes: `h-4 w-4` for UI, `h-5 w-5` for CTAs, `h-7 w-7` for hero emblem.  
+- Color: default to `text-conv-primary` on light backgrounds; use `text-conv-text-secondary` for muted states; keep icon containers lightly tinted (`bg-conv-section-mint`).
 
 ---
 
 ## Patterns & Best Practices
 
-### Card Hierarchy Pattern
+- **Hero (bento)**: 3/6/3 grid with white cards, primary pill badge, serif headline, dual CTAs, trust line.  
+- **Navigation**: sticky, translucent (`bg-white/95 backdrop-blur-md`), thin bottom border; announcement bar above.  
+- **Section headers**: Serif title + supporting paragraph; CTA aligned right on desktop.  
+- **Workflow diagram**: Node + animated connectors, alternating horizontal/vertical flow for responsiveness.  
+- **Pricing**: Two-column cards with checklisted bullets, micro badges for limits, rounded-full buttons.  
+- **Footer**: Multi-column links with muted text and social icons; keep `text-conv-text-secondary`.
 
-```tsx
-// Level 1: Main container card
-<Card className="border-border/50 bg-card">
-  <CardContent>
-    
-    {/* Level 2: List item */}
-    <div className="rounded-xl border border-border/30 bg-background p-4">
-      {/* Content */}
-    </div>
-    
-  </CardContent>
-</Card>
-```
+Do:
+- Use `max-w-[90rem]` containers and generous `gap-5+`.  
+- Keep borders visible on white cards; avoid shadow-only separation.  
+- Use pills for badges and CTAs for brand cohesion.  
+- Alternate mint/sage backgrounds to break sections.
 
-### Section Header Pattern
-
-```tsx
-<div className="flex items-center gap-2">
-  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
-    <Users className="h-4 w-4 text-primary" />
-  </div>
-  <div className="text-left">
-    <h3 className="text-sm font-medium text-foreground">Section Title</h3>
-    <p className="text-xs text-muted-foreground">
-      Section description
-    </p>
-  </div>
-</div>
-```
-
-### Expandable Section Pattern
-
-```tsx
-<button
-  onClick={() => setIsExpanded(!isExpanded)}
-  className="flex w-full items-center justify-between"
->
-  <div className="flex items-center gap-2">
-    {/* Icon and title */}
-  </div>
-  <div className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent transition-colors">
-    {isExpanded ? (
-      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-    ) : (
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-    )}
-  </div>
-</button>
-```
-
-### Empty State Pattern
-
-```tsx
-<div className="flex flex-col items-center justify-center py-12 text-center">
-  <div className="mb-4 rounded-full border border-border bg-muted p-4">
-    <FileEdit className="h-6 w-6 text-muted-foreground" />
-  </div>
-  <p className="text-sm text-muted-foreground">No items found</p>
-  <Button asChild size="sm" className="mt-4">
-    <Link href="/create">Create new</Link>
-  </Button>
-</div>
-```
-
-### Error/Warning Pattern
-
-```tsx
-// Error message
-<p className="text-xs text-destructive">{errorMessage}</p>
-
-// Warning banner
-<div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
-  <TriangleAlert className="h-4 w-4" />
-  {warningMessage}
-</div>
-
-// Success message
-<p className="text-xs text-emerald-600">{successMessage}</p>
-```
+Avoid:
+- Harsh dark backgrounds behind teal text.  
+- Squared corners on CTAs/cards.  
+- Heavy drop shadows; rely on border + soft shadow combos.  
+- Low-contrast gray text on white (stay at or above `text-conv-text-secondary`).
 
 ---
 
 ## Quick Reference Cheat Sheet
 
-### Essential Classes (Theme-Adaptive)
-
 ```
-Background:        bg-background, bg-card, bg-muted
-Text Primary:      text-foreground
-Text Secondary:    text-muted-foreground
-Text Accent:       text-primary, text-primary/70
-Borders:           border-border, border-border/50, border-border/30
-Cards:             rounded-xl border border-border/50 bg-card
-Hover States:      hover:bg-accent/50, hover:border-border
-Buttons:           rounded-md (standard), rounded-full (pill)
-Inputs:            rounded-lg border border-border bg-background
-Progress bars:     bg-muted (track), bg-primary (fill)
-Spacing:           gap-2 (tight), gap-4 (standard), gap-6 (loose)
+Backgrounds: bg-conv-background, bg-conv-section-mint, bg-conv-section-sage
+Text: text-conv-text-primary (body), text-conv-text-secondary (muted), text-conv-text-muted (labels)
+Borders: border-conv-border, border-conv-border-light
+Cards: bg-white border-conv-border rounded-2xl shadow-card
+Primary CTA: rounded-full bg-conv-primary text-white hover:bg-conv-primary-hover shadow-button
+Outline CTA: rounded-full border-conv-border text-conv-text-primary hover:bg-white
+Badges: bg-conv-primary/10 text-conv-primary rounded-full px-4 py-2
+Containers: max-w-[90rem] px-6 md:px-10 lg:px-16
+Animations: animate-fade-in-up, animate-dash, animate-flow-horiz/vert
 ```
-
-### Do's ✅
-
-- **Always use semantic tokens** (`text-foreground`, `bg-card`, `border-border`)
-- Use `-500` or `-600` color variants for text on light backgrounds
-- Add transitions to interactive elements (`transition-colors`, `hover:bg-accent/50`)
-- Use `rounded-xl` or `rounded-2xl` for cards
-- Use `bg-muted` for progress bar tracks and icon containers
-- Test components in both light and dark modes
-
-### Don'ts ❌
-
-- **Don't use `text-white`** — use `text-foreground` instead
-- **Don't use `text-black`** — use `text-foreground` instead
-- **Don't use `bg-white/[0.02]`** — use `bg-card` instead
-- **Don't use `border-white/10`** — use `border-border/50` instead
-- Don't use `-300` or `-400` color variants for text (too light)
-- Don't skip focus rings on interactive elements
-
-### Migration Guide (Dark → Light Theme)
-
-| Old (Dark Theme) | New (Theme-Adaptive) |
-|------------------|----------------------|
-| `text-white` | `text-foreground` |
-| `text-white/60` | `text-muted-foreground` |
-| `bg-white/[0.02]` | `bg-card` |
-| `bg-white/5` | `bg-muted` |
-| `border-white/10` | `border-border/50` |
-| `border-white/5` | `border-border/30` |
-| `hover:bg-white/[0.04]` | `hover:bg-accent/50` |
-| `text-amber-300` | `text-amber-600` |
-| `text-blue-400` | `text-blue-500` |
-| `text-emerald-400` | `text-emerald-500` |
 
 ---
 
 ## Appendix: Component Import Paths
 
-```typescript
+```ts
 // UI Components (shadcn)
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -797,11 +332,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 // Icons
-import { Sparkles, Check, ArrowRight } from "lucide-react";
+import { ArrowRight, Calculator, Zap } from "lucide-react";
 ```
 
 ---
 
-*Last updated: November 2024*
-*Based on: Next.js 16 + shadcn/ui (New York style) + Tailwind CSS*
-*Theme: Light-first with semantic color tokens*
+*Last updated: December 2025*  
+*Theme: Light-first teal/white with serif headlines and pill CTAs*  
+*Sources: Landing page (FlowScope), `globals.css`, `tailwind.config.ts`*

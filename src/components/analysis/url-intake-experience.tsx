@@ -294,31 +294,31 @@ export function UrlIntakeExperience({
 
   return (
     <div className="space-y-8">
-      <Card className="border-white/10 bg-gradient-to-r from-[#0b0f1f] to-[#090b16]">
+      <Card className="bg-white border-conv-border shadow-card">
         <CardContent className="space-y-6 pt-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs text-primary/80">
+              <p className="text-xs text-conv-primary uppercase tracking-wider">
                 Existing site analysis
               </p>
-              <CardTitle className="text-3xl">
+              <CardTitle className="font-serif text-3xl font-normal tracking-tight text-conv-text-primary">
                 Capture the current footprint before migrating.
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                We’ll crawl the URL, detect stack + complexity, and feed it into
+              <p className="text-sm text-conv-text-secondary">
+                We'll crawl the URL, detect stack + complexity, and feed it into
                 the streamlined questionnaire.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-muted-foreground">
+            <div className="rounded-2xl border border-conv-border bg-conv-background-alt px-4 py-3 text-xs text-conv-text-secondary">
               <p>
                 Context:{" "}
-                <span className="text-white">
+                <span className="text-conv-text-primary font-medium">
                   {effectiveEntry === "existing" ? "Existing site flow" : "Flow TBD"}
                 </span>
               </p>
               <p>
                 User type:{" "}
-                <span className="text-white">
+                <span className="text-conv-text-primary font-medium">
                   {displayUserType
                     ? displayUserType.charAt(0).toUpperCase() + displayUserType.slice(1)
                     : "Not set"}
@@ -328,7 +328,7 @@ export function UrlIntakeExperience({
           </div>
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
             <div className="space-y-3">
-              <label className="text-sm font-medium text-white">
+              <label className="text-sm font-medium text-conv-text-primary">
                 Website URL
               </label>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -342,10 +342,10 @@ export function UrlIntakeExperience({
                     }}
                     placeholder="https://clientsite.com"
                     className={cn(
-                      "w-full rounded-xl border bg-transparent px-4 py-3 text-base text-white outline-none transition",
+                      "w-full rounded-xl border bg-white px-4 py-3 text-base text-conv-text-primary outline-none transition focus:ring-2",
                       error
-                        ? "border-destructive focus-visible:ring-destructive/40"
-                        : "border-white/15 focus-visible:ring-primary/40",
+                        ? "border-destructive focus:ring-destructive/40"
+                        : "border-conv-border focus:ring-conv-primary/40",
                       isAnalyzing && "opacity-70",
                     )}
                     disabled={isAnalyzing}
@@ -372,12 +372,12 @@ export function UrlIntakeExperience({
                   )}
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-2 text-xs text-conv-text-secondary">
                 {exampleUrls.map((example) => (
                   <button
                     key={example}
                     type="button"
-                    className="rounded-full border border-white/15 px-3 py-1 transition hover:border-white/40 hover:text-white"
+                    className="rounded-full border border-conv-border px-3 py-1 transition hover:border-conv-primary hover:text-conv-text-primary"
                     onClick={() => handleExampleClick(example)}
                     disabled={isAnalyzing}
                   >
@@ -386,9 +386,9 @@ export function UrlIntakeExperience({
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2 text-white">
-                <Info className="h-4 w-4 text-primary" />
+            <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-4 text-sm text-conv-text-secondary">
+              <p className="flex items-center gap-2 text-conv-text-primary font-medium">
+                <Info className="h-4 w-4 text-conv-primary" />
                 What we extract
               </p>
               <ul className="mt-3 space-y-2">
@@ -399,17 +399,17 @@ export function UrlIntakeExperience({
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-wrap items-center gap-3 border-t border-white/10 px-6 py-4 text-xs text-muted-foreground">
+        <CardFooter className="flex flex-wrap items-center gap-3 border-t border-conv-border px-6 py-4 text-xs text-conv-text-secondary">
           <div className="flex items-center gap-2">
-            <PlugZap className="h-3.5 w-3.5 text-primary" />
+            <PlugZap className="h-3.5 w-3.5 text-conv-primary" />
             Firecrawl-ready placeholder
           </div>
           <div className="flex items-center gap-2">
-            <Clock4 className="h-3.5 w-3.5 text-primary" />
+            <Clock4 className="h-3.5 w-3.5 text-conv-primary" />
             Autosaves last 4 analyses
           </div>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <Sparkles className="h-3.5 w-3.5 text-conv-primary" />
             Deterministic summary for questionnaire
           </div>
         </CardFooter>
@@ -417,20 +417,20 @@ export function UrlIntakeExperience({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <Card className="border-white/5 bg-white/[0.02]">
-            <CardHeader className="border-b border-white/5">
-              <p className="text-xs text-primary/70">
+          <Card className="bg-white border-conv-border shadow-card">
+            <CardHeader className="border-b border-conv-border">
+              <p className="text-xs text-conv-primary uppercase tracking-wider">
                 Crawl progress
               </p>
-              <CardTitle className="text-2xl">Status timeline</CardTitle>
+              <CardTitle className="text-2xl text-conv-text-primary">Status timeline</CardTitle>
               <div className="mt-4 space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-xs text-conv-text-secondary">
                   <span>Summarizing progress</span>
-                  <span className="text-white">{normalizedCrawlPercent}%</span>
+                  <span className="text-conv-text-primary font-medium">{normalizedCrawlPercent}%</span>
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-white/10">
+                <div className="h-1.5 w-full rounded-full bg-conv-border">
                   <div
-                    className="h-1.5 rounded-full bg-primary transition-all"
+                    className="h-1.5 rounded-full bg-conv-primary transition-all"
                     style={{ width: `${normalizedCrawlPercent}%` }}
                   />
                 </div>
@@ -438,11 +438,11 @@ export function UrlIntakeExperience({
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               {status === "completed" ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-muted-foreground">
-                  <p className="text-xs text-primary/70">
+                <div className="rounded-2xl border border-conv-border bg-conv-background-alt p-4 text-sm text-conv-text-secondary">
+                  <p className="text-xs text-conv-primary uppercase tracking-wider">
                     Crawl finished
                   </p>
-                  <p className="text-white">
+                  <p className="text-conv-text-primary">
                     We captured the latest snapshot. Review the summary below or rerun a new URL.
                   </p>
                 </div>
@@ -450,8 +450,8 @@ export function UrlIntakeExperience({
                 <Timeline phases={phaseProgress} />
               )}
               {notice && (
-                <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary-foreground">
-                  <Info className="mt-0.5 h-4 w-4 text-primary" />
+                <div className="flex items-start gap-2 rounded-xl border border-conv-primary/30 bg-conv-primary/5 px-4 py-3 text-sm text-conv-text-primary">
+                  <Info className="mt-0.5 h-4 w-4 text-conv-primary" />
                   {notice}
                 </div>
               )}
@@ -459,15 +459,15 @@ export function UrlIntakeExperience({
           </Card>
 
           {result && (
-            <Card className="border-white/5 bg-white/[0.01]">
+            <Card className="bg-white border-conv-border shadow-card">
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5 text-primary" />
+                  <Globe className="h-5 w-5 text-conv-primary" />
                   <div>
-                    <p className="text-xs text-primary/70">
+                    <p className="text-xs text-conv-primary uppercase tracking-wider">
                       Crawl summary
                     </p>
-                    <CardTitle className="text-2xl">Site insights</CardTitle>
+                    <CardTitle className="text-2xl text-conv-text-primary">Site insights</CardTitle>
                   </div>
                 </div>
               </CardHeader>
@@ -478,23 +478,23 @@ export function UrlIntakeExperience({
           )}
 
           {status === "completed" && result && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.01] p-6">
+            <div className="rounded-2xl border border-conv-border bg-white shadow-card p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs text-primary/70">
+                  <p className="text-xs text-conv-primary uppercase tracking-wider">
                     Ready for questionnaire
                   </p>
-                  <p className="text-lg font-semibold text-white">
+                  <p className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">
                     {result.normalizedUrl}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-conv-text-secondary">
                     {result.metrics.pages} pages · {result.stack.platform} ·{" "}
                     {result.stack.technologies.slice(0, 2).join(", ")}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    className="gap-2"
+                    className="gap-2 shadow-button"
                     onClick={handleContinueToQuestionnaire}
                     disabled={isTransitioningToQuestionnaire}
                   >
@@ -512,7 +512,7 @@ export function UrlIntakeExperience({
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-white/20"
+                    className="border-conv-border text-conv-text-primary hover:bg-white"
                     onClick={handleReset}
                   >
                     Run another URL
@@ -544,11 +544,11 @@ export function UrlIntakeExperience({
                   <button
                     key={record.id}
                     type="button"
-                    className="w-full rounded-xl border border-white/10 px-4 py-3 text-left transition hover:border-white/30"
+                    className="w-full rounded-xl border border-conv-border bg-conv-background-alt px-4 py-3 text-left transition hover:border-conv-primary hover:shadow-card"
                     onClick={() => handleHistorySelect(record)}
                   >
-                      <p className="text-sm text-white">{record.normalizedUrl}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-conv-text-primary">{record.normalizedUrl}</p>
+                      <p className="text-xs text-conv-text-secondary">
                         {formatHistoryDate(record.timestamp)}
                       </p>
                   </button>
@@ -558,7 +558,7 @@ export function UrlIntakeExperience({
           </InsightCard>
 
           <InsightCard kicker="Next step" title="What happens after?" icon={BarChart3}>
-            <ul className="space-y-2 text-xs text-muted-foreground">
+            <ul className="space-y-2 text-xs text-conv-text-secondary">
               <li>Streamlined questionnaire focuses on deltas & improvements.</li>
               <li>Deterministic engine merges crawl metrics + answers.</li>
               <li>Exports highlight migration scope vs net-new work.</li>
@@ -585,26 +585,26 @@ function Timeline({
           className={cn(
             "flex items-start gap-4 rounded-2xl border px-4 py-3 transition",
             phase.state === "done"
-              ? "border-primary/60 bg-primary/10"
+              ? "border-conv-primary/60 bg-conv-primary/10"
               : phase.state === "active"
-                ? "border-primary/40 bg-white/[0.03]"
-                : "border-white/10",
+                ? "border-conv-primary/40 bg-conv-background-alt"
+                : "border-conv-border",
           )}
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-conv-border">
             {phase.state === "done" ? (
-              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <CheckCircle2 className="h-5 w-5 text-conv-primary" />
             ) : phase.state === "active" ? (
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <Loader2 className="h-5 w-5 animate-spin text-conv-primary" />
             ) : (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-conv-text-secondary">
                 {index + 1}
               </span>
             )}
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">{phase.label}</p>
-            <p className="text-xs text-muted-foreground">{phase.description}</p>
+            <p className="text-sm font-semibold text-conv-text-primary">{phase.label}</p>
+            <p className="text-xs text-conv-text-secondary">{phase.description}</p>
           </div>
         </li>
       ))}
@@ -623,17 +623,17 @@ function SummaryDetails({
   return (
     <>
       <div className="space-y-1">
-        <p className="text-[11px] text-primary/70">
+        <p className="text-[11px] text-conv-primary uppercase tracking-wider">
           Crawl progress
         </p>
         <div className="flex items-center gap-3">
-          <div className="h-1.5 flex-1 rounded-full bg-white/10">
+          <div className="h-1.5 flex-1 rounded-full bg-conv-border">
             <div
-              className="h-1.5 rounded-full bg-primary transition-all"
+              className="h-1.5 rounded-full bg-conv-primary transition-all"
               style={{ width: `${clamped}%` }}
             />
           </div>
-          <span className="text-xs text-white">{clamped}%</span>
+          <span className="text-xs text-conv-text-primary font-medium">{clamped}%</span>
         </div>
       </div>
 
@@ -659,54 +659,54 @@ function SummaryDetails({
         ].map((item) => (
           <div
             key={item.label}
-            className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
+            className="rounded-2xl border border-conv-border bg-conv-background-alt px-4 py-3 text-sm"
           >
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-conv-text-secondary">
               {item.label}
             </p>
-            <p className="text-xl font-semibold text-white">{item.value}</p>
+            <p className="text-xl font-semibold text-conv-text-primary">{item.value}</p>
             {item.hint && (
-              <p className="text-[11px] text-muted-foreground">{item.hint}</p>
+              <p className="text-[11px] text-conv-text-muted">{item.hint}</p>
             )}
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-primary/70">
+        <div className="space-y-3 rounded-2xl border border-conv-border bg-conv-background-alt p-4">
+          <p className="text-xs text-conv-primary uppercase tracking-wider">
             Technology stack
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-conv-text-secondary">
             {result.stack.platform} on {result.stack.hosting}
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-conv-text-muted">
             Detected from current crawl sample — not a full inventory.
           </p>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-2 text-xs text-conv-text-secondary">
             {result.stack.technologies.map((tech) => (
-              <span key={tech} className="rounded-full border border-white/15 px-3 py-1">
+              <span key={tech} className="rounded-full border border-conv-border bg-white px-3 py-1">
                 {tech}
               </span>
             ))}
           </div>
         </div>
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-primary/70">
+        <div className="space-y-3 rounded-2xl border border-conv-border bg-conv-background-alt p-4">
+          <p className="text-xs text-conv-primary uppercase tracking-wider">
             Complexity score
           </p>
           <div className="flex items-center gap-4">
-            <div className="h-2 flex-1 rounded-full bg-white/10">
+            <div className="h-2 flex-1 rounded-full bg-conv-border">
               <div
-                className="h-2 rounded-full bg-primary"
+                className="h-2 rounded-full bg-conv-primary"
                 style={{ width: `${result.complexityScore}%` }}
               />
             </div>
-            <span className="text-2xl font-semibold text-white">
+            <span className="text-2xl font-semibold text-conv-text-primary">
               {result.complexityScore}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-conv-text-secondary">
             Estimated {result.estimatedHours} hours to rebuild / migrate.
           </p>
         </div>
@@ -714,34 +714,34 @@ function SummaryDetails({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-primary/70">
+          <h3 className="font-serif text-base font-normal leading-tight tracking-tight text-conv-primary">
             Page mix
           </h3>
           {result.pageTypes.some((item) => item.count > 0) ? (
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <ul className="space-y-2 text-sm text-conv-text-secondary">
               {result.pageTypes.map((item) => (
                 <li key={item.label} className="flex items-center gap-3">
                   <span className="flex-1">{item.label}</span>
-                  <span className="rounded-full border border-white/10 px-3 py-0.5 text-xs">
+                  <span className="rounded-full border border-conv-border bg-white px-3 py-0.5 text-xs">
                     {item.count}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-conv-text-secondary">
               Page mix will populate once the crawl finds pages with distinct paths.
             </p>
           )}
         </div>
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-primary/70">
+          <h3 className="font-serif text-base font-normal leading-tight tracking-tight text-conv-primary">
             Recommendations
           </h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2 text-sm text-conv-text-secondary">
             {result.recommendations.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-conv-primary" />
                 <span>{item}</span>
               </li>
             ))}
@@ -750,11 +750,11 @@ function SummaryDetails({
       </div>
 
       {result.warnings.length > 0 && (
-        <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <div className="rounded-2xl border border-amber-400/40 bg-amber-50 p-4 text-sm text-amber-800">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-300" />
+            <AlertCircle className="h-4 w-4 text-amber-500" />
             <div>
-              <p className="font-semibold text-white">Watch outs</p>
+              <p className="font-semibold text-amber-900">Watch outs</p>
               <ul className="mt-1 list-disc space-y-1 pl-5">
                 {result.warnings.map((warning) => (
                   <li key={warning}>{warning}</li>
@@ -795,17 +795,17 @@ function InsightCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="border-white/10 bg-white/[0.03]">
+    <Card className="bg-white border-conv-border shadow-card">
       <CardHeader className="pb-2">
-        <p className="text-xs text-primary/70">
+        <p className="text-xs text-conv-primary uppercase tracking-wider">
           {kicker}
         </p>
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-conv-primary" />
+          <CardTitle className="text-base text-conv-text-primary">{title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground">
+      <CardContent className="pt-0 text-sm text-conv-text-secondary">
         {children}
       </CardContent>
     </Card>
@@ -813,7 +813,7 @@ function InsightCard({
 }
 
 function PlaceholderText({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <p className="text-sm text-conv-text-secondary">{children}</p>;
 }
 
 function normalizeUrl(

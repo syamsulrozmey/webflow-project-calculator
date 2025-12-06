@@ -76,17 +76,17 @@ const typeLabels: Record<Project["type"], string> = {
 const statusConfig: Record<Project["status"], { label: string; className: string; icon: React.ReactNode }> = {
   draft: { 
     label: "Draft", 
-    className: "border-amber-500/50 text-amber-600 bg-amber-500/10",
+    className: "border-amber-500/60 bg-amber-500/10 text-amber-600",
     icon: <FileEdit className="h-3 w-3" />,
   },
   in_progress: { 
     label: "In Progress", 
-    className: "border-blue-500/50 text-blue-600 bg-blue-500/10",
+    className: "border-conv-primary/60 bg-conv-primary/10 text-conv-primary",
     icon: <Clock className="h-3 w-3" />,
   },
   completed: { 
     label: "Completed", 
-    className: "border-emerald-500/50 text-emerald-600 bg-emerald-500/10",
+    className: "border-emerald-500/60 bg-emerald-500/10 text-emerald-600",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
 }
@@ -132,17 +132,17 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
   }), [projects])
 
   return (
-    <Card className="border-border/50 bg-card">
+    <Card className="rounded-2xl border border-conv-border bg-white shadow-card">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div>
-          <CardTitle className="text-lg font-medium text-foreground">Recent Projects</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <CardTitle className="font-serif text-xl font-normal leading-tight tracking-tight text-conv-text-primary">Recent Projects</CardTitle>
+          <CardDescription className="text-sm text-conv-text-secondary">
             {projects.length} project{projects.length !== 1 ? "s" : ""} total
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <SelectTrigger className="h-8 w-[130px] border-border bg-background text-xs">
+            <SelectTrigger className="h-8 w-[130px] border-conv-border bg-conv-background text-xs text-conv-text-primary">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -155,13 +155,13 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
               </SelectItem>
               <SelectItem value="in_progress">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-3 w-3 text-blue-500" />
+                  <Clock className="h-3 w-3 text-conv-primary" />
                   Active ({statusCounts.in_progress})
                 </div>
               </SelectItem>
               <SelectItem value="draft">
                 <div className="flex items-center gap-2">
-                  <FileEdit className="h-3 w-3 text-amber-500" />
+                  <FileEdit className="h-3 w-3 text-amber-600" />
                   Draft ({statusCounts.draft})
                 </div>
               </SelectItem>
@@ -177,35 +177,35 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
       <CardContent>
         {filteredProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 rounded-full border border-border bg-muted p-4">
-              <FileEdit className="h-6 w-6 text-muted-foreground" />
+            <div className="mb-4 rounded-full border border-conv-border bg-conv-background p-4">
+              <FileEdit className="h-6 w-6 text-conv-text-muted" />
             </div>
-            <p className="text-sm text-muted-foreground">No projects found</p>
+            <p className="text-sm text-conv-text-secondary">No projects found</p>
             <Button asChild size="sm" className="mt-4">
               <Link href="/questionnaire">Create your first estimate</Link>
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filteredProjects.map((project) => {
               const status = statusConfig[project.status]
               return (
                 <div
                   key={project.id}
-                  className="group flex items-center justify-between rounded-xl border border-border/30 bg-background p-4 transition-all hover:border-border hover:bg-accent/50"
+                  className="group flex items-center justify-between rounded-xl border border-conv-border/60 bg-conv-background p-4 transition-all hover:-translate-y-0.5 hover:border-conv-border hover:bg-white hover:shadow-card"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-conv-primary/10 text-conv-primary">
                       {typeIcons[project.type]}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">{project.title}</span>
+                        <span className="font-medium text-conv-text-primary">{project.title}</span>
                         <Badge variant="outline" className={`text-[10px] ${status.className}`}>
                           {status.label}
                         </Badge>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-conv-text-muted">
                         <span>{typeLabels[project.type]}</span>
                         <span>•</span>
                         <span>{project.hours} hrs</span>
@@ -215,7 +215,7 @@ export function RecentProjects({ projects, showViewAll = true }: RecentProjectsP
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium tabular-nums text-foreground">
+                    <span className="text-sm font-medium tabular-nums text-conv-text-primary">
                       {formatCurrency(project.estimatedCost, project.currency)}
                     </span>
                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
