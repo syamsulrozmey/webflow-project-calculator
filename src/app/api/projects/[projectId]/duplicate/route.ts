@@ -5,16 +5,16 @@ import { requireProUser, requireUserId } from "@/lib/projects/auth";
 import { duplicateProject } from "@/lib/projects/service";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
 export async function POST(request: Request, context: RouteContext) {
   try {
     const userId = requireUserId(request);
     await requireProUser(userId);
-    const projectId = context.params?.projectId;
+    const { projectId } = await context.params;
     if (!projectId) {
       throw new ApiError("Project id is required", 400);
     }

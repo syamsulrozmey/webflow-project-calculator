@@ -52,7 +52,26 @@ export async function PUT(request: Request) {
     const json = await request.json().catch(() => {
       throw new ApiError("Invalid JSON body", 400);
     });
-    const payload = UpsertSchema.parse(json);
+    const parsed = UpsertSchema.parse(json);
+
+    // Build payload excluding undefined values for exactOptionalPropertyTypes compatibility
+    const payload: Parameters<typeof upsertAgencyProfile>[1] = {};
+    if (parsed.targetMargin !== undefined) payload.targetMargin = parsed.targetMargin;
+    if (parsed.desiredMarkup !== undefined) payload.desiredMarkup = parsed.desiredMarkup;
+    if (parsed.notes !== undefined) payload.notes = parsed.notes;
+    if (parsed.members !== undefined) {
+      payload.members = parsed.members.map((m) => ({
+        id: m.id ?? crypto.randomUUID(),
+        name: m.name,
+        role: m.role,
+        costRate: m.costRate,
+        ...(m.billableRate !== undefined && { billableRate: m.billableRate }),
+        ...(m.weeklyCapacity !== undefined && { weeklyCapacity: m.weeklyCapacity }),
+        ...(m.utilizationTarget !== undefined && { utilizationTarget: m.utilizationTarget }),
+        ...(m.color !== undefined && { color: m.color }),
+      }));
+    }
+
     const profile = await upsertAgencyProfile(userId, payload);
     return NextResponse.json({ data: profile });
   } catch (error) {

@@ -59,7 +59,6 @@ import {
   ArrowRight,
   Check,
   ClipboardList,
-  Clock4,
   CloudDownload,
   CloudUpload,
   DollarSign,

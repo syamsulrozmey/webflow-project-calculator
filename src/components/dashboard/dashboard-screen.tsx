@@ -13,15 +13,27 @@ import {
   TeamCapacity,
   WelcomeHeader,
 } from "@/components/dashboard"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import dashboardDataRaw from "@/app/dashboard/data.json"
 import { useWorkspace } from "@/hooks/use-workspace"
 import type { ProjectSummary } from "@/lib/projects/types"
 import { isFreeTier } from "@/lib/export/feature-tier"
 
+interface DashboardProject {
+  id: string
+  title: string
+  type: "landing_page" | "small_business" | "ecommerce" | "web_app"
+  flow: "fresh" | "existing"
+  status: "draft" | "in_progress" | "completed"
+  estimatedCost: number
+  hours: number
+  currency: string
+  persona: "freelancer" | "agency" | "company"
+  updatedAt: string
+}
+
 type DashboardData = typeof dashboardDataRaw
-type DashboardProject = DashboardData["projects"][number]
 
 export function coerceProject(summary: ProjectSummary): DashboardProject {
   const fallbackCost = summary.hourlyRate ? Math.max(1800, summary.hourlyRate * 32) : 3200
@@ -30,7 +42,7 @@ export function coerceProject(summary: ProjectSummary): DashboardProject {
     id: summary.id,
     title: summary.title,
     type: "landing_page",
-    flow: summary.flow,
+    flow: (summary.flow as DashboardProject["flow"]) ?? "fresh",
     status: (summary.status as DashboardProject["status"]) ?? "draft",
     estimatedCost: fallbackCost,
     hours: fallbackHours,
@@ -76,8 +88,16 @@ export function computeMetrics(projects: DashboardProject[], fallback: Dashboard
     webApp: { count: 0, value: 0 },
   }
 
+  const typeMapping: Record<DashboardProject["type"], keyof typeof pipelineByType> = {
+    landing_page: "landingPage",
+    small_business: "smallBusiness",
+    ecommerce: "ecommerce",
+    web_app: "webApp",
+  }
+
   projects.forEach((project) => {
-    const bucket = pipelineByType[project.type] ?? pipelineByType.landingPage
+    const bucketKey = typeMapping[project.type]
+    const bucket = pipelineByType[bucketKey]
     bucket.count += 1
     bucket.value += project.estimatedCost
   })
@@ -88,8 +108,8 @@ export function computeMetrics(projects: DashboardProject[], fallback: Dashboard
 export function DashboardScreen() {
   const { projects, projectsLoading, tier, usage, user } = useWorkspace()
 
-  const preparedProjects = React.useMemo(() => {
-    if (projects.length === 0) return dashboardDataRaw.projects
+  const preparedProjects = React.useMemo((): DashboardProject[] => {
+    if (projects.length === 0) return dashboardDataRaw.projects as DashboardProject[]
     return projects.map(coerceProject)
   }, [projects])
 

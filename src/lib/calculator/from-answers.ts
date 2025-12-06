@@ -8,9 +8,9 @@ import type {
 } from "@/lib/calculator/types";
 import type {
   EntryFlow,
-  QuestionnaireAnswerMap,
   QuestionnaireUserType,
 } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 import type { AgencyRateSummary } from "@/lib/agency/types";
 import { deriveAddonsFromAnswers } from "@/lib/calculator/addons";
 import { evaluateComplexity } from "@/lib/calculator/complexity-score";

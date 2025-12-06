@@ -76,8 +76,6 @@ export function ResultsExperience({
     hourlyRate: result.effectiveHourlyRate,
     currency: fallbackCurrency,
     margin: 0.25,
-    internalHourlyRate: undefined,
-    agencyRateSummary: undefined,
   });
   const [margin, setMargin] = useState(meta.margin);
   const [viewMode, setViewMode] = useState<ViewMode>("detailed");
@@ -377,12 +375,19 @@ export function ResultsExperience({
     if (isExporting || typeof window === "undefined") return;
     setIsExporting(true);
     try {
+      const pdfMeta = {
+        hourlyRate: displayMeta.hourlyRate,
+        currency: displayMeta.currency,
+        margin,
+        ...(displayMeta.internalHourlyRate !== undefined && { internalHourlyRate: displayMeta.internalHourlyRate }),
+        ...(displayMeta.agencyRateSummary && { agencyRateSummary: displayMeta.agencyRateSummary }),
+      } as CalculationMeta;
       const pdfBytes = await generateBasicPdfReport({
         result: displayResult,
-        meta: { ...displayMeta, margin },
+        meta: pdfMeta,
         source: resultSource,
       });
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -728,7 +733,6 @@ export function ResultsExperience({
               <AgencyEconomicsCard
                 summary={displayMeta.agencyRateSummary}
                 formatCurrency={formatMoney}
-                currencySymbol={displayCurrency === "eur" ? "€" : displayCurrency === "gbp" ? "£" : "$"}
               />
             </section>
           )}
@@ -1441,7 +1445,7 @@ function TierView({
     description: string;
     cost: number;
     hours: number;
-    features: string[];
+    features: readonly string[];
     priceHint: string;
   }>;
   formatCurrency: (value: number) => string;

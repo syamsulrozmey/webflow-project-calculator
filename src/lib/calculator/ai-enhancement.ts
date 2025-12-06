@@ -62,15 +62,15 @@ export function mergeMultipliersWithAi(
     }
     if (confidence >= 0.65) {
       if (blended[key] !== aiValue) {
-        blended[key] = aiValue as ComplexityMultipliers[typeof key];
-        overrides[key] = aiValue;
+        (blended as unknown as Record<string, unknown>)[key] = aiValue;
+        (overrides as unknown as Record<string, unknown>)[key] = aiValue;
       }
       return;
     }
     const heavier = pickHeavierValue(key, blended[key], aiValue);
     if (heavier !== blended[key]) {
-      blended[key] = heavier as ComplexityMultipliers[typeof key];
-      overrides[key] = heavier;
+      (blended as unknown as Record<string, unknown>)[key] = heavier;
+      (overrides as unknown as Record<string, unknown>)[key] = heavier;
     }
   });
 

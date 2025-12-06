@@ -49,8 +49,8 @@ export default async function OnboardingPage({
           </p>
         </div>
         <OnboardingExperience
-          initialEntryParam={entry}
-          initialUserTypeParam={userType}
+          {...(entry && { initialEntryParam: entry })}
+          {...(userType && { initialUserTypeParam: userType })}
           initialSessionId={sessionId}
         />
       </div>

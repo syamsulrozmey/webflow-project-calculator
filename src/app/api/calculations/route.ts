@@ -172,9 +172,9 @@ export async function POST(request: Request) {
         confidence: aiInsight.confidence,
         globalMultiplier: aiInput.multiplier,
         overridesApplied: aiInput.overrides,
-        highlights: aiInsight.highlights,
-        risks: aiInsight.risks,
-        rationale: aiInsight.rationale,
+        ...(aiInsight.highlights && { highlights: aiInsight.highlights }),
+        ...(aiInsight.risks && { risks: aiInsight.risks }),
+        ...(aiInsight.rationale && { rationale: aiInsight.rationale }),
       },
       deterministicTotals: {
         totalHours: deterministicResult.totalHours,

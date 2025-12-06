@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.FIRECRAWL_API_KEY) {
+    if (!process.env["FIRECRAWL_API_KEY"]) {
       throw new ApiError("Crawler is not configured.", 503);
     }
 

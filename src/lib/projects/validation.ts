@@ -23,7 +23,7 @@ export const ProjectWriteSchema = z.object({
   hourlyRate: z.number().min(0).max(2000).optional(),
   currency: z.enum(CURRENCY_VALUES).default("usd"),
   notes: z.string().max(2000).optional().nullable(),
-  answers: z.record(AnswerValueSchema).default({}),
+  answers: z.record(z.string(), AnswerValueSchema).default({}),
 });
 
 export type ProjectWritePayload = z.infer<typeof ProjectWriteSchema>;

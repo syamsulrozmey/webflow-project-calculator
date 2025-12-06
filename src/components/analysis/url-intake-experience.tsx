@@ -151,14 +151,15 @@ export function UrlIntakeExperience({
   const phaseProgress = useMemo(() => {
     return crawlPhases.map((phase, index) => ({
       ...phase,
-      state:
+      state: (
         status === "completed"
           ? "done"
           : index < phaseIndex
             ? "done"
             : index === phaseIndex
               ? "active"
-              : "upcoming",
+              : "upcoming"
+      ) as "done" | "active" | "upcoming",
     }));
   }, [phaseIndex, status]);
 

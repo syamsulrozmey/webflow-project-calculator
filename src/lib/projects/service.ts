@@ -3,9 +3,9 @@ import { Prisma, ProjectFlow, UserType } from "@prisma/client";
 import type {
   EntryFlow,
   QuestionnaireAnswer,
-  QuestionnaireAnswerMap,
   QuestionnaireUserType,
 } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 import { ApiError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
@@ -82,7 +82,7 @@ export async function createProject(
       },
     });
 
-    await replaceResponses(tx, project.id, payload.answers);
+    await replaceResponses(tx, project.id, payload.answers as QuestionnaireAnswerMap);
 
     return project.id;
   });
@@ -118,7 +118,7 @@ export async function updateProject(
       },
     });
 
-    await replaceResponses(tx, projectId, payload.answers);
+    await replaceResponses(tx, projectId, payload.answers as QuestionnaireAnswerMap);
   });
 
   return getProject(userId, projectId);
@@ -303,13 +303,13 @@ function detectAnswerType(value: QuestionnaireAnswer | undefined) {
 
 function toJsonValue(value: QuestionnaireAnswer): Prisma.InputJsonValue {
   if (value === null) {
-    return Prisma.JsonNull;
+    return Prisma.JsonNull as unknown as Prisma.InputJsonValue;
   }
   return value as Prisma.InputJsonValue;
 }
 
 function fromJsonValue(value: Prisma.JsonValue): QuestionnaireAnswer {
-  if (value === null || value === Prisma.JsonNull) {
+  if (value === null) {
     return null;
   }
   if (Array.isArray(value)) {

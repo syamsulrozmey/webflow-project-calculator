@@ -1,5 +1,6 @@
 import type { CalculationMeta } from "@/lib/calculator/storage";
-import type { CalculationResult, LineItem, SupportedCurrency } from "@/lib/calculator/types";
+import type { CalculationResult, LineItem } from "@/lib/calculator/types";
+import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 import { selectPaymentPlan } from "@/lib/calculator/payment-plan";
 import type { FeatureTier } from "@/lib/export/feature-tier";
 

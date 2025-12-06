@@ -1,4 +1,4 @@
-import type { QuestionnaireAnswerMap } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 
 export type AddonCategory =
   | "integration"
@@ -89,7 +89,7 @@ const LOCALIZATION_HOURS: Record<string, { hours: number; label: string; descrip
 
 export function deriveAddonsFromAnswers(answers: QuestionnaireAnswerMap): AddonInput[] {
   const addons: AddonInput[] = [];
-  const integrations = toArray(answers.integration_targets);
+  const integrations = toArray(answers["integration_targets"]);
   integrations.forEach((integration) => {
     const meta = INTEGRATION_HOURS[integration];
     if (!meta) return;
@@ -103,7 +103,7 @@ export function deriveAddonsFromAnswers(answers: QuestionnaireAnswerMap): AddonI
     });
   });
 
-  const trainingNeeds = toArray(answers.training_needs);
+  const trainingNeeds = toArray(answers["training_needs"]);
   trainingNeeds.forEach((need) => {
     const meta = TRAINING_HOURS[need];
     if (!meta) return;
@@ -117,7 +117,7 @@ export function deriveAddonsFromAnswers(answers: QuestionnaireAnswerMap): AddonI
     });
   });
 
-  const seoSupport = asString(answers.seo_support);
+  const seoSupport = asString(answers["seo_support"]);
   if (seoSupport && SEO_HOURS[seoSupport]) {
     const meta = SEO_HOURS[seoSupport];
     addons.push({
@@ -130,7 +130,7 @@ export function deriveAddonsFromAnswers(answers: QuestionnaireAnswerMap): AddonI
     });
   }
 
-  const localization = asString(answers.localization);
+  const localization = asString(answers["localization"]);
   if (localization && LOCALIZATION_HOURS[localization]) {
     const meta = LOCALIZATION_HOURS[localization];
     addons.push({

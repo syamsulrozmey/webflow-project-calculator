@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Calculator, Layers, Clock, DollarSign, CheckCircle2, Settings, FileText, Layout, Database, Search, Zap } from "lucide-react";
+import { ArrowRight, Calculator, Layers, Clock, FileText, Layout, Database, Zap } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 

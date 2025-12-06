@@ -52,8 +52,8 @@ export async function POST(request: Request) {
       features: parsed.features ?? [],
       constraints: parsed.constraints ?? [],
       signals: parsed.signals ?? {},
-      entry: parsed.entry,
-      userType: parsed.userType,
+      entry: parsed.entry ?? null,
+      userType: parsed.userType ?? null,
     });
 
     return NextResponse.json({ data: insight });

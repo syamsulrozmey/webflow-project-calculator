@@ -18,16 +18,16 @@ function serializeMember(member: AgencyTeamMember) {
 
 function mapMemberFromDb(member: { [key: string]: unknown }): AgencyTeamMember {
   return {
-    id: String(member.id),
-    name: String(member.name ?? ""),
-    role: String(member.role ?? ""),
-    costRate: Number(member.costRate ?? 0),
-    billableRate: member.billableRate ? Number(member.billableRate) : undefined,
-    weeklyCapacity: member.weeklyCapacity ? Number(member.weeklyCapacity) : undefined,
-    utilizationTarget: member.utilizationTarget
-      ? Number(member.utilizationTarget)
+    id: String(member["id"]),
+    name: String(member["name"] ?? ""),
+    role: String(member["role"] ?? ""),
+    costRate: Number(member["costRate"] ?? 0),
+    billableRate: member["billableRate"] ? Number(member["billableRate"]) : undefined,
+    weeklyCapacity: member["weeklyCapacity"] ? Number(member["weeklyCapacity"]) : undefined,
+    utilizationTarget: member["utilizationTarget"]
+      ? Number(member["utilizationTarget"])
       : undefined,
-    color: typeof member.color === "string" ? member.color : undefined,
+    color: typeof member["color"] === "string" ? member["color"] : undefined,
   };
 }
 

@@ -1,8 +1,8 @@
 import type {
   EntryFlow,
-  QuestionnaireAnswerMap,
   QuestionnaireUserType,
 } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 import type { SupportedCurrency } from "@/lib/calculator/from-answers";
 
 export interface ProjectSummary {

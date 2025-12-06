@@ -6,16 +6,16 @@ import { deleteProject, getProject, updateProject } from "@/lib/projects/service
 import { ProjectWriteSchema } from "@/lib/projects/validation";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
   try {
     const userId = requireUserId(request);
     await requireProUser(userId);
-    const projectId = requireProjectId(context);
+    const projectId = await requireProjectId(context);
 
     const project = await getProject(userId, projectId);
     return NextResponse.json({ data: project });
@@ -28,7 +28,7 @@ export async function PUT(request: Request, context: RouteContext) {
   try {
     const userId = requireUserId(request);
     await requireProUser(userId);
-    const projectId = requireProjectId(context);
+    const projectId = await requireProjectId(context);
 
     const json = await request.json().catch(() => {
       throw new ApiError("Invalid JSON body", 400);
@@ -46,7 +46,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const userId = requireUserId(request);
     await requireProUser(userId);
-    const projectId = requireProjectId(context);
+    const projectId = await requireProjectId(context);
 
     await deleteProject(userId, projectId);
     return new NextResponse(null, { status: 204 });
@@ -55,8 +55,8 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 }
 
-function requireProjectId(context: RouteContext) {
-  const projectId = context.params?.projectId;
+async function requireProjectId(context: RouteContext) {
+  const { projectId } = await context.params;
   if (!projectId) {
     throw new ApiError("Project id is required", 400);
   }

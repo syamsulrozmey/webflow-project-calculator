@@ -17,7 +17,7 @@ const pageTitles: Record<string, { title: string; badge?: string }> = {
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const pageInfo = pageTitles[pathname] || { title: "Dashboard" }
+  const pageInfo = (pathname ? pageTitles[pathname] : null) || { title: "Dashboard" }
 
   return (
     <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b border-conv-border bg-white/90 backdrop-blur-md transition-[width,height] ease-linear">

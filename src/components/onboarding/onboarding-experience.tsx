@@ -285,8 +285,8 @@ export function OnboardingExperience({
               onEntrySelect: setSelectedEntry,
               onUserTypeSelect: setSelectedUserType,
               summary: combinedSummary,
-              entryData: selectedEntryData,
-              userTypeData: selectedUserTypeData,
+              ...(selectedEntryData && { entryData: selectedEntryData }),
+              ...(selectedUserTypeData && { userTypeData: selectedUserTypeData }),
               sessionId,
             })}
           </div>
@@ -735,7 +735,7 @@ function InsightList({
 }: {
   icon: LucideIcon;
   muted: string;
-  items: string[];
+  items: readonly string[];
 }) {
   const Icon = icon;
   return (
@@ -763,7 +763,7 @@ function SummaryTile({
 }: {
   title: string;
   meta: string;
-  points: string[];
+  points: readonly string[];
 }) {
   return (
     <div className="rounded-2xl border border-conv-border bg-white p-5 shadow-card">

@@ -1,9 +1,9 @@
 import {
   questionnaireSections,
   type EntryFlow,
-  type QuestionnaireAnswerMap,
   type QuestionnaireUserType,
 } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 import type { ProjectType } from "@/lib/calculator/types";
 
 interface AiSummaryPayload {

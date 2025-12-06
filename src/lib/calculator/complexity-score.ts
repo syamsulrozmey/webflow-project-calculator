@@ -1,4 +1,4 @@
-import type { QuestionnaireAnswerMap } from "@/config/questionnaire";
+import type { QuestionnaireAnswerMap } from "@/lib/questionnaire";
 
 export type ComplexityTier = "starter" | "professional" | "growth" | "enterprise";
 

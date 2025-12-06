@@ -14,9 +14,9 @@ export function ResultsHeader() {
   const stored = calculation ?? loadCalculationResult()
   const effectiveTier = tier ?? getFeatureTier()
   const isFree = isFreeTier(effectiveTier)
-  const name = stored?.result?.projectName ?? "Demo project"
-  const flow = stored?.result?.flow ?? "fresh"
-  const persona = stored?.result?.persona ?? "agency"
+  const name = "Project estimate"
+  const flow = stored?.source === "analysis" ? "existing" : "fresh"
+  const persona = "agency"
   const rate = stored?.result?.effectiveHourlyRate ?? 125
 
   return (
