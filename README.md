@@ -6,30 +6,35 @@ Next.js 16 + TypeScript + Tailwind CSS codebase for the AI-assisted Webflow esti
 
 - **Frontend**: Next.js 16 (App Router, Server Components), React 19, Tailwind CSS 3, Geist fonts, shadcn/ui New York theme
 - **Backend**: Next.js Route Handlers, Node.js (TypeScript), Prisma ORM + Dockerized PostgreSQL
-- **Infra**: Clerk for auth, Redis cache (later), Firecrawl + OpenRouter integrations (Phase 3+)
+- **Services**: local mock identity, Redis cache, and optional Firecrawl, OpenRouter and currency API integrations
 
 ### Getting Started
 
 1. Ensure you have **Node 20+** and **Docker Desktop** installed.
-2. Copy `.env.local.example` to `.env.local` and fill in Clerk, database, Redis, and API keys (see Service Accounts below).
-3. Boot the local data stack:
+2. Copy the example configuration. The database and Redis defaults match the local Docker stack; add service keys only for the features you need (see Service Accounts below).
+
+```bash
+cp .env.local.example .env.local
+npm install
+```
+
+3. Boot the local data stack and prepare the database:
 
 ```bash
 npm run stack:up
-# tears down with npm run stack:down
+npm run prisma:generate
+npm run prisma:push
 ```
 
-4. Install dependencies and start the dev server:
+4. Start the dev server:
 
 ```bash
-npm install
 npm run dev
 ```
-5. Generate the Prisma client after schema changes:
 
-```bash
-npm run prisma:generate
-```
+Open `http://localhost:3000`. Stop the local data stack with `npm run stack:down`.
+
+The current project APIs use a mock `x-user-id` header, not Clerk authentication. For local project API testing, create a `User` with Prisma Studio and set its ID as `NEXT_PUBLIC_MOCK_USER_ID` in `.env.local`. The mock identity is not suitable for protecting production data.
 
 Add more shadcn/ui primitives as needed:
 
@@ -39,7 +44,7 @@ npx shadcn@latest add button
 
 ### Database & Prisma
 
-Prisma schema lives in `prisma/schema.prisma` and is seeded with base tables (`User`, `Project`, `ProjectResponse`, `CrawlResult`, `CostCalculation`). Useful commands:
+The Prisma schema in `prisma/schema.prisma` defines the base tables (`User`, `Project`, `ProjectResponse`, `CrawlResult`, `CostCalculation`). Useful commands:
 
 | Command                | Description                                  |
 | ---------------------- | -------------------------------------------- |
@@ -99,15 +104,13 @@ Unit tests for the cost engine are located in `__tests__/calculator.test.ts`. Us
 
 | Tool        | Purpose                               | Setup                                                                 |
 | ----------- | ------------------------------------- | --------------------------------------------------------------------- |
-| Clerk       | Auth, user management                 | Create an app at [clerk.com](https://clerk.com), grab publishable + secret keys |
-| PostgreSQL  | System-of-record (Dockerized locally) | `DATABASE_URL` already targets the compose service                    |
-| Redis       | Rate limiting + crawl cache           | Local compose service, or Upstash URL assigned to `REDIS_URL`         |
-| Firecrawl   | Website analysis                      | Create API key at [firecrawl.dev](https://firecrawl.dev)              |
-| OpenRouter  | AI orchestration                      | Get API key at [openrouter.ai](https://openrouter.ai)                 |
-| currencyapi.com | Live FX rates (USD/EUR/GBP)         | Create a free account at [currencyapi.com](https://currencyapi.com) and set `CURRENCY_API_KEY` |
-| Stripe      | Billing (Phase 5)                     | Generate secret + webhook keys in test mode                           |
+| PostgreSQL  | System-of-record (Dockerized locally) | Set `DATABASE_URL`; the example matches the compose service |
+| Redis       | Rate limiting + crawl cache           | Set `REDIS_URL` to the local compose service or another Redis instance |
+| Firecrawl   | Website analysis                      | Set `FIRECRAWL_API_KEY` to enable crawling |
+| OpenRouter  | AI complexity analysis                | Set `OPENROUTER_API_KEY` to enable AI analysis |
+| currencyapi.com | Live FX rates (USD/EUR/GBP)      | Set `CURRENCY_API_KEY`; without it the app uses static fallback rates |
 
-Document any production keys inside an internal vault; never commit `.env.local`.
+Clerk authentication and Stripe billing are planned rather than configured in this codebase. Keep real keys in a secure vault and never commit `.env.local`.
 
 Visit `http://localhost:3000` to view the marketing placeholder and start building modules under `src/app`.
 
